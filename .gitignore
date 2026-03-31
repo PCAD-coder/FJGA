@@ -34,3 +34,6 @@ pnpm-debug.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+id_ed25519_paterno
+id_ed25519_paterno.pub
