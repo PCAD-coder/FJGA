@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 18, "column": 0}, "map": {"version":3,"sources":["file:///D:/CSP/FJGA/app/sign-up/page.tsx"],"sourcesContent":["import SignUp from \"@/components/ui/sign-up\"\r\n\r\nexport default function SignUpPage() {\r\n  return <SignUp />\r\n}"],"names":[],"mappings":";;;;;;;;;;;;AAEe,SAAS;IACtB,qBAAO,6VAAC;;;;;AACV"}}]
+}
