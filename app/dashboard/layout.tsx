@@ -13,13 +13,13 @@ const defaultOpen = cookieStore.get("sidebar_state")?.value ==="true"
     <SidebarProvider defaultOpen={defaultOpen}>
       <div className="flex min-h-screen w-full">
         <AppSidebar />
-        <main className="flex-1 flex flex-col">
+        <main className="flex-1 w-full">
           <div className="p-4 flex items-center gap-2">
             <SidebarTrigger />
             <Navbar />
           </div>
 
-          <div className="flex-1 px-4">
+          <div className="flex-1 px-4 w-full">
             {children}
           </div>
         </main>

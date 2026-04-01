@@ -49,11 +49,8 @@ const ThemeSwitcher = () => {
 }
 const Navbar = () => {
   return (
-    <nav className="p-4 relative">
-      {/* Fixed Theme Button in top-right corner */}
-       <div className="fixed top-4 right-2 z-50">
-        <ThemeSwitcher />
-      </div>
+    <nav className="w-full sticky top-0 z-40 px-6 py-4 flex justify-end items-center">
+      <ThemeSwitcher />
     </nav>
   )
 }

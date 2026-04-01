@@ -28,47 +28,47 @@ const items =[
         icon: UserPen,
     },{
         title: "Products",
-        url:"",
+        url:"/dashboard/products",
         icon: ShelvingUnit,
     },{
         title: "Inventory",
-        url:"#",
+        url:"/dashboard/inventorym",
         icon: Box,
     },{
         title: "Custom Orders",
-        url:"#",
+        url:"/dashboard/custom-orders",
         icon: ClipboardList,
     },{
         title: "Pricing",
-        url:"#",
+        url:"/dashboard/pricing",
         icon: Tag,
     },{
         title: "Production",
-        url:"#",
+        url:"/dashboard/production",
         icon: ListTodo,
     },{
         title: "Returns",
-        url:"#",
+        url:"/dashboard/returns",
         icon: BanknoteX,
     },{
         title: "Content",
-        url:"#",
+        url:"/dashboard/contentm",
         icon: FolderPen,
     },{
         title: "Feedback",
-        url:"",
+        url:"/dashboard/feedback",
         icon: Send,
     },{
         title: "Analytics",
-        url:"",
+        url:"/dashboard/analytics",
         icon: ChartNoAxesCombined,
     },{
         title: "Activity Logs",
-        url:"",
+        url:"/dashboard/activity-logs",
         icon: ClipboardClock,
     },{
         title: "Backup and Restore",
-        url:"",
+        url:"/dashboard/backup-and-restore",
         icon: CloudBackup,
     },
 ];
