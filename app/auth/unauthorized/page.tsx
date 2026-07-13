@@ -1,10 +1,24 @@
-import { createClient } from "@/lib/supabase/server";
-import { NextResponse } from "next/server";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
-export async function GET() {
-  const supabase = await createClient();
+export default function UnauthorizedPage() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="text-center space-y-4">
+        <h1 className="text-3xl font-bold">
+          Access Denied
+        </h1>
 
-  await supabase.auth.signOut();
+        <p className="text-muted-foreground">
+          You do not have permission to access this page.
+        </p>
 
-  return NextResponse.redirect(new URL("/login", process.env.NEXT_PUBLIC_SITE_URL!));
+        <Button asChild>
+          <Link href="/">
+            Return Home
+          </Link>
+        </Button>
+      </div>
+    </div>
+  );
 }
