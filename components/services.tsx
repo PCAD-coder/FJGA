@@ -12,9 +12,9 @@ const links = [
 
 export default function ContentSection() {
     return (
-        <section id="services" className="py-16 md:py-32">
+        <section id="services" className="py-16 md:py-32 dark:bg-transparent">
             <div className="mx-auto max-w-5xl border-t px-6">
-                <span className="text-caption -ml-6 -mt-3.5 mb-8 block w-max bg-gray-50 px-6 dark:bg-gray-950">
+                <span className="text-caption -ml-6 -mt-5.5 mb-8 block w-max bg-gray-50 px-6 dark:bg-transparent">
                     Services
                 </span>
                 <div className="grid gap-6 md:grid-cols-2 md:gap-12">

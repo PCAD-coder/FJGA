@@ -44,7 +44,7 @@ export default function TeamSection() {
     return (
         <section id="projects" className="bg-gray-50 py-16 md:py-32 dark:bg-transparent">
             <div className="mx-auto max-w-5xl border-t px-6">
-                <span className="text-caption -ml-6 -mt-3.5 block w-max bg-gray-50 px-6 dark:bg-gray-950">Projects</span>
+                <span className="text-caption -ml-6 -mt-5.5 block w-max bg-gray-50 px-6 dark:bg-transparent">Projects</span>
                 <div className="mt-12 gap-4 sm:grid sm:grid-cols-2 md:mt-24">
                     <div className="sm:w-2/5">
                         <h2 className="text-3xl font-bold sm:text-4xl">Our Latest Projects</h2>

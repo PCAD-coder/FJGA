@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google" 
-import "./globals.css" 
+// @ts-ignore: allow importing global CSS without type declarations
+import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider"; 
 import { cn } from "@/lib/utils"; 
 import { cookies } from "next/headers";
