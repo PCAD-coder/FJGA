@@ -1,23 +1,60 @@
 export interface MaterialPricing {
-  id: number
+  id: string
+
+  material_name: string
 
   category: string
 
-  material: string
+  specification: string
+
+  size: string
 
   unit: string
 
-  baseCost: number
+  stock_quantity: number
 
-  markupPercentage: number
+  minimum_stock: number
+
+  unit_cost: number
+
+  remarks: string | null
+
+  created_at: string
+
+  updated_at: string
+
+  is_active: boolean
+
+  markup_percentage: number | null
+
+  selling_price: number
 }
 
-export interface LaborService {
-  id: number
+export interface LaborPricing {
+  id: string;
+  service_name: string;
+  description: string | null;
+  unit: string;
 
-  serviceType: string
+  labor_cost: number;
+  markup_percentage: number;
 
-  unit: string
+  is_active: boolean;
 
-  rate: number
+  created_at: string;
+  updated_at: string;
+
+  selling_price: number;
+}
+
+export interface PricingStats{
+  totalMaterials: number
+
+  totalServices: number
+
+  averageMaterialMarkup: number
+
+  averageLaborMarkup: number
+
+
 }

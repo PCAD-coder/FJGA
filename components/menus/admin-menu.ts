@@ -25,8 +25,8 @@ export const adminMenu = [
     icon: Home,
   },
   {
-    title: "Client Management",
-    url: "/dashboard/client-management",
+    title: "User Management",
+    url: "/dashboard/user-management",
     icon: UserPen,
   },
   {
