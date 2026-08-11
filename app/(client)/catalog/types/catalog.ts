@@ -11,7 +11,21 @@ export type StockStatus =
   | "Made to Order"
   | "Out of Stock";
 
+
 export interface CatalogProduct {
+  id: string
+  name: string
+  description: string
+  image: string
+
+  width: number
+  height: number
+  depth: number
+
+  sellingPrice: number
+}
+
+/*export interface CatalogProduct {
   id: string;
 
   name: string;
@@ -35,4 +49,4 @@ export interface CatalogProduct {
   stockStatus: StockStatus;
 
   customizable: boolean;
-}
+}*/

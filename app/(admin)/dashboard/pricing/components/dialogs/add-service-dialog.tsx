@@ -41,11 +41,11 @@ export default function AddServiceDialog({
   const [saving, setSaving] = useState(false)
 
   const sellingPrice = useMemo(() => {
-  const cost = Number(laborCost) || 0
-  const markupValue = Number(markup) || 0
+    const cost = Number(laborCost) || 0
+    const markupValue = Number(markup) || 0
 
-  return cost * (1 + markupValue / 100)
-}, [laborCost, markup])
+    return cost * (1 + markupValue / 100)
+  }, [laborCost, markup])
 
   async function handleSave() {
     try {
@@ -56,7 +56,7 @@ export default function AddServiceDialog({
         description,
         unit,
         labor_cost: Number(laborCost),
-        markup_percentage: Number (markup),
+        markup_percentage: Number(markup),
       })
 
       await refresh()
@@ -69,7 +69,7 @@ export default function AddServiceDialog({
       setLaborCost("")
       setMarkup("")
     } catch (error) {
-      console.error("Create Labor Service:", error)
+      console.error("Create Labor Service:", JSON.stringify(error, null, 2))
     } finally {
       setSaving(false)
     }
@@ -106,20 +106,13 @@ export default function AddServiceDialog({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium">
-              Unit
-            </label>
+            <label className="mb-2 block text-sm font-medium">Unit</label>
 
-            <Input
-              value={unit}
-              onChange={(e) => setUnit(e.target.value)}
-            />
+            <Input value={unit} onChange={(e) => setUnit(e.target.value)} />
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium">
-              Labor Cost
-            </label>
+            <label className="mb-2 block text-sm font-medium">Labor Cost</label>
 
             <Input
               type="number"
@@ -129,9 +122,7 @@ export default function AddServiceDialog({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium">
-              Markup %
-            </label>
+            <label className="mb-2 block text-sm font-medium">Markup %</label>
 
             <Input
               type="number"
@@ -145,25 +136,16 @@ export default function AddServiceDialog({
               Selling Price
             </label>
 
-            <Input
-              value={`₱${sellingPrice.toFixed(2)}`}
-              disabled
-            />
+            <Input value={`₱${sellingPrice.toFixed(2)}`} disabled />
           </div>
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
 
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-          >
+          <Button onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : "Save Service"}
           </Button>
         </DialogFooter>

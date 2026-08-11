@@ -4,8 +4,14 @@ export interface InventoryMaterial {
   material_name: string
 
   category: string
+  
+  series: string | null
 
   specification: string
+
+  thickness: string | null
+
+  color: string | null
 
   size: string
 
@@ -15,6 +21,8 @@ export interface InventoryMaterial {
 
   minimum_stock: number
 
+  markup_percentage?: number | null
+
   remarks: string | null
 
   created_at: string
@@ -22,8 +30,6 @@ export interface InventoryMaterial {
   updated_at: string
 
   is_active: boolean
-
-  markup_percentage?: number | null
 
 }
 

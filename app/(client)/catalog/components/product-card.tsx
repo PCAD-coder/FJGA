@@ -1,10 +1,13 @@
+"use client"
+
 import Image from "next/image"
-import { Badge } from "@/components/ui/badge"
+
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 
-import { Palette, ShoppingCart, MapPinned } from "lucide-react"
+import type { CatalogProduct } from "../types/catalog"
 
-import { CatalogProduct } from "../types/catalog"
+import Link from "next/link"
 
 interface Props {
   product: CatalogProduct
@@ -12,62 +15,57 @@ interface Props {
 
 export default function ProductCard({ product }: Props) {
   return (
-    <div className="group overflow-hidden rounded-xl border bg-card transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-      {/* Product Image */}
-      <div className="relative h-30 overflow-hidden">
+    <Card className="overflow-hidden">
+      <div className="relative aspect-[4/3] w-full bg-muted">
         <Image
           src={product.image}
           alt={product.name}
           fill
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          className="object-cover"
         />
-
-        {/* Category Badge */}
-        <Badge className="absolute top-3 right-3">{product.category}</Badge>
       </div>
 
-      {/* Product Details */}
-      <div className="flex flex-1 flex-col p-4">
-        <div>
-          <h3 className="line-clamp-2 min-h-[56px] text-lg font-semibold">
-            {product.name}
-          </h3>
+      <CardContent className="space-y-4 p-5">
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold">{product.name}</h3>
 
-          <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-            <p>
-              {product.width}cm × {product.height}cm
+          <p className="line-clamp-3 text-sm text-muted-foreground">
+            {product.description ||
+              "Custom glass and aluminum furniture product."}
+          </p>
+        </div>
+
+        <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+          <p className="font-medium">Dimensions</p>
+          <p className="text-muted-foreground">
+            {product.width} × {product.height}
+            {product.depth > 0 ? ` × ${product.depth}` : ""} cm
+          </p>
+        </div>
+
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="text-xs text-muted-foreground">Starting at</p>
+            <p className="text-2xl font-bold text-primary">
+              ₱
+              {product.sellingPrice.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </p>
-
-            <p>{product.glassType}</p>
-
-            <p>{product.aluminumSeries}</p>
           </div>
         </div>
 
-        {/* Price , buttons*/}
-        <div className="mt-auto">
-          <p className="text-xs text-muted-foreground">Starts at</p>
-
-          <p className="text-m font-bold text-primary">
-            ₱{product.basePrice.toLocaleString()}
-          </p>
-          <Button variant="outline" className="w-full">
-            <Palette className="mr-1 h-4 w-4" />
+        <div className="flex gap-2">
+          <Button className="flex-1" variant="outline">
             Customize
           </Button>
 
-          <Button className="w-full">
-            <ShoppingCart className="mr-1 h-4 w-4" />
-            Order
+          <Button asChild className="flex-1">
+            <Link href={`/catalog/${product.id}`}>Order</Link>
           </Button>
         </div>
-
-        {/* Inspection */}
-        <Button variant="ghost" className="w-full justify-center">
-          <MapPinned className="mr-1 h-4 w-4" />
-          Request On-site Inspection
-        </Button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }

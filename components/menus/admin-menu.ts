@@ -45,8 +45,8 @@ export const adminMenu = [
     icon: Box,
   },
   {
-    title: "Custom Orders",
-    url: "/dashboard/custom-orders",
+    title: "Orders",
+    url: "/dashboard/orders",
     icon: ClipboardList,
   },
   {

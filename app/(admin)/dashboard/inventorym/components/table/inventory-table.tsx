@@ -23,7 +23,7 @@ interface InventoryTableProps {
   materials: InventoryMaterial[]
 
   onEditMaterial: (id: string, form: InventoryUpdate) => Promise<void>
-    onArchiveMaterial: (id: string) => Promise<void>
+  onArchiveMaterial: (id: string) => Promise<void>
 }
 
 function getStatus(stock: number, minimumStock: number) {
@@ -59,21 +59,15 @@ export function InventoryTable({
           <TableHeader>
             <TableRow>
               <TableHead>Material</TableHead>
-
               <TableHead>Category</TableHead>
-
-              <TableHead>Specification</TableHead>
-
+              <TableHead>Series</TableHead>
+              <TableHead>Finish / Type</TableHead>
+              <TableHead>Thickness</TableHead>
               <TableHead>Size</TableHead>
-
               <TableHead>Unit</TableHead>
-
               <TableHead>Stock</TableHead>
-
               <TableHead>Minimum Stock</TableHead>
-
               <TableHead>Status</TableHead>
-
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -82,7 +76,7 @@ export function InventoryTable({
             {materials.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={10}
+                  colSpan={11}
                   className="py-8 text-center text-muted-foreground"
                 >
                   No materials found.
@@ -103,15 +97,17 @@ export function InventoryTable({
 
                     <TableCell>{material.category}</TableCell>
 
+                    <TableCell>{material.series ?? "—"}</TableCell>
+
                     <TableCell>{material.specification}</TableCell>
+
+                    <TableCell>{material.thickness ?? "—"}</TableCell>
 
                     <TableCell>{material.size}</TableCell>
 
                     <TableCell>{material.unit}</TableCell>
 
                     <TableCell>{material.stock_quantity}</TableCell>
-
-                    <TableCell>{material.unit}</TableCell>
 
                     <TableCell>{material.minimum_stock}</TableCell>
 
@@ -125,12 +121,11 @@ export function InventoryTable({
                           material={material}
                           onSubmit={onEditMaterial}
                         />
+
                         <ArchiveMaterialDialog
-    material={material}
-    onArchive={
-        onArchiveMaterial
-    }
-/>
+                          material={material}
+                          onArchive={onArchiveMaterial}
+                        />
                       </div>
                     </TableCell>
                   </TableRow>

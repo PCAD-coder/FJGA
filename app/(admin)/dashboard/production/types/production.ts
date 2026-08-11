@@ -1,31 +1,39 @@
 export type ProductionStage =
-  | "pending-fabrication"
-  | "glass-cutting"
-  | "assembly"
-  | "quality-check"
-  | "ready-for-delivery"
-  | "on-hold"
+  | "Pending"
+  | "Material Prep"
+  | "Glass Cutting"
+  | "Frame Fabrication"
+  | "Assembly"
+  | "Finishing"
+  | "Quality Check"
+  | "Ready for Delivery"
 
 export interface ProductionProject {
-  id: number
+  id: string
+
+  orderNumber: string
 
   projectName: string
-
   clientName: string
 
-  image?: string
-
-  dimensions: string
-
-  startDate: string
-
-  estimatedCompletion: string
-
-  currentStage: ProductionStage
+  stage: ProductionStage
+  assignedStaff: string
 
   progress: number
 
-  assignedStaff?: string
+  estimatedCompletion: string
+
+  imageUrl?: string
+  dimensions?: string
+}
+
+export interface ProductionStageHistory {
+  id: string
+
+  stage: ProductionStage
+
+  changedAt: string
+  changedBy: string
 
   notes?: string
 }

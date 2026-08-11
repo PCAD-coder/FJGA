@@ -28,11 +28,14 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import type { InventoryInsert } from "../../types/inventory"
 
-import {
-  MATERIAL_CATEGORIES,
-  MATERIAL_SPECIFICATIONS,
-  MATERIAL_UNITS,
-} from "../../constants/material-options"
+import { useUnits } from "../../hooks/use-units"
+
+import { useSpecifications } from "../../hooks/use-specifications"
+
+import { useCategories } from "../../hooks/use-categories"
+import { useColors } from "../../hooks/use-colors"
+import { useSeries } from "../../hooks/use-series"
+import { useThicknesses } from "../../hooks/use-thicknesses"
 
 interface AddMaterialDialogProps {
   onSubmit: (form: InventoryInsert) => Promise<void>
@@ -40,7 +43,10 @@ interface AddMaterialDialogProps {
 type AddMaterialForm = {
   material_name: string
   category: string
+  series: string
   specification: string
+  thickness: string
+  color: string
   size: string
   unit: string
   stock_quantity: string
@@ -51,7 +57,10 @@ type AddMaterialForm = {
 const initialForm: AddMaterialForm = {
   material_name: "",
   category: "",
+  series:"",
   specification: "",
+  thickness:"",
+  color: " ",
   size: "",
   unit: "",
   stock_quantity: "",
@@ -64,12 +73,29 @@ export function AddMaterialDialog({ onSubmit }: AddMaterialDialogProps) {
   const [open, setOpen] = useState(false)
 
   const [form, setForm] = useState(initialForm)
+  const { categories, colorCategories } = useCategories()
+
+  const { colors } = useColors(form.category)
+
+  const { units } = useUnits()
+
+  const { series } = useSeries()
+
+  const { thicknesses } = useThicknesses(form.category)
+
+  const categorySupportsColors = colorCategories.some(
+    (category) => category.category_name === form.category
+  )
+
+  const { specifications } = useSpecifications(form.category)
 
   async function handleSave() {
     await onSubmit({
       ...form,
       stock_quantity: Number(form.stock_quantity),
       minimum_stock: Number(form.minimum_stock),
+      series:form.category === "Aluminum"? form.series: null,
+      thickness:form.category === "Glass"? form.thickness: null,
     })
 
     setOpen(false)
@@ -121,7 +147,10 @@ export function AddMaterialDialog({ onSubmit }: AddMaterialDialogProps) {
                   setForm({
                     ...form,
                     category: value,
+                    series: "",
                     specification: "",
+                    thickness:"",
+                    color: "",
                   })
                 }
               >
@@ -130,9 +159,12 @@ export function AddMaterialDialog({ onSubmit }: AddMaterialDialogProps) {
                 </SelectTrigger>
 
                 <SelectContent>
-                  {MATERIAL_CATEGORIES.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
+                  {categories.map((category) => (
+                    <SelectItem
+                      key={category.id}
+                      value={category.category_name}
+                    >
+                      {category.category_name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -140,9 +172,40 @@ export function AddMaterialDialog({ onSubmit }: AddMaterialDialogProps) {
             </div>
           </div>
 
+          {form.category === "Aluminum" && (
+  <div className="space-y-2">
+    <Label>Series</Label>
+
+    <Select
+      value={form.series}
+      onValueChange={(value) =>
+        setForm({
+          ...form,
+          series: value,
+        })
+      }
+    >
+      <SelectTrigger>
+        <SelectValue placeholder="Select aluminum series" />
+      </SelectTrigger>
+
+      <SelectContent>
+        {series.map((item) => (
+          <SelectItem
+            key={item.id}
+            value={item.series_name}
+          >
+            {item.series_name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+)}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Specification</Label>
+              <Label>Variant/Finish</Label>
 
               <Select
                 value={form.specification}
@@ -154,18 +217,73 @@ export function AddMaterialDialog({ onSubmit }: AddMaterialDialogProps) {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select specification" />
+                  <SelectValue placeholder="Select Variant/Finish" />
                 </SelectTrigger>
 
                 <SelectContent>
-                  {form.category &&
-                    MATERIAL_SPECIFICATIONS[
-                      form.category as keyof typeof MATERIAL_SPECIFICATIONS
-                    ]?.map((spec) => (
-                      <SelectItem key={spec} value={spec}>
-                        {spec}
-                      </SelectItem>
-                    ))}
+                  {specifications.map((spec) => (
+                    <SelectItem key={spec.id} value={spec.specification_name}>
+                      {spec.specification_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {form.category === "Glass" && (
+  <div className="space-y-2">
+    <Label>Thickness</Label>
+
+    <Select
+      value={form.thickness}
+      onValueChange={(value) =>
+        setForm({
+          ...form,
+          thickness: value,
+        })
+      }
+    >
+      <SelectTrigger>
+        <SelectValue placeholder="Select glass thickness" />
+      </SelectTrigger>
+
+      <SelectContent>
+        {thicknesses.map((item) => (
+          <SelectItem
+            key={item.id}
+            value={item.thickness_name}
+          >
+            {item.thickness_name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+)}
+
+            <div className="space-y-2">
+              <Label>Color</Label>
+
+              <Select
+                value={form.color ?? ""}
+                onValueChange={(value) =>
+                  setForm({
+                    ...form,
+                    color: value,
+                  })
+                }
+                disabled={!categorySupportsColors}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select color" />
+                </SelectTrigger>
+
+                <SelectContent>
+                  {colors.map((color) => (
+                    <SelectItem key={color.id} value={color.color_name}>
+                      {color.color_name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -203,11 +321,14 @@ export function AddMaterialDialog({ onSubmit }: AddMaterialDialogProps) {
                 </SelectTrigger>
 
                 <SelectContent>
-                  {MATERIAL_UNITS.map((unit) => (
-                    <SelectItem key={unit} value={unit}>
-                      {unit}
-                    </SelectItem>
-                  ))}
+                  {units.map((unit) => (
+  <SelectItem
+    key={unit.id}
+    value={unit.unit_name}
+  >
+    {unit.unit_name}
+  </SelectItem>
+))}
                 </SelectContent>
               </Select>
             </div>
