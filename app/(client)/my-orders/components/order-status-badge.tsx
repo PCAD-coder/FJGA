@@ -1,30 +1,29 @@
-import { Badge } from "@/components/ui/badge";
+"use client"
 
-import { OrderStatus } from "../types/order";
+import { Badge } from "@/components/ui/badge"
+
+import type { OrderStatus } from "../types/order"
 
 interface Props {
-  status: OrderStatus;
+  status: OrderStatus
 }
 
-export default function OrderStatusBadge({
-  status,
-}: Props) {
+const variant: Record<OrderStatus, string> = {
+  Pending: "bg-yellow-100 text-yellow-700 hover:bg-yellow-100",
+  Quoted: "bg-blue-100 text-blue-700 hover:bg-blue-100",
+  Approved: "bg-green-100 text-green-700 hover:bg-green-100",
+  Production: "bg-blue-100 text-blue-700 hover:bg-blue-100",
+  "Ready for Delivery":
+    "bg-purple-100 text-purple-700 hover:bg-purple-100",
+  Completed: "bg-green-100 text-green-700 hover:bg-green-100",
+  Declined: "bg-red-100 text-red-700 hover:bg-red-100",
+  Cancelled: "bg-gray-100 text-gray-700 hover:bg-gray-100",
+}
 
-  const variant = {
-    Production: "bg-blue-100 text-blue-700",
-    Approved: "bg-green-100 text-green-700",
-    Completed: "bg-green-100 text-green-700",
-    Declined: "bg-red-100 text-red-700",
-    Cancelled: "bg-gray-100 text-gray-700",
-    Quotation: "bg-yellow-100 text-yellow-700",
-    "Pending Payment": "bg-orange-100 text-orange-700",
-    "Ready for Delivery": "bg-purple-100 text-purple-700",
-    "Out for Delivery": "bg-cyan-100 text-cyan-700",
-  };
-
+export default function OrderStatusBadge({ status }: Props) {
   return (
     <Badge className={variant[status]}>
       {status}
     </Badge>
-  );
+  )
 }

@@ -16,6 +16,12 @@ export interface ProductionProject {
   projectName: string
   clientName: string
 
+  contactNumber: string | null
+  paymentMethod: "cash_on_delivery" | "card" | "gcash" | null
+
+  orderItemId:string
+
+  deliveryAddress?: ProductionDeliveryAddress | null
   stage: ProductionStage
   assignedStaff: string
 
@@ -36,4 +42,18 @@ export interface ProductionStageHistory {
   changedBy: string
 
   notes?: string
+}
+export interface ProductionDeliveryAddress {
+  house_building_number: string
+  street: string
+  building_subdivision: string | null
+  unit_floor: string | null
+
+  region_name: string
+  province_name: string | null
+  city_name: string
+  barangay_name: string
+
+  postal_code: string | null
+  landmark: string | null
 }

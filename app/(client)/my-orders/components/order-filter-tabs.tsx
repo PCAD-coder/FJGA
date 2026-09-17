@@ -1,11 +1,12 @@
-"use client";
+"use client"
 
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 
 interface Props {
-  activeTab: string;
-  onChange: (tab: string) => void;
+  activeTab: string
+  onChange: (tab: string) => void
+  counts?: Record<string, number>
 }
 
 const tabs = [
@@ -15,15 +16,15 @@ const tabs = [
   "Approved",
   "Declined",
   "Cancelled",
-];
+]
 
 export default function OrderFilterTabs({
   activeTab,
   onChange,
+  counts = {},
 }: Props) {
   return (
     <div className="flex flex-wrap gap-3 rounded-xl border bg-card p-3">
-
       {tabs.map((tab) => (
         <button
           key={tab}
@@ -38,11 +39,10 @@ export default function OrderFilterTabs({
           {tab}
 
           <Badge variant="secondary">
-            0
+            {counts[tab] ?? 0}
           </Badge>
         </button>
       ))}
-
     </div>
-  );
+  )
 }

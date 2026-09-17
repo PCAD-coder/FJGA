@@ -338,6 +338,8 @@ export function AddMaterialDialog({ onSubmit }: AddMaterialDialogProps) {
 
               <Input
                 type="number"
+                min="0"
+                step="0.0001"
                 value={form.stock_quantity}
                 onChange={(e) =>
                   setForm({
@@ -353,6 +355,8 @@ export function AddMaterialDialog({ onSubmit }: AddMaterialDialogProps) {
 
               <Input
                 type="number"
+                min="0"
+                step="0.0001"
                 value={form.minimum_stock}
                 onChange={(e) =>
                   setForm({

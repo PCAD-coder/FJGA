@@ -4,7 +4,7 @@ export interface InventoryMaterial {
   material_name: string
 
   category: string
-  
+
   series: string | null
 
   specification: string
@@ -30,7 +30,6 @@ export interface InventoryMaterial {
   updated_at: string
 
   is_active: boolean
-
 }
 
 export type InventoryInsert = Omit<

@@ -1,53 +1,95 @@
 export type OrderStatus =
-  | "Pending Payment"
-  | "Quotation"
+  | "Pending"
+  | "Quoted"
+  | "Approved"
   | "Production"
   | "Ready for Delivery"
-  | "Out for Delivery"
   | "Completed"
-  | "Approved"
   | "Declined"
-  | "Cancelled";
+  | "Cancelled"
+
+export type PaymentSubmissionStatus = "pending" | "approved" | "rejected"
 
 export interface OrderProgress {
-  quotation: boolean;
-  production: boolean;
-  delivery: boolean;
-  completed: boolean;
+  quotation: boolean
+  production: boolean
+  delivery: boolean
+  completed: boolean
+}
+
+export interface OrderTimelineItem {
+  id: string
+  fromStage: string | null
+  toStage: string
+  notes: string | null
+  changedAt: string
+  changedBy: string | null
+}
+
+export interface OrderPaymentSubmission {
+  id: string
+  amount: number
+  paymentMethod: string
+  paymentDate: string
+  referenceNumber: string | null
+  proofImagePath: string | null
+  verificationStatus: PaymentSubmissionStatus
+  submittedAt: string
+  verifiedAt: string | null
+  rejectionReason: string | null
 }
 
 export interface Order {
-  id: string;
+  id: string
 
-  orderNumber: string;
+  orderNumber: string
 
-  productName: string;
+  productName: string
 
-  image: string;
+  image: string
 
-  madeToOrder: boolean;
+  madeToOrder: boolean
 
-  quantity: number;
+  quantity: number
 
-  width: number;
+  width: number | null
+  height: number | null
+  depth: number | null
+  dimensionUnit: string
 
-  height: number;
+  orderedAt: string
 
-  aluminumSeries: string;
+  estimatedDelivery: string | null
 
-  glassType: string;
+  total: number
 
-  orderedAt: string;
+  currentStage: string
 
-  estimatedDelivery: string;
+  progressPercentage: number
 
-  total: number;
+  status: OrderStatus
 
-  currentStage: string;
+  progress: OrderProgress
 
-  progressPercentage: number;
+  timeline: OrderTimelineItem[]
 
-  status: OrderStatus;
+  /*
+   * ============================================================
+   * PAYMENT INFORMATION
+   * ============================================================
+   */
 
-  progress: OrderProgress;
+  amountPaid: number
+
+  requiredDownPayment: number
+
+  remainingDownPayment: number
+
+  paymentDeadline: string | null
+
+  paymentDaysRemaining: number | null
+
+  productionPaymentComplete: boolean
+
+  paymentSubmission: OrderPaymentSubmission | null
 }

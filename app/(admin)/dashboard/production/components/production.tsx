@@ -197,13 +197,13 @@ export default function ProductionModule() {
         project={selectedProject}
         open={updateOpen}
         onOpenChange={setUpdateOpen}
-        onStageChange={async (stage, notes) => {
+        onStageChange={async (stage, notes, replacement) => {
           if (!selectedProject) return
 
           const toastId = toast.loading("Updating production stage...")
 
           try {
-            await changeStage(selectedProject.id, stage, notes)
+            await changeStage(selectedProject.id, stage, notes, replacement)
 
             toast.success("Stage updated successfully", {
               id: toastId,

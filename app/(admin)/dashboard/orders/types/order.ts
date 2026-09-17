@@ -55,11 +55,41 @@ export interface OrderItem {
   dimensionUnit?: string | null
 }
 
+export interface OrderAddress {
+  id: string
+  order_id: string
+
+  house_building_number: string
+  street: string
+  building_subdivision: string | null
+  unit_floor: string | null
+
+  region_psgc_code: string
+  region_name: string
+
+  province_psgc_code: string | null
+  province_name: string | null
+
+  city_psgc_code: string
+  city_name: string
+
+  barangay_psgc_code: string
+  barangay_name: string
+
+  postal_code: string | null
+  landmark: string | null
+
+  created_at: string
+  updated_at: string
+}
+
 export interface Order {
   id: string
   order_number: string
 
   customer_id: string
+  customer_contact_number: string | null
+  payment_method: PaymentMethod
 
   order_type: OrderType
   status: OrderStatus
@@ -74,16 +104,18 @@ export interface Order {
   denial_reason: string | null
   notes: string | null
 
+  address?: OrderAddress | null
+
   created_at: string
   updated_at: string
 
   items?: OrderItem[]
 
   profiles?: {
-  id: string
-  first_name: string
-  last_name: string
-} | null
+    id: string
+    first_name: string
+    last_name: string
+  } | null
 }
 
 export interface CreateOrderItemInput {
@@ -100,17 +132,46 @@ export interface CreateOrderItemInput {
   glass_variant_id?: string | null
 }
 
+export type PaymentMethod =
+  | "cash_on_delivery"
+  |"Card" 
+  |"Gcash" 
+  
+
 export interface CreateOrderInput {
   customer_id: string
+  customer_contact_number: string
+  payment_method: PaymentMethod
   order_type: OrderType
   items: CreateOrderItemInput[]
   delivery_fee?: number
   notes?: string
+  address: CreateOrderAddressInput
 }
 
 export interface OrderProfile {
   id: string
   first_name: string | null
   last_name: string | null
+}
+export interface CreateOrderAddressInput {
+  house_building_number: string
+  street: string
+  building_subdivision?: string | null
+  unit_floor?: string | null
 
+  region_psgc_code: string
+  region_name: string
+
+  province_psgc_code?: string | null
+  province_name?: string | null
+
+  city_psgc_code: string
+  city_name: string
+
+  barangay_psgc_code: string
+  barangay_name: string
+
+  postal_code?: string | null
+  landmark?: string | null
 }

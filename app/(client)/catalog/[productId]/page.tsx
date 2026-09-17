@@ -16,6 +16,22 @@ export default async function Page({ params }: Props) {
 
   const supabase = await createClient()
 
+  const {
+  data: { user },
+} = await supabase.auth.getUser()
+
+let contactNumber: string | null = null
+
+if (user) {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("contact_number")
+    .eq("auth_user_id", user.id)
+    .single()
+
+  contactNumber = profile?.contact_number ?? null
+}
+
   const { data: product, error } = await supabase
     .from("products")
     .select(
@@ -80,6 +96,7 @@ const defaultGlassVariantId =
 
   return (
     <ProductOrderPage
+    contactNumber={contactNumber}
       product={{
         id: product.id,
         name: product.product_name,

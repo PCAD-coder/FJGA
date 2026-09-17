@@ -197,7 +197,7 @@ export default function OrdersModule() {
                     </Button>
                   </>
                 )}
-
+              {/*}
                 {order.status === "in_production" && (
                   <Button
                     onClick={() => changeStatus(order.id, "ready_for_delivery")}
@@ -210,7 +210,7 @@ export default function OrdersModule() {
                   <Button onClick={() => changeStatus(order.id, "delivered")}>
                     Mark Delivered
                   </Button>
-                )}
+                )}*/}
               </div>
             </CardContent>
           </Card>

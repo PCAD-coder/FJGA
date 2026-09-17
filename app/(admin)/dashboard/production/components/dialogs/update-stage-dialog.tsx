@@ -24,6 +24,11 @@ import { Loader2 } from "lucide-react"
 import { ProductionProject } from "../../types/production"
 import { Textarea } from "@/components/ui/textarea"
 
+import {
+  getProductionReplacementMaterials,
+  type ProductionReplacementMaterial,
+} from "../../services/production"
+
 interface Props {
   project: ProductionProject | null
 
@@ -31,7 +36,16 @@ interface Props {
 
   onOpenChange: (open: boolean) => void
 
-  onStageChange: (stage: string, notes?: string) => void
+  onStageChange: (
+    stage: string,
+    notes?: string,
+    replacement?: {
+      orderItemId: string
+      materialId: string
+      quantity: number
+      reason: string
+    }
+  ) => void
 }
 
 const stageToDb: Record<string, string> = {
@@ -66,18 +80,91 @@ export default function UpdateStageDialog({
   const [notes, setNotes] = useState("")
   const [saving, setSaving] = useState(false)
 
+  const [replacement, setReplacement] = useState(false)
+  const [replacementMaterialId, setReplacementMaterialId] = useState("")
+  const [replacementQuantity, setReplacementQuantity] = useState("")
+  const [replacementReason, setReplacementReason] = useState("")
+
+  const [replacementMaterials, setReplacementMaterials] = useState<
+    ProductionReplacementMaterial[]
+  >([])
+
+  const [replacementMaterialUnit, setReplacementMaterialUnit] = useState("")
+
+  const [loadingReplacementMaterials, setLoadingReplacementMaterials] =
+    useState(false)
+
   useEffect(() => {
     if (project) {
       setStage(project.stage)
       setNotes("")
+      setReplacement(false)
+      setReplacementMaterialId("")
+      setReplacementQuantity("")
+      setReplacementReason("")
+      setReplacementMaterialUnit("")
+      setReplacementMaterials([])
     }
   }, [project])
+  useEffect(() => {
+    if (!replacement || !project) {
+      setReplacementMaterials([])
+      return
+    }
+    const projectId = project.id
+
+    let cancelled = false
+
+    async function loadReplacementMaterials() {
+      try {
+        setLoadingReplacementMaterials(true)
+
+        const materials = await getProductionReplacementMaterials(projectId)
+
+        if (!cancelled) {
+          setReplacementMaterials(materials)
+        }
+      } catch (error) {
+        console.error("Failed to load replacement materials:", error)
+
+        if (!cancelled) {
+          setReplacementMaterials([])
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingReplacementMaterials(false)
+        }
+      }
+    }
+
+    loadReplacementMaterials()
+
+    return () => {
+      cancelled = true
+    }
+  }, [replacement, project])
 
   if (!project) return null
+  const currentStageDb = stageToDb[project.stage]
+  const selectedStageDb = stageToDb[stage]
+
+  const stageOrder: Record<string, number> = {
+    pending: 0,
+    material_prep: 1,
+    glass_cutting: 2,
+    frame_fabrication: 3,
+    assembly: 4,
+    finishing: 5,
+    quality_check: 6,
+    ready_for_delivery: 7,
+  }
+
+  const isGoingBackward =
+    stageOrder[selectedStageDb] < stageOrder[currentStageDb]
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-lg">
         <DialogHeader className="space-y-2">
           <DialogTitle>Update production stage</DialogTitle>
           <p className="text-sm text-muted-foreground">
@@ -86,7 +173,7 @@ export default function UpdateStageDialog({
           </p>
         </DialogHeader>
 
-        <div className="space-y-2 py-2">
+        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto py-2 pr-2">
           {/* Current stage summary */}
           <div className="rounded-lg border bg-muted/30 p-4">
             <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
@@ -120,6 +207,133 @@ export default function UpdateStageDialog({
               </SelectContent>
             </Select>
           </div>
+          {isGoingBackward && (
+            <div className="space-y-4 rounded-lg border bg-muted/20 p-4">
+              <div>
+                <p className="text-sm font-semibold">Material replacement</p>
+
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Use this when a material was damaged or needs to be replaced
+                  while returning the order to an earlier production stage.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg border bg-background p-3">
+                <div>
+                  <p className="text-sm font-medium">Replace a material</p>
+
+                  <p className="text-xs text-muted-foreground">
+                    Deduct the replacement material from inventory.
+                  </p>
+                </div>
+
+                <Button
+                  type="button"
+                  variant={replacement ? "default" : "outline"}
+                  onClick={() => {
+                    setReplacement((value) => !value)
+
+                    if (replacement) {
+                      setReplacementMaterialId("")
+                      setReplacementQuantity("")
+                    }
+                  }}
+                >
+                  {replacement ? "Enabled" : "Enable"}
+                </Button>
+              </div>
+
+              {replacement && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Replacement material</p>
+
+                    <Select
+                      value={replacementMaterialId}
+                      onValueChange={(value) => {
+                        setReplacementMaterialId(value)
+
+                        const selectedMaterial = replacementMaterials.find(
+                          (material) => material.id === value
+                        )
+
+                        if (selectedMaterial) {
+                          setReplacementMaterialUnit(selectedMaterial.unit)
+                          setReplacementQuantity(
+                            String(selectedMaterial.snapshotQuantity)
+                          )
+                        } else {
+                          setReplacementMaterialUnit("")
+                          setReplacementQuantity("")
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select material" />
+                      </SelectTrigger>
+
+                      <SelectContent>
+                        {loadingReplacementMaterials ? (
+                          <SelectItem value="loading" disabled>
+                            Loading materials...
+                          </SelectItem>
+                        ) : replacementMaterials.length === 0 ? (
+                          <SelectItem value="empty" disabled>
+                            No order materials available
+                          </SelectItem>
+                        ) : (
+                          replacementMaterials.map((material) => (
+                            <SelectItem key={material.id} value={material.id}>
+                              {material.material_name}
+                              {material.specification
+                                ? ` — ${material.specification}`
+                                : ""}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Replacement quantity</p>
+
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.0001"
+                        value={replacementQuantity}
+                        onChange={(e) => setReplacementQuantity(e.target.value)}
+                        placeholder="Enter quantity"
+                        className="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                      />
+
+                      <div className="flex h-10 min-w-[100px] items-center justify-center rounded-md border bg-muted px-3 text-sm font-medium">
+                        {replacementMaterialUnit || "Unit"}
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground">
+                      The quantity is automatically based on the material
+                      requirement for this order. Adjust it only if the actual
+                      replacement amount is different.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Replacement reason</p>
+
+                    <Textarea
+                      placeholder="Example: Glass cracked during assembly and needs to be replaced."
+                      className="min-h-[90px] resize-none"
+                      value={replacementReason}
+                      onChange={(e) => setReplacementReason(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Notes */}
           <div className="space-y-2">
@@ -140,12 +354,36 @@ export default function UpdateStageDialog({
           </Button>
 
           <Button
-            disabled={saving || stage === project.stage}
+            disabled={
+              saving ||
+              stage === project.stage ||
+              (replacement &&
+                (!replacementMaterialId ||
+                  !replacementQuantity ||
+                  Number(replacementQuantity) <= 0))
+            }
             onClick={async () => {
               setSaving(true)
 
               try {
-                await onStageChange(stageToDb[stage], notes)
+                const finalNotes = replacementReason.trim()
+                  ? `${notes.trim()}${
+                      notes.trim() ? "\n\n" : ""
+                    }Replacement reason: ${replacementReason.trim()}`
+                  : notes
+
+                await onStageChange(
+                  stageToDb[stage],
+                  finalNotes,
+                  replacement
+                    ? {
+                        orderItemId: project.orderItemId,
+                        materialId: replacementMaterialId,
+                        quantity: Number(replacementQuantity),
+                        reason: replacementReason,
+                      }
+                    : undefined
+                )
                 setNotes("")
                 onOpenChange(false)
               } finally {

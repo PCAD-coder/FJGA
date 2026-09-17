@@ -7,14 +7,14 @@ export interface PaymentSummary {
 }
 
 export interface Invoice {
-  invoiceId: string;
-  orderId: string;
-  productName: string;
-  dueDate: string;
-  amountDue: number;
-  status: "Pending" | "Partial" | "Paid" | "Overdue";
+  invoiceId: string
+  orderId: string
+  orderNumber: string
+  productName: string
+  dueDate: string
+  amountDue: number
+  status: "Pending" | "Partial" | "Paid" | "Overdue"
 }
-
 export interface PaymentMethod {
   id: string;
   name: string;

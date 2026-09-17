@@ -10,6 +10,8 @@ import type {
   LaborSnapshot,
 } from "../types/order"
 
+import { getDeliveryFeeByCity } from "../services/delivery-service"
+
 interface ProductPricingSnapshot {
   productId: string
   productName: string
@@ -121,10 +123,11 @@ export async function createOrderServer(input: CreateOrderInput) {
       })
     )
   )
+  const deliveryFee = await getDeliveryFeeByCity(input.address.city_psgc_code)
 
   let subtotal = 0
   let laborTotal = 0
-  let totalAmount = Number(input.delivery_fee ?? 0)
+  let totalAmount = deliveryFee
 
   const orderItems = pricingSnapshots.map((snapshot, index) => {
     const quantity = input.items[index].quantity
@@ -164,10 +167,12 @@ export async function createOrderServer(input: CreateOrderInput) {
     "create_order_transaction",
     {
       p_customer_id: input.customer_id,
+      p_customer_contact_number: input.customer_contact_number,
+      p_payment_method: input.payment_method,
       p_order_type: input.order_type,
       p_subtotal: subtotal,
       p_labor_total: laborTotal,
-      p_delivery_fee: input.delivery_fee ?? 0,
+      p_delivery_fee: deliveryFee,
       p_total_amount: totalAmount,
       p_notes: input.notes ?? null,
       p_items: orderItems,
@@ -176,6 +181,45 @@ export async function createOrderServer(input: CreateOrderInput) {
 
   if (error) {
     throw new Error(error.message || "Failed to create order")
+  }
+  if (input.address) {
+    const { error: addressError } = await supabase
+      .from("order_addresses")
+      .insert({
+        order_id: orderId,
+
+        house_building_number: input.address.house_building_number,
+
+        street: input.address.street,
+
+        building_subdivision: input.address.building_subdivision ?? null,
+
+        unit_floor: input.address.unit_floor ?? null,
+
+        region_psgc_code: input.address.region_psgc_code,
+
+        region_name: input.address.region_name,
+
+        province_psgc_code: input.address.province_psgc_code ?? null,
+
+        province_name: input.address.province_name ?? null,
+
+        city_psgc_code: input.address.city_psgc_code,
+
+        city_name: input.address.city_name,
+
+        barangay_psgc_code: input.address.barangay_psgc_code,
+
+        barangay_name: input.address.barangay_name,
+
+        postal_code: input.address.postal_code ?? null,
+
+        landmark: input.address.landmark ?? null,
+      })
+
+    if (addressError) {
+      throw new Error(addressError.message || "Failed to save delivery address")
+    }
   }
 
   const { data: order, error: fetchError } = await supabase

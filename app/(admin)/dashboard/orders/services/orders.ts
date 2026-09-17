@@ -102,6 +102,8 @@ export async function getOrders() {
         ),
         order_items (
           *
+        ),order_addresses (
+          *
         )
       `
     )
@@ -112,6 +114,9 @@ export async function getOrders() {
   return (data ?? []).map((order) => ({
     ...order,
     items: order.order_items ?? [],
+    address: Array.isArray(order.order_addresses)
+      ? (order.order_addresses[0] ?? null)
+      : (order.order_addresses ?? null),
   }))
 }
 export async function getOrderById(orderId: string) {
@@ -127,6 +132,9 @@ export async function getOrderById(orderId: string) {
         ),
         order_items (
           *
+        ),
+        order_addresses (
+          *
         )
       `
     )
@@ -135,9 +143,12 @@ export async function getOrderById(orderId: string) {
 
   if (error) throw error
 
-  return{
+  return {
     ...data,
     items: data.order_items ?? [],
+    address: Array.isArray(data.order_addresses)
+      ? (data.order_addresses[0] ?? null)
+      : (data.order_addresses ?? null),
   }
 }
 
@@ -156,6 +167,45 @@ export async function updateOrderStatus(
   }
 
   if (status === "in_production") {
+    const { data: order, error: orderError } = await supabase
+      .from("orders")
+      .select("id, total_amount")
+      .eq("id", orderId)
+      .single()
+
+    if (orderError || !order) {
+      throw new Error("Order not found")
+    }
+
+    const { data: payments, error: paymentsError } = await supabase
+      .from("order_payments")
+      .select("amount")
+      .eq("order_id", orderId)
+
+    if (paymentsError) {
+      throw new Error("Failed to check order payments")
+    }
+
+    const totalPaid = (payments ?? []).reduce(
+      (total, payment) => total + Number(payment.amount ?? 0),
+      0
+    )
+
+    const requiredDownPayment = Number(order.total_amount ?? 0) * 0.5
+
+    if (totalPaid < requiredDownPayment) {
+      const remaining = requiredDownPayment - totalPaid
+
+      throw new Error(
+        `Production cannot start. The customer must pay at least 50% of the order total. ${remaining.toLocaleString(
+          "en-PH",
+          {
+            style: "currency",
+            currency: "PHP",
+          }
+        )} remaining.`
+      )
+    }
     updateData.production_started_at = new Date().toISOString()
     updateData.production_stage = "material_prep"
 
@@ -164,8 +214,32 @@ export async function updateOrderStatus(
     }
 
     if (options?.estimatedCompletionDate) {
-      updateData.estimated_completion_date =
-        options.estimatedCompletionDate
+      updateData.estimated_completion_date = options.estimatedCompletionDate
+    }
+
+    /*
+     * Material consumption happens when production starts.
+     *
+     * The database function protects against duplicate
+     * consumption, so moving the order back to Material Prep
+     * later will not deduct the same material twice.
+     */
+    const { data: consumptionResult, error: consumptionError } =
+      await supabase.rpc("consume_order_materials", {
+        p_order_id: orderId,
+        p_production_stage: "material_prep",
+      })
+
+    console.log("MATERIAL CONSUMPTION ON START PRODUCTION:", {
+      orderId,
+      consumptionResult,
+      consumptionError,
+    })
+
+    if (consumptionError) {
+      throw new Error(
+        consumptionError.message || "Failed to consume production materials"
+      )
     }
   }
 

@@ -22,18 +22,13 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
+import { Textarea } from "@/components/ui/textarea"
+
 interface UpdateDeliveryStatusDialogProps {
   delivery: Delivery | null
-
   open: boolean
-
-  onOpenChange: (
-    open: boolean
-  ) => void
-
-  onSave: (
-    status: Delivery["status"]
-  ) => void
+  onOpenChange: (open: boolean) => void
+  onSave: (status: Delivery["status"], notes: string) => void
 }
 
 export default function UpdateDeliveryStatusDialog({
@@ -42,141 +37,159 @@ export default function UpdateDeliveryStatusDialog({
   onOpenChange,
   onSave,
 }: UpdateDeliveryStatusDialogProps) {
-  const [status, setStatus] =
-    useState<Delivery["status"]>(
-      "ready"
-    )
+  const [status, setStatus] = useState<Delivery["status"]>("scheduled")
+
+  const [notes, setNotes] = useState("")
 
   useEffect(() => {
     if (delivery) {
       setStatus(delivery.status)
+      setNotes("")
     }
   }, [delivery])
 
   if (!delivery) return null
 
-  const formatStatus = (
-    value: string
-  ) => {
+  const formatStatus = (value: string) => {
     switch (value) {
-      case "out-for-delivery":
+      case "out_for_delivery":
         return "Out For Delivery"
 
       default:
-        return (
-          value.charAt(0).toUpperCase() +
-          value.slice(1)
-        )
+        return value.charAt(0).toUpperCase() + value.slice(1)
     }
   }
 
-  return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
-      <DialogContent>
+  const canGoOutForDelivery =
+    Boolean(delivery.deliveryDate) &&
+    Boolean(delivery.deliveryTime) &&
+    Boolean(delivery.assignedDriver) &&
+    Boolean(delivery.assignedTruck)
 
+  const isGoingOutForDelivery =
+    status === "out_for_delivery" && delivery.status !== "out_for_delivery"
+
+  const isBeingDelivered =
+    status === "delivered" && delivery.status !== "delivered"
+
+  const handleSave = () => {
+    if (isGoingOutForDelivery && !canGoOutForDelivery) {
+      return
+    }
+
+    onSave(status, notes.trim())
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            Update Delivery Status
-          </DialogTitle>
+          <DialogTitle>Update Delivery Status</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* PROJECT */}
 
           <div>
-            <p className="text-sm text-muted-foreground">
-              Project
-            </p>
+            <p className="text-sm text-muted-foreground">Project</p>
 
-            <p className="font-medium">
-              {delivery.projectName}
-            </p>
+            <p className="font-medium">{delivery.projectName}</p>
           </div>
 
-          <div>
-            <p className="text-sm text-muted-foreground mb-2">
-              Current Status
-            </p>
+          {/* CURRENT STATUS */}
 
-            <p className="font-medium">
-              {formatStatus(
-                delivery.status
-              )}
-            </p>
+          <div>
+            <p className="mb-2 text-sm text-muted-foreground">Current Status</p>
+
+            <p className="font-medium">{formatStatus(delivery.status)}</p>
           </div>
 
+          {/* NEW STATUS */}
+
           <div>
-            <p className="text-sm text-muted-foreground mb-2">
-              New Status
-            </p>
+            <p className="mb-2 text-sm text-muted-foreground">New Status</p>
 
             <Select
               value={status}
-              onValueChange={(
-                value
-              ) =>
-                setStatus(
-                  value as Delivery["status"]
-                )
-              }
+              onValueChange={(value) => setStatus(value as Delivery["status"])}
             >
-
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
 
               <SelectContent>
+                {delivery.status === "scheduled" && (
+                  <>
+                    <SelectItem value="scheduled">Scheduled</SelectItem>
 
-                <SelectItem value="ready">
-                  Ready
-                </SelectItem>
+                    <SelectItem value="out_for_delivery">
+                      Out For Delivery
+                    </SelectItem>
 
-                <SelectItem value="scheduled">
-                  Scheduled
-                </SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </>
+                )}
 
-                <SelectItem value="out-for-delivery">
-                  Out For Delivery
-                </SelectItem>
+                {delivery.status === "out_for_delivery" && (
+                  <>
+                    <SelectItem value="out_for_delivery">
+                      Out For Delivery
+                    </SelectItem>
 
-                <SelectItem value="delivered">
-                  Delivered
-                </SelectItem>
-
-                <SelectItem value="cancelled">
-                  Cancelled
-                </SelectItem>
-
+                    <SelectItem value="delivered">Delivered</SelectItem>
+                  </>
+                )}
               </SelectContent>
-
             </Select>
           </div>
 
+          {/* SCHEDULE REQUIREMENT */}
+
+          {isGoingOutForDelivery && !canGoOutForDelivery && (
+            <div className="rounded-lg border border-orange-200 bg-orange-50 p-3">
+              <p className="text-sm font-medium text-orange-800">
+                Delivery information is incomplete.
+              </p>
+
+              <p className="mt-1 text-sm text-orange-700">
+                Before marking this delivery as Out For Delivery, assign a
+                delivery date, time, driver, and truck.
+              </p>
+            </div>
+          )}
+
+          {/* DELIVERY NOTES */}
+
+          <div>
+            <p className="mb-2 text-sm text-muted-foreground">Delivery Notes</p>
+
+            <Textarea
+              placeholder="Add notes about this delivery status update..."
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+              rows={4}
+            />
+
+            {isBeingDelivered && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Add any relevant information about the completed delivery.
+              </p>
+            )}
+          </div>
         </div>
 
         <DialogFooter>
-
-          <Button
-            variant="outline"
-            onClick={() =>
-              onOpenChange(false)
-            }
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
 
           <Button
-            onClick={() =>
-              onSave(status)
-            }
+            onClick={handleSave}
+            disabled={isGoingOutForDelivery && !canGoOutForDelivery}
           >
             Save Changes
           </Button>
-
         </DialogFooter>
-
       </DialogContent>
     </Dialog>
   )

@@ -36,10 +36,16 @@ export function useProduction() {
   const changeStage = async (
     projectId: string,
     stage: string,
-    notes?: string
+    notes?: string,
+    replacement?: {
+    orderItemId: string,
+    materialId: string
+    quantity: number,
+    reason?: string
+  }
   ) => {
     try {
-      await updateProductionStage(projectId, stage, notes)
+      await updateProductionStage(projectId, stage, notes, replacement)
       await loadProjects()
     } catch (err: unknown) {
       console.error("Update Production Stage Error:", err)

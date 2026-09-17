@@ -50,6 +50,16 @@ export default function InvoiceCard({ invoice }: Props) {
             {invoice.dueDate}
           </span>
         </div>
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+  <p className="text-sm font-medium text-amber-900">
+    Production Payment Required
+  </p>
+  <p className="mt-1 text-sm text-amber-800">
+    A 50% payment of the total order amount is required before
+    production can begin. Please complete the required payment
+    to proceed with production.
+  </p>
+</div>
 
         <div className="border-t pt-4">
           <div className="flex justify-between">

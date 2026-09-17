@@ -67,12 +67,15 @@ export default function ProductionDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton = {false} className="h-[85vh] !w-[1000px] !max-w-[95vw] overflow-hidden p-0">
-        <div className="grid h-[85vh] md:grid-cols-[360px_1fr]">
+      <DialogContent
+        showCloseButton={false}
+        className="h-[95vh] !w-[1000px] !max-w-[95vw] overflow-hidden p-0"
+      >
+        <div className="grid h-[95vh] md:grid-cols-[360px_1fr]">
           {/* LEFT PANEL (fixed) */}
           <div className="overflow-hidden border-r bg-muted/20 p-6">
             <div className="flex h-full flex-col">
-              <div className="relative h-[280px] overflow-hidden rounded-xl border bg-background">
+              <div className="relative h-[240px] overflow-hidden rounded-xl border bg-background">
                 <Image
                   src={project.imageUrl ?? "/placeholder.jpg"}
                   alt={project.projectName}
@@ -81,7 +84,7 @@ export default function ProductionDetailsDialog({
                 />
               </div>
 
-              <div className="mt-6 flex-1 space-y-5">
+              <div className="mt-4 flex-1 space-y-1">
                 <div>
                   <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                     Order number
@@ -95,6 +98,29 @@ export default function ProductionDetailsDialog({
                   </p>
                   <p className="font-semibold">{project.clientName}</p>
                 </div>
+                <div>
+  <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+    Contact Number
+  </p>
+  <p className="font-semibold">
+    {project.contactNumber ?? "Not provided"}
+  </p>
+</div>
+
+<div>
+  <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+    Payment Method
+  </p>
+  <p className="font-semibold">
+    {project.paymentMethod === "cash_on_delivery"
+      ? "Cash on Delivery"
+      : project.paymentMethod === "card"
+        ? "Card"
+        : project.paymentMethod === "gcash"
+          ? "GCash"
+          : "Not specified"}
+  </p>
+</div>
 
                 <div>
                   <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
@@ -111,6 +137,35 @@ export default function ProductionDetailsDialog({
                   </p>
                   <p className="font-semibold">{project.estimatedCompletion}</p>
                 </div>
+                {project.deliveryAddress && (
+                  <div>
+                    <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                      Delivery address
+                    </p>
+
+                    <p className="mt-1 text-sm leading-relaxed font-semibold">
+                      {project.deliveryAddress.house_building_number},{" "}
+                      {project.deliveryAddress.street}
+                      {project.deliveryAddress.building_subdivision &&
+                        `, ${project.deliveryAddress.building_subdivision}`}
+                      {project.deliveryAddress.unit_floor &&
+                        `, ${project.deliveryAddress.unit_floor}`}
+                      {`, ${project.deliveryAddress.barangay_name}`}
+                      {`, ${project.deliveryAddress.city_name}`}
+                      {project.deliveryAddress.province_name &&
+                        `, ${project.deliveryAddress.province_name}`}
+                      {`, ${project.deliveryAddress.region_name}`}
+                      {project.deliveryAddress.postal_code &&
+                        ` ${project.deliveryAddress.postal_code}`}
+                    </p>
+
+                    {project.deliveryAddress.landmark && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Landmark: {project.deliveryAddress.landmark}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -118,31 +173,31 @@ export default function ProductionDetailsDialog({
           {/* RIGHT PANEL (scrollable) */}
           <div className="h-full overflow-y-auto">
             {/* Sticky header */}
-          <div className="sticky top-0 z-10 border-b bg-background p-6">
-  <div className="flex items-start justify-between gap-4">
-    <DialogHeader className="space-y-3 text-left">
-      <DialogTitle className="text-2xl">
-        {project.projectName}
-      </DialogTitle>
+            <div className="sticky top-0 z-10 border-b bg-background p-6">
+              <div className="flex items-start justify-between gap-4">
+                <DialogHeader className="space-y-3 text-left">
+                  <DialogTitle className="text-2xl">
+                    {project.projectName}
+                  </DialogTitle>
 
-      <div className="flex items-center gap-3">
-        <Badge>{project.stage}</Badge>
-        <span className="text-sm text-muted-foreground">
-          {project.progress}% complete
-        </span>
-      </div>
-    </DialogHeader>
+                  <div className="flex items-center gap-3">
+                    <Badge>{project.stage}</Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {project.progress}% complete
+                    </span>
+                  </div>
+                </DialogHeader>
 
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={() => onOpenChange(false)}
-      className="shrink-0"
-    >
-      <X className="h-5 w-5" />
-    </Button>
-  </div>
-</div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onOpenChange(false)}
+                  className="shrink-0"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
 
             {/* Scrollable content */}
             <div className="space-y-6 p-6">
