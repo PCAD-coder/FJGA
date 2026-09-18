@@ -1,6 +1,7 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { createClient as createServerClient } from "@/lib/supabase/server"
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 
 interface CreateCheckoutSessionInput {
   orderId: string
@@ -40,7 +41,7 @@ export async function createPayMongoCheckoutSession(
     throw new Error("NEXT_PUBLIC_SITE_URL is not configured")
   }
 
-  const supabase = await createClient()
+  const supabase = await createServerClient()
 
   /*
    * Get authenticated customer.
@@ -139,6 +140,23 @@ export async function createPayMongoCheckoutSession(
   }
 
   const amountInCentavos = Math.round(amountDue * 100)
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+if (!supabaseUrl || !serviceRoleKey) {
+  throw new Error("Supabase server configuration is missing")
+}
+
+const adminSupabase = createSupabaseClient(
+  supabaseUrl,
+  serviceRoleKey,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
+)
 
   /*
    * Check for an existing Checkout Session
@@ -147,7 +165,7 @@ export async function createPayMongoCheckoutSession(
   const {
     data: existingSession,
     error: existingSessionError,
-  } = await supabase
+  } = await adminSupabase
     .from("paymongo_checkout_sessions")
     .select(`
       id,
@@ -223,7 +241,7 @@ export async function createPayMongoCheckoutSession(
        * PayMongo reports that the session is no longer active.
        * Mark our local record as expired so a new one can be created.
        */
-      await supabase
+      await adminSupabase
         .from("paymongo_checkout_sessions")
         .update({
           status: "expired",
@@ -241,7 +259,7 @@ export async function createPayMongoCheckoutSession(
     existingSession &&
     existingSession.status === "creating"
   ) {
-    await supabase
+    await adminSupabase
       .from("paymongo_checkout_sessions")
       .delete()
       .eq("id", existingSession.id)
@@ -255,7 +273,7 @@ export async function createPayMongoCheckoutSession(
    * Checkout Session records.
    */
   const { data: reservation, error: reservationError } =
-    await supabase
+    await adminSupabase
       .from("paymongo_checkout_sessions")
       .insert({
         order_id: order.id,
@@ -362,7 +380,7 @@ export async function createPayMongoCheckoutSession(
      * Remove the local reservation so the customer
      * can try again.
      */
-    await supabase
+    await adminSupabase
       .from("paymongo_checkout_sessions")
       .delete()
       .eq("id", reservation.id)
@@ -407,7 +425,7 @@ export async function createPayMongoCheckoutSession(
   /*
    * Save the real PayMongo Checkout Session.
    */
-  const { error: updateError } = await supabase
+  const { error: updateError } = await adminSupabase
     .from("paymongo_checkout_sessions")
     .update({
       checkout_session_id: checkoutSessionId,
