@@ -155,6 +155,7 @@ export async function createPayMongoCheckoutSession(
           "base64"
         )}`,
         "Content-Type": "application/json",
+        "Idempotency-Key": `fjga-order-${order.id}-${amountInCentavos}`,
       },
       body: JSON.stringify({
         data: {

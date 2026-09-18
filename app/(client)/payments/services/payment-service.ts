@@ -168,7 +168,7 @@ export async function getPaymentPageData(): Promise<PaymentPageData> {
     const remainingAmount = Math.max(totalAmount - amountPaid, 0)
 
     // Only show the amount still needed to reach the 50% requirement.
-const remainingPayment = Math.max(requiredPayment - paidAmount, 0)
+    const remainingPayment = Math.max(requiredPayment - paidAmount, 0)
 
     /*
      * Payment deadline:
