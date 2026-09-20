@@ -18,16 +18,12 @@ import {
 
 interface Props {
   request: ReturnRequest
-
   onView: () => void
-
   onApprove: () => void
-
   onDecline: () => void
-
   onSchedule: () => void
-
   onArchive: () => void
+  onCompleteInspection: () => void
 }
 
 export default function ReturnCard({
@@ -37,37 +33,56 @@ export default function ReturnCard({
   onDecline,
   onSchedule,
   onArchive,
+  onCompleteInspection,
 }: Props) {
   const statusStyles = {
-  "under-review":
-    "bg-orange-100 text-orange-700",
+    "under-review":
+      "bg-orange-100 text-orange-700",
 
-  "inspection-scheduled":
-    "bg-blue-100 text-blue-700",
+    "inspection-scheduled":
+      "bg-blue-100 text-blue-700",
 
-  approved:
-    "bg-green-100 text-green-700",
+    approved:
+      "bg-green-100 text-green-700",
 
-  declined:
-    "bg-red-100 text-red-700",
+    declined:
+      "bg-red-100 text-red-700",
 
-  resolved:
-    "bg-gray-100 text-gray-700",
-}
+    resolved:
+      "bg-gray-100 text-gray-700",
+  }
+
+  const canApprove =
+    request.status === "under-review"
+
+  const canSchedule =
+    request.status === "approved" ||
+    request.status === "inspection-scheduled"
+
+  const isInspectionScheduled =
+    request.status === "inspection-scheduled"
+  const canCompleteInspection =
+  request.status === "inspection-scheduled"
 
   return (
     <Card>
       <CardContent className="p-5">
         <div className="mb-5 flex items-start justify-between">
           <div>
-            <h3 className="text-lg font-semibold">{request.title}</h3>
+            <h3 className="text-lg font-semibold">
+              {request.title}
+            </h3>
 
             <p className="text-sm text-muted-foreground">
               Original Order: {request.orderNumber}
             </p>
           </div>
 
-          <Badge className={statusStyles[request.status]}>
+          <Badge
+            className={
+              statusStyles[request.status]
+            }
+          >
             {request.status}
           </Badge>
         </div>
@@ -91,34 +106,51 @@ export default function ReturnCard({
           <div className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <p className="text-sm text-muted-foreground">Client</p>
-
-                <p className="font-medium">{request.clientName}</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-muted-foreground">Date Reported</p>
-
-                <p className="font-medium">{request.reportedDate}</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-muted-foreground">Product Type</p>
-
-                <p className="font-medium">{request.productType}</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-muted-foreground">Original Amount</p>
+                <p className="text-sm text-muted-foreground">
+                  Client
+                </p>
 
                 <p className="font-medium">
-                  ₱{request.originalAmount.toLocaleString()}
+                  {request.clientName}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Date Reported
+                </p>
+
+                <p className="font-medium">
+                  {request.reportedDate}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Product Type
+                </p>
+
+                <p className="font-medium">
+                  {request.productType}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Original Amount
+                </p>
+
+                <p className="font-medium">
+                  ₱
+                  {request.originalAmount.toLocaleString()}
                 </p>
               </div>
             </div>
 
             <div>
-              <p className="mb-2 text-sm font-medium">Issue Description</p>
+              <p className="mb-2 text-sm font-medium">
+                Issue Description
+              </p>
 
               <div className="rounded-md bg-muted p-3 text-sm">
                 {request.issueDescription}
@@ -126,27 +158,56 @@ export default function ReturnCard({
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Button variant="outline" onClick={onView}>
+              <Button
+                variant="outline"
+                onClick={onView}
+              >
                 <Eye className="mr-2 h-4 w-4" />
                 View Details
               </Button>
 
-              <Button onClick={onApprove}>
-                <CheckCircle2 className="mr-2 h-4 w-4" />
-                Approve Repair
-              </Button>
+              {canApprove && (
+                <Button onClick={onApprove}>
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Approve Request
+                </Button>
+              )}
 
-              <Button variant="destructive" onClick={onDecline}>
-                <XCircle className="mr-2 h-4 w-4" />
-                Decline Request
-              </Button>
+              {canApprove && (
+                <Button
+                  variant="destructive"
+                  onClick={onDecline}
+                >
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Decline Request
+                </Button>
+              )}
 
-              <Button variant="outline" onClick={onSchedule}>
-                <Calendar className="mr-2 h-4 w-4" />
-                Schedule Inspection
-              </Button>
+              {canSchedule && (
+                <Button
+                  variant="outline"
+                  onClick={onSchedule}
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
 
-              <Button variant="outline" onClick={onArchive}>
+                  {isInspectionScheduled
+                    ? "Reschedule Inspection"
+                    : "Schedule Inspection"}
+                </Button>
+              )}
+              {canCompleteInspection && (
+  <Button
+    onClick={onCompleteInspection}
+  >
+    <CheckCircle2 className="mr-2 h-4 w-4" />
+    Complete Inspection
+  </Button>
+)}
+
+              <Button
+                variant="outline"
+                onClick={onArchive}
+              >
                 <Archive className="mr-2 h-4 w-4" />
                 Archive Request
               </Button>

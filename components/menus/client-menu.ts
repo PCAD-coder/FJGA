@@ -61,7 +61,7 @@ export const clientMenu = [
   },
   {
     title: "Returns",
-    url: "returns",
+    url: "/returns",
     icon: RotateCcw,
   },
 ];

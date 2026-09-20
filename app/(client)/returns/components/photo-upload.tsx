@@ -1,21 +1,25 @@
 "use client";
 
 import { Upload } from "lucide-react";
+
 import { Input } from "@/components/ui/input";
 
 interface Props {
   onChange?: (files: FileList | null) => void;
+  disabled?: boolean;
 }
 
-export default function PhotoUpload({ onChange }: Props) {
+export default function PhotoUpload({
+  onChange,
+  disabled = false,
+}: Props) {
   return (
     <div className="space-y-2">
       <label className="font-medium">
         4. Photo Evidence
       </label>
 
-      <div className="border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center text-center space-y-4">
-
+      <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border-2 border-dashed p-8 text-center">
         <Upload className="h-12 w-12 text-muted-foreground" />
 
         <div>
@@ -31,9 +35,12 @@ export default function PhotoUpload({ onChange }: Props) {
         <Input
           type="file"
           multiple
-          accept="image/*"
+          accept="image/jpeg,image/png"
           className="max-w-xs"
-          onChange={(e) => onChange?.(e.target.files)}
+          disabled={disabled}
+          onChange={(event) =>
+            onChange?.(event.target.files)
+          }
         />
       </div>
     </div>
