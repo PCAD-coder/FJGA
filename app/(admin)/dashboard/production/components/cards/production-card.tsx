@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 
-import { Eye, Settings2 } from "lucide-react"
+import { Eye, Settings2, RotateCcw } from "lucide-react"
 
 import { ProductionProject, ProductionStage } from "../../types/production"
 
@@ -55,7 +55,16 @@ export default function ProductionCard({
             </p>
           </div>
 
-          <Badge>{project.stage}</Badge>
+          <div className="flex items-center gap-2">
+            {project.projectType === "return" && (
+              <Badge variant="outline">
+                <RotateCcw className="mr-1 h-3 w-3" />
+                Return
+              </Badge>
+            )}
+
+            <Badge>{project.stage}</Badge>
+          </div>
         </div>
 
         {/* Main Content */}

@@ -36,18 +36,54 @@ export async function completeDeliveryWithPayment(
       p_payment_date: input.paymentDate
         ? `${input.paymentDate}T00:00:00`
         : null,
-      p_reference_number:
-        input.referenceNumber,
-      p_received_by_employee:
-        input.receivedByEmployee,
+      p_reference_number: input.referenceNumber,
+      p_received_by_employee: input.receivedByEmployee,
       p_notes: input.notes,
     }
   )
 
   if (error) {
     throw new Error(
-      error.message ||
-        "Failed to complete delivery"
+      error.message || "Failed to complete delivery"
+    )
+  }
+
+  return data
+}
+
+interface CompleteReturnDeliveryInput {
+  deliveryId: string
+  deliveryDate: string
+  notes: string | null
+}
+
+export async function completeReturnDelivery(
+  input: CompleteReturnDeliveryInput
+) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    throw new Error("Authentication required")
+  }
+
+  const { data, error } = await supabase.rpc(
+    "complete_return_delivery",
+    {
+      p_return_delivery_id: input.deliveryId,
+      p_delivery_date: input.deliveryDate
+        ? `${input.deliveryDate}T00:00:00`
+        : null,
+      p_notes: input.notes,
+    }
+  )
+
+  if (error) {
+    throw new Error(
+      error.message || "Failed to complete return delivery"
     )
   }
 

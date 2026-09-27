@@ -24,7 +24,14 @@ import { getDeliveriesAction } from "../actions/get-deliveries"
 
 import {
   mapOrderToDelivery,
+  mapReturnToDelivery,
   mapOrderToDeliveryDetails,
+  mapReturnToDeliveryDetails,
+} from "../services/delivery-mapper"
+
+import type {
+  DeliveryQueryResult,
+  ReturnDeliveryQueryResult,
 } from "../services/delivery-mapper"
 
 import { getDeliveryDetailsAction } from "../actions/get-delivery-details"
@@ -69,10 +76,20 @@ export default function DeliveryModule() {
     try {
       setLoading(true)
       setError(null)
+      const result = await getDeliveriesAction()
 
-      const orders = await getDeliveriesAction()
+      const mappedOrderDeliveries = result.orderDeliveries.map(
+        (row: DeliveryQueryResult) => mapOrderToDelivery(row)
+      )
 
-      const mappedDeliveries = orders.map(mapOrderToDelivery)
+      const mappedReturnDeliveries = result.returnDeliveries.map(
+        (row: ReturnDeliveryQueryResult) => mapReturnToDelivery(row)
+      )
+
+      const mappedDeliveries = [
+        ...mappedOrderDeliveries,
+        ...mappedReturnDeliveries,
+      ]
 
       setDeliveries(mappedDeliveries)
     } catch (error) {
@@ -114,24 +131,42 @@ export default function DeliveryModule() {
     (currentPage - 1) * deliveriesPerPage,
     currentPage * deliveriesPerPage
   )
-  const handleViewDetails = async (delivery: Delivery) => {
-    try {
-      setSelectedDelivery(delivery)
-      setSelectedDeliveryDetails(null)
-      setViewOpen(true)
-      setDetailsLoading(true)
+const handleViewDetails = async (delivery: Delivery) => {
+  try {
+    setSelectedDelivery(delivery)
+    setSelectedDeliveryDetails(null)
+    setViewOpen(true)
+    setDetailsLoading(true)
 
-      const data = await getDeliveryDetailsAction(delivery.id)
+    if (delivery.deliveryType === "return") {
+      const data = await getDeliveryDetailsAction(
+        delivery.id,
+        "return"
+      )
 
-      const details = mapOrderToDeliveryDetails(data)
+      const details = mapReturnToDeliveryDetails(
+        data as ReturnDeliveryQueryResult
+      )
 
       setSelectedDeliveryDetails(details)
-    } catch (error) {
-      console.error("Failed to load delivery details:", error)
-    } finally {
-      setDetailsLoading(false)
+    } else {
+      const data = await getDeliveryDetailsAction(
+        delivery.id,
+        "order"
+      )
+
+      const details = mapOrderToDeliveryDetails(
+        data as DeliveryQueryResult
+      )
+
+      setSelectedDeliveryDetails(details)
     }
+  } catch (error) {
+    console.error("Failed to load delivery details:", error)
+  } finally {
+    setDetailsLoading(false)
   }
+}
 
   const handleUpdateStatus = async (status: DeliveryStatus, notes: string) => {
     if (!selectedDelivery) {

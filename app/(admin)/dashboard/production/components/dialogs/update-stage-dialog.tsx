@@ -20,8 +20,7 @@ import {
 
 import { useEffect, useState } from "react"
 import { Loader2 } from "lucide-react"
-
-import { ProductionProject } from "../../types/production"
+import { ProductionProject, ProductionStage } from "../../types/production"
 import { Textarea } from "@/components/ui/textarea"
 
 import {
@@ -96,7 +95,14 @@ export default function UpdateStageDialog({
 
   useEffect(() => {
     if (project) {
-      setStage(project.stage)
+      const initialStage =
+        project.projectType === "return" &&
+        project.applicableStages?.length &&
+        !project.applicableStages.includes(project.stage)
+          ? project.applicableStages[0]
+          : project.stage
+
+      setStage(initialStage)
       setNotes("")
       setReplacement(false)
       setReplacementMaterialId("")
@@ -147,6 +153,19 @@ export default function UpdateStageDialog({
   if (!project) return null
   const currentStageDb = stageToDb[project.stage]
   const selectedStageDb = stageToDb[stage]
+  const availableStages =
+    project.projectType === "return" && project.applicableStages?.length
+      ? project.applicableStages
+      : ([
+          "Pending",
+          "Material Prep",
+          "Glass Cutting",
+          "Frame Fabrication",
+          "Assembly",
+          "Finishing",
+          "Quality Check",
+          "Ready for Delivery",
+        ] as ProductionStage[])
 
   const stageOrder: Record<string, number> = {
     pending: 0,
@@ -168,7 +187,7 @@ export default function UpdateStageDialog({
         <DialogHeader className="space-y-2">
           <DialogTitle>Update production stage</DialogTitle>
           <p className="text-sm text-muted-foreground">
-            Move this order to another production stage and optionally leave a
+            Move this project to another production stage and optionally leave a
             note for the production team.
           </p>
         </DialogHeader>
@@ -192,22 +211,15 @@ export default function UpdateStageDialog({
               </SelectTrigger>
 
               <SelectContent>
-                <SelectItem value="Pending">Pending</SelectItem>
-                <SelectItem value="Material Prep">Material Prep</SelectItem>
-                <SelectItem value="Glass Cutting">Glass Cutting</SelectItem>
-                <SelectItem value="Frame Fabrication">
-                  Frame Fabrication
-                </SelectItem>
-                <SelectItem value="Assembly">Assembly</SelectItem>
-                <SelectItem value="Finishing">Finishing</SelectItem>
-                <SelectItem value="Quality Check">Quality Check</SelectItem>
-                <SelectItem value="Ready for Delivery">
-                  Ready for Delivery
-                </SelectItem>
+                {availableStages.map((availableStage) => (
+                  <SelectItem key={availableStage} value={availableStage}>
+                    {availableStage}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
-          {isGoingBackward && (
+          {isGoingBackward && project.projectType === "order" && (
             <div className="space-y-4 rounded-lg border bg-muted/20 p-4">
               <div>
                 <p className="text-sm font-semibold">Material replacement</p>

@@ -13,6 +13,86 @@ const STAGE_LABELS: Record<string, ProductionStage> = {
   quality_check: "Quality Check",
   ready_for_delivery: "Ready for Delivery",
 }
+function getReturnApplicableStages(
+  resolutionType: "repair" | "replacement" | undefined,
+  laborServices: string[]
+): ProductionStage[] {
+  const stages = new Set<ProductionStage>()
+
+  stages.add("Pending")
+
+  // Any physical return work needs material preparation.
+  stages.add("Material Prep")
+
+  const normalizedServices = laborServices.map((service) =>
+    service.toLowerCase()
+  )
+
+  const hasGlassWork = normalizedServices.some(
+    (service) => service.includes("glass") || service.includes("cutting")
+  )
+
+  const hasFrameWork = normalizedServices.some(
+    (service) =>
+      service.includes("frame") ||
+      service.includes("aluminum") ||
+      service.includes("fabrication")
+  )
+
+  const hasAssemblyWork = normalizedServices.some(
+    (service) =>
+      service.includes("assembly") ||
+      service.includes("install") ||
+      service.includes("installation")
+  )
+
+  const hasFinishingWork = normalizedServices.some(
+    (service) =>
+      service.includes("finish") ||
+      service.includes("polish") ||
+      service.includes("paint")
+  )
+
+  if (hasGlassWork) {
+    stages.add("Glass Cutting")
+  }
+
+  if (hasFrameWork) {
+    stages.add("Frame Fabrication")
+  }
+
+  /*
+   * A physical repair/replacement normally needs
+   * assembly/installation before quality checking.
+   */
+  if (
+    hasAssemblyWork ||
+    resolutionType === "repair" ||
+    resolutionType === "replacement"
+  ) {
+    stages.add("Assembly")
+  }
+
+  if (hasFinishingWork) {
+    stages.add("Finishing")
+  }
+
+  stages.add("Quality Check")
+  stages.add("Ready for Delivery")
+
+  const stageOrder: ProductionStage[] = [
+    "Pending",
+    "Material Prep",
+    "Glass Cutting",
+    "Frame Fabrication",
+    "Assembly",
+    "Finishing",
+    "Quality Check",
+    "Ready for Delivery",
+  ]
+
+  return stageOrder.filter((stage) => stages.has(stage))
+}
 export interface ProductionReplacementMaterial {
   id: string
   material_name: string
@@ -135,6 +215,204 @@ export async function getProductionProjects(): Promise<ProductionProject[]> {
             landmark: address.landmark,
           }
         : null,
+      projectType: "order",
+    })
+  }
+
+  return projects
+}
+export async function getReturnProductionProjects(): Promise<
+  ProductionProject[]
+> {
+  const { data, error } = await supabase
+    .from("return_production_jobs")
+    .select(
+      `
+        id,
+        return_request_id,
+        resolution_id,
+        production_stage,
+        assigned_staff,
+        started_at,
+
+        return_requests (
+          return_number,
+          issue_type,
+          customer_id,
+
+          customer:profiles!return_requests_customer_id_fkey (
+            first_name,
+            last_name
+          ),
+
+          orders (
+            order_number,
+            customer_contact_number,
+            payment_method,
+
+            order_items (
+              id,
+              product_id,
+              product_name_snapshot,
+              width,
+              height,
+              depth,
+              dimension_unit
+            ),
+
+            order_addresses (
+              house_building_number,
+              street,
+              building_subdivision,
+              unit_floor,
+              region_name,
+              province_name,
+              city_name,
+              barangay_name,
+              postal_code,
+              landmark
+            )
+          )
+        ),
+
+        return_resolutions (
+          resolution_type,
+
+            return_resolution_items (
+              item_type,
+              labor_service_id,
+
+              labor_services(
+              service_name
+              )
+        )
+      )
+      `
+    )
+    .order("started_at", { ascending: true })
+
+  if (error) {
+    console.error("RETURN PRODUCTION QUERY ERROR:", error)
+
+    throw error
+  }
+
+  const projects: ProductionProject[] = []
+
+  for (const job of data ?? []) {
+    const request = Array.isArray(job.return_requests)
+      ? job.return_requests[0]
+      : job.return_requests
+
+    if (!request) continue
+
+    const order = Array.isArray(request.orders)
+      ? request.orders[0]
+      : request.orders
+
+    if (!order) continue
+
+    const item = Array.isArray(order.order_items)
+      ? order.order_items[0]
+      : order.order_items
+
+    const address = Array.isArray(order.order_addresses)
+      ? (order.order_addresses[0] ?? null)
+      : (order.order_addresses ?? null)
+
+    const customer = Array.isArray(request.customer)
+      ? request.customer[0]
+      : request.customer
+
+    const resolution = Array.isArray(job.return_resolutions)
+      ? job.return_resolutions[0]
+      : job.return_resolutions
+    const laborServices = (resolution?.return_resolution_items ?? [])
+      .filter((item) => item.item_type === "labor" && item.labor_services)
+      .map((item) => {
+        const service = Array.isArray(item.labor_services)
+          ? item.labor_services[0]
+          : item.labor_services
+
+        return service?.service_name ?? ""
+      })
+      .filter(Boolean)
+    const applicableStages = getReturnApplicableStages(
+      resolution?.resolution_type === "repair" ||
+        resolution?.resolution_type === "replacement"
+        ? resolution.resolution_type
+        : undefined,
+      laborServices
+    )
+
+    let imageUrl: string | undefined
+
+    if (item?.product_id) {
+      const { data: image } = await supabase
+        .from("product_images")
+        .select("image_url")
+        .eq("product_id", item.product_id)
+        .order("display_order", { ascending: true })
+        .limit(1)
+        .maybeSingle()
+
+      imageUrl = image?.image_url
+    }
+
+    const resolutionType =
+      resolution?.resolution_type === "repair" ||
+      resolution?.resolution_type === "replacement"
+        ? resolution.resolution_type
+        : undefined
+
+    projects.push({
+      id: job.id,
+      orderNumber: order.order_number ?? request.return_number,
+      projectName: item?.product_name_snapshot ?? "Return Resolution",
+      clientName: customer
+        ? `${customer.first_name} ${customer.last_name}`
+        : "Unknown Client",
+      contactNumber: order.customer_contact_number ?? null,
+      paymentMethod: order.payment_method ?? null,
+      orderItemId: item?.id ?? "",
+
+      stage: STAGE_LABELS[job.production_stage ?? "pending"] ?? "Pending",
+
+      assignedStaff: job.assigned_staff ?? "Unassigned",
+
+      progress: stageToProgress(job.production_stage ?? "pending"),
+
+      estimatedCompletion: new Date().toISOString().split("T")[0],
+
+      imageUrl,
+
+      dimensions: item
+        ? `${item.width ?? "-"} × ${item.height ?? "-"} × ${
+            item.depth ?? "-"
+          } ${item.dimension_unit ?? "cm"}`
+        : undefined,
+
+      deliveryAddress: address
+        ? {
+            house_building_number: address.house_building_number,
+            street: address.street,
+            building_subdivision: address.building_subdivision,
+            unit_floor: address.unit_floor,
+            region_name: address.region_name,
+            province_name: address.province_name,
+            city_name: address.city_name,
+            barangay_name: address.barangay_name,
+            postal_code: address.postal_code,
+            landmark: address.landmark,
+          }
+        : null,
+
+      projectType: "return",
+
+      returnRequestId: job.return_request_id,
+      resolutionId: job.resolution_id,
+      resolutionType,
+      applicableStages,
     })
   }
 
@@ -243,6 +521,94 @@ function stageToProgress(stage: string): number {
       return 100
     default:
       return 0
+  }
+}
+export async function updateReturnProductionStage(
+  productionJobId: string,
+  stage: string,
+  notes?: string
+) {
+  const { data: currentJob, error: fetchError } =
+    await supabase
+      .from("return_production_jobs")
+      .select(`
+        id,
+        production_stage,
+        return_request_id,
+        resolution_id
+      `)
+      .eq("id", productionJobId)
+      .single()
+
+  if (fetchError) {
+    throw fetchError
+  }
+
+  const currentStage = currentJob.production_stage
+  const isEnteringMaterialPrep =
+    stage === "material_prep" &&
+    currentStage !== "material_prep"
+
+  /*
+    ============================================================
+    CONSUME RETURN MATERIALS
+    ============================================================
+
+    Materials are deducted only when the return enters
+    Material Prep.
+
+    Do not consume again when:
+    - the stage remains Material Prep
+    - the production moves forward
+    - the production moves backward and later re-enters
+      Material Prep
+
+    The RPC itself provides duplicate-consumption protection.
+  */
+
+if (isEnteringMaterialPrep) {
+  const { data: consumptionResult, error: consumptionError } =
+    await supabase.rpc(
+      "consume_return_materials",
+      {
+        p_production_job_id: productionJobId,
+      }
+    )
+
+  console.log("RETURN MATERIAL CONSUMPTION RESULT:", {
+    productionJobId,
+    fromStage: currentStage,
+    toStage: stage,
+    consumptionResult,
+    consumptionError: consumptionError
+      ? {
+          message: consumptionError.message,
+          details: consumptionError.details,
+          hint: consumptionError.hint,
+          code: consumptionError.code,
+        }
+      : null,
+  })
+
+  if (consumptionError) {
+    throw new Error(
+      consumptionError.message ||
+        "Failed to consume return production materials"
+    )
+  }
+}
+
+  const { error: updateError } = await supabase
+    .from("return_production_jobs")
+    .update({
+      production_stage: stage,
+      updated_at: new Date().toISOString(),
+      notes: notes?.trim() || null,
+    })
+    .eq("id", productionJobId)
+
+  if (updateError) {
+    throw updateError
   }
 }
 
@@ -364,38 +730,34 @@ export async function updateProductionStage(
    * The existing delivery record is checked first
    * to prevent duplicate deliveries.
    */
-  
+
   if (
     stage === "ready_for_delivery" &&
     currentOrder.production_stage !== "ready_for_delivery"
   ) {
-    const { data: existingDelivery, error: deliveryCheckError } =
-      await supabase
-        .from("deliveries")
-        .select("id")
-        .eq("order_id", orderId)
-        .maybeSingle()
+    const { data: existingDelivery, error: deliveryCheckError } = await supabase
+      .from("deliveries")
+      .select("id")
+      .eq("order_id", orderId)
+      .maybeSingle()
 
     if (deliveryCheckError) {
       throw new Error(
-        deliveryCheckError.message ||
-          "Failed to check existing delivery"
+        deliveryCheckError.message || "Failed to check existing delivery"
       )
     }
 
     if (!existingDelivery) {
-      const { error: deliveryInsertError } =
-        await supabase
-          .from("deliveries")
-          .insert({
-            order_id: orderId,
-            delivery_status: "scheduled",
-          })
+      const { error: deliveryInsertError } = await supabase
+        .from("deliveries")
+        .insert({
+          order_id: orderId,
+          delivery_status: "scheduled",
+        })
 
       if (deliveryInsertError) {
         throw new Error(
-          deliveryInsertError.message ||
-            "Failed to create delivery record"
+          deliveryInsertError.message || "Failed to create delivery record"
         )
       }
     }

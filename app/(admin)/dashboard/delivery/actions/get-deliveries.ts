@@ -2,6 +2,16 @@
 
 import { getDeliveries } from "../services/delivery-service"
 
-export async function getDeliveriesAction() {
+import type {
+  DeliveryQueryResult,
+  ReturnDeliveryQueryResult,
+} from "../services/delivery-mapper"
+
+export interface GetDeliveriesResult {
+  orderDeliveries: DeliveryQueryResult[]
+  returnDeliveries: ReturnDeliveryQueryResult[]
+}
+
+export async function getDeliveriesAction(): Promise<GetDeliveriesResult> {
   return getDeliveries()
 }

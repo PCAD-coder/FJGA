@@ -4,15 +4,23 @@ export type DeliveryStatus =
   | "delivered"
   | "cancelled"
 
+export type DeliveryType = "order" | "return"
+
+export type ReturnResolutionType = "repair" | "replacement"
+
 export interface Delivery {
   id: string
-  orderId: string
+  deliveryType: DeliveryType
 
+  orderId: string
   orderNumber: string
+
+  returnRequestId: string | null
+  returnNumber: string | null
+  resolutionType: ReturnResolutionType | null
 
   projectName: string
   clientName: string
-
   address: string
 
   deliveryDate: string | null
@@ -24,16 +32,16 @@ export interface Delivery {
   productName: string
 
   deliveryFee: number
-
   totalAmount: number
-amountPaid: number
-remainingBalance: number
+  amountPaid: number
+  remainingBalance: number
 
   status: DeliveryStatus
 
   deliveredAt: string | null
   deliveryNotes: string | null
 }
+
 export interface DeliveryOrderItem {
   id: string
   productName: string
@@ -61,8 +69,14 @@ export interface DeliveryAddress {
 
 export interface DeliveryDetails {
   id: string
+  deliveryType: DeliveryType
+
   orderId: string
   orderNumber: string
+
+  returnRequestId: string | null
+  returnNumber: string | null
+  resolutionType: ReturnResolutionType | null
 
   status: DeliveryStatus
 
@@ -79,5 +93,6 @@ export interface DeliveryDetails {
 
   customer: DeliveryCustomer | null
   address: DeliveryAddress | null
+
   items: DeliveryOrderItem[]
 }

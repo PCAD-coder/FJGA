@@ -2,19 +2,47 @@
 
 import { createClient } from "@/lib/supabase/server"
 
-import type { DeliveryStatus } from "../types/delivery"
+import type { DeliveryStatus, DeliveryType } from "../types/delivery"
 
 export async function updateDeliveryStatus(
   deliveryId: string,
   status: DeliveryStatus,
-  notes?: string
+  notes?: string,
+  deliveryType: DeliveryType = "order"
 ) {
   const supabase = await createClient()
 
+  if (deliveryType === "return") {
+    if (status === "delivered") {
+      throw new Error(
+        "Return delivery completion must use the return delivery completion flow."
+      )
+    }
+
+    const { data, error } = await supabase.rpc(
+      "update_return_delivery_status",
+      {
+        p_return_delivery_id: deliveryId,
+        p_status: status,
+        p_notes: notes?.trim() || null,
+      }
+    )
+
+    if (error) {
+      throw new Error(
+        error.message || "Failed to update return delivery status"
+      )
+    }
+
+    return data
+  }
+
   /*
-   * First get the order_id associated
-   * with this delivery.
+   * ----------------------------------------------------------
+   * NORMAL ORDER DELIVERY
+   * ----------------------------------------------------------
    */
+
   const { data: delivery, error: deliveryError } = await supabase
     .from("deliveries")
     .select("order_id")
@@ -28,21 +56,12 @@ export async function updateDeliveryStatus(
   /*
    * Delivery completion is handled separately by
    * completeDeliveryWithPayment().
-   *
-   * This prevents a delivery from being marked
-   * as delivered without recording the final payment.
    */
+
   if (status === "delivered") {
     throw new Error("Delivery completion requires recording the final payment.")
   }
 
-  /*
-   * Prepare delivery update.
-   *
-   * Since "delivered" is handled by the dedicated
-   * final-payment flow above, this function only
-   * updates the non-delivered delivery statuses.
-   */
   const updateData: {
     delivery_status: DeliveryStatus
     delivered_at: string | null
@@ -53,9 +72,6 @@ export async function updateDeliveryStatus(
     delivery_notes: notes?.trim() || null,
   }
 
-  /*
-   * Update delivery record.
-   */
   const { data, error } = await supabase
     .from("deliveries")
     .update(updateData)
@@ -82,9 +98,9 @@ export async function updateDeliveryStatus(
   }
 
   /*
-   * Keep the related order status synchronized
-   * with the delivery status.
+   * Keep the existing normal order synchronization.
    */
+
   let orderStatus: string | null = null
 
   if (status === "cancelled") {
@@ -93,9 +109,6 @@ export async function updateDeliveryStatus(
     orderStatus = "ready_for_delivery"
   }
 
-  /*
-   * Update the related order status when necessary.
-   */
   if (orderStatus) {
     const { error: orderError } = await supabase
       .from("orders")

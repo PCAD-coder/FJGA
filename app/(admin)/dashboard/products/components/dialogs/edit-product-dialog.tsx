@@ -77,17 +77,23 @@ function getMeasurementValue(
 
   switch (methodKey) {
     case "width":
-      return w
+      return w / 100
+
     case "height":
-      return h
+      return h / 100
+
     case "depth":
-      return d
+      return d / 100
+
     case "perimeter":
-      return 2 * (w + h)
+      return (2 * (w + h)) / 100
+
     case "area":
-      return w * h
+      return (w * h) / 10000
+
     case "volume":
-      return w * h * d
+      return (w * h * d) / 1000000
+
     default:
       return 1
   }

@@ -11,6 +11,8 @@ import {
   scheduleReturnInspection,
   completeReturnInspection,
   createReturnResolution,
+  startReturnResolution,
+  completeReturnResolution,
 } from "../services/return-service"
 
 import ReturnCard from "./return-card"
@@ -79,29 +81,31 @@ export default function Returns() {
 
     setLoading(false)
   }
- const [inspectionRequest, setInspectionRequest] =
-  useState<ReturnRequest | null>(null)
+  const [inspectionRequest, setInspectionRequest] =
+    useState<ReturnRequest | null>(null)
 
-const [inspectionDialogOpen, setInspectionDialogOpen] = useState(false)
+  const [inspectionDialogOpen, setInspectionDialogOpen] = useState(false)
 
-const [resolutionRequest, setResolutionRequest] =
-  useState<ReturnRequest | null>(null)
+  const [resolutionRequest, setResolutionRequest] =
+    useState<ReturnRequest | null>(null)
 
-const [resolutionInspectionId, setResolutionInspectionId] =
-  useState<string | null>(null)
+  const [resolutionInspectionId, setResolutionInspectionId] = useState<
+    string | null
+  >(null)
 
-const [resolutionDialogOpen, setResolutionDialogOpen] = useState(false)
+  const [resolutionDialogOpen, setResolutionDialogOpen] = useState(false)
 
-const [resolutionId, setResolutionId] = useState<string | null>(null)
+  const [resolutionId, setResolutionId] = useState<string | null>(null)
 
-const [resolutionType, setResolutionType] = useState<
-  "repair" | "replacement" | null
->(null)
+  const [resolutionType, setResolutionType] = useState<
+    "repair" | "replacement" | null
+  >(null)
 
-const [resolutionItemsDialogOpen, setResolutionItemsDialogOpen] =
-  useState(false)
-  const [resolutionReturnRequestId, setResolutionReturnRequestId] =
-  useState<string | null>(null)
+  const [resolutionItemsDialogOpen, setResolutionItemsDialogOpen] =
+    useState(false)
+  const [resolutionReturnRequestId, setResolutionReturnRequestId] = useState<
+    string | null
+  >(null)
 
   useEffect(() => {
     loadReturns()
@@ -160,30 +164,50 @@ const [resolutionItemsDialogOpen, setResolutionItemsDialogOpen] =
       )
     }
 
-setResolutionId(result.data)
+    setResolutionId(result.data)
 
-if (
-  data.resolutionType === "repair" ||
-  data.resolutionType === "replacement"
-) {
-  setResolutionType(data.resolutionType)
-}
-setResolutionReturnRequestId(resolutionRequest.id)
+    if (
+      data.resolutionType === "repair" ||
+      data.resolutionType === "replacement"
+    ) {
+      setResolutionType(data.resolutionType)
+    }
+    setResolutionReturnRequestId(resolutionRequest.id)
 
-setResolutionDialogOpen(false)
+    setResolutionDialogOpen(false)
 
     setResolutionRequest(null)
     setResolutionInspectionId(null)
 
     setResolutionItemsDialogOpen(true)
   }
-async function handleResolutionItemsComplete() {
-  setResolutionItemsDialogOpen(false)
-  setResolutionId(null)
-  setResolutionType(null)
-  setResolutionReturnRequestId(null)
-  await loadReturns()
-}
+  async function handleResolutionItemsComplete() {
+    setResolutionItemsDialogOpen(false)
+    setResolutionId(null)
+    setResolutionType(null)
+    setResolutionReturnRequestId(null)
+    await loadReturns()
+  }
+  async function handleStartResolution(request: ReturnRequest) {
+    const result = await startReturnResolution(request.id)
+
+    if (result.error) {
+      setError(result.error)
+      return
+    }
+
+    await loadReturns()
+  }
+  async function handleCompleteResolution(request: ReturnRequest) {
+    const result = await completeReturnResolution(request.id)
+
+    if (result.error) {
+      setError(result.error)
+      return
+    }
+
+    await loadReturns()
+  }
 
   const filteredRequests = useMemo(() => {
     return requests.filter((request) => {
@@ -493,6 +517,8 @@ async function handleResolutionItemsComplete() {
                 setArchiveOpen(true)
               }}
               onCompleteInspection={() => handleCompleteInspection(request)}
+              onStartResolution={() => handleStartResolution(request)}
+              onCompleteResolution={() => handleCompleteResolution(request)}
             />
           ))}
         </div>
@@ -580,23 +606,23 @@ async function handleResolutionItemsComplete() {
         }}
         onContinue={handleResolutionContinue}
       />
-<ResolutionItemsDialog
-  open={resolutionItemsDialogOpen}
-  returnRequestId={resolutionReturnRequestId}
-  resolutionId={resolutionId}
-  resolutionType={resolutionType}
-  onOpenChange={(open) => {
-    if (!open) {
-      setResolutionItemsDialogOpen(false)
-      setResolutionId(null)
-      setResolutionType(null)
-      setResolutionReturnRequestId(null)
-    } else {
-      setResolutionItemsDialogOpen(true)
-    }
-  }}
-  onComplete={handleResolutionItemsComplete}
-/>
+      <ResolutionItemsDialog
+        open={resolutionItemsDialogOpen}
+        returnRequestId={resolutionReturnRequestId}
+        resolutionId={resolutionId}
+        resolutionType={resolutionType}
+        onOpenChange={(open) => {
+          if (!open) {
+            setResolutionItemsDialogOpen(false)
+            setResolutionId(null)
+            setResolutionType(null)
+            setResolutionReturnRequestId(null)
+          } else {
+            setResolutionItemsDialogOpen(true)
+          }
+        }}
+        onComplete={handleResolutionItemsComplete}
+      />
     </div>
   )
 }

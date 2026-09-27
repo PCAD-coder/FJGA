@@ -19,7 +19,7 @@ export interface ProductionProject {
   contactNumber: string | null
   paymentMethod: "cash_on_delivery" | "card" | "gcash" | null
 
-  orderItemId:string
+  orderItemId: string
 
   deliveryAddress?: ProductionDeliveryAddress | null
   stage: ProductionStage
@@ -31,6 +31,13 @@ export interface ProductionProject {
 
   imageUrl?: string
   dimensions?: string
+
+  projectType: "order" | "return"
+
+  returnRequestId?: string
+  resolutionId?: string
+  resolutionType?: "repair" | "replacement"
+  applicableStages?: ProductionStage[]
 }
 
 export interface ProductionStageHistory {
