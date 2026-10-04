@@ -1,6 +1,8 @@
 export interface ActivityLog {
   id: number
 
+  userId: string | null
+
   userName: string
 
   role: string
@@ -9,7 +11,7 @@ export interface ActivityLog {
 
   module: string
 
-  description: string
+  description: string | null
 
   timestamp: string
 

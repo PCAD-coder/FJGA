@@ -165,7 +165,9 @@ export default function DeliveryDetailsDialog({
               <DialogTitle>Delivery Details</DialogTitle>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Order #{delivery.orderNumber}
+                {delivery.deliveryType === "return"
+                  ? `Return #${delivery.returnNumber ?? "N/A"}`
+                  : `Order #${delivery.orderNumber}`}
               </p>
             </div>
 
@@ -174,6 +176,43 @@ export default function DeliveryDetailsDialog({
             </Badge>
           </div>
         </DialogHeader>
+        {delivery.deliveryType === "return" && (
+          <section className="space-y-3">
+            <div>
+              <h3 className="font-semibold">Return Information</h3>
+
+              <p className="text-sm text-muted-foreground">
+                Information about this return delivery
+              </p>
+            </div>
+
+            <div className="grid gap-4 rounded-lg border p-4 sm:grid-cols-2">
+              <div>
+                <p className="text-sm text-muted-foreground">Original Order</p>
+
+                <p className="mt-1 font-medium">#{delivery.orderNumber}</p>
+              </div>
+
+              <div>
+                <p className="text-sm text-muted-foreground">Resolution</p>
+
+                <p className="mt-1 font-medium capitalize">
+                  {delivery.resolutionType
+                    ? delivery.resolutionType
+                    : "Not specified"}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm text-muted-foreground">Return Number</p>
+
+                <p className="mt-1 font-medium">
+                  {delivery.returnNumber ?? "N/A"}
+                </p>
+              </div>
+            </div>
+          </section>
+        )}
 
         <div className="space-y-6">
           {/* CUSTOMER */}
@@ -250,14 +289,20 @@ export default function DeliveryDetailsDialog({
             </div>
           </section>
 
-          {/* ORDER ITEMS */}
+          {/* ORDER / RETURN ITEMS */}
 
           <section className="space-y-3">
             <div>
-              <h3 className="font-semibold">Order Items</h3>
+              <h3 className="font-semibold">
+                {delivery.deliveryType === "return"
+                  ? "Related Order Items"
+                  : "Order Items"}
+              </h3>
 
               <p className="text-sm text-muted-foreground">
-                Products included in this delivery
+                {delivery.deliveryType === "return"
+                  ? "Products associated with the original order"
+                  : "Products included in this delivery"}
               </p>
             </div>
 
@@ -279,7 +324,9 @@ export default function DeliveryDetailsDialog({
                 </div>
               ) : (
                 <p className="p-4 text-sm text-muted-foreground">
-                  No order items found.
+                  {delivery.deliveryType === "return"
+                    ? "No related order items found."
+                    : "No order items found."}
                 </p>
               )}
             </div>
@@ -329,17 +376,19 @@ export default function DeliveryDetailsDialog({
                 </p>
               </div>
 
-              <div>
-                <p className="text-sm text-muted-foreground">Delivery Fee</p>
+              {delivery.deliveryType === "order" && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Delivery Fee</p>
 
-                <p className="mt-1 font-medium">
-                  ₱
-                  {delivery.deliveryFee.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </p>
-              </div>
+                  <p className="mt-1 font-medium">
+                    ₱
+                    {delivery.deliveryFee.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </p>
+                </div>
+              )}
 
               <div>
                 <p className="text-sm text-muted-foreground">Delivered At</p>

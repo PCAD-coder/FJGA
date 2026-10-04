@@ -34,7 +34,9 @@ function mapStatus(
     return hasInspection ? "inspection-scheduled" : "approved"
   }
 
-  if (status === "Replacement Delivered") {
+  if (status === "Replacement Delivered" ||
+    status === "Repair Delivered"
+  ) {
     return "resolved"
   }
 
@@ -193,66 +195,66 @@ return_resolutions (
         : []
     const inspection = inspections[0]
     const inspectionDetails = inspection
-  ? {
-      id: inspection.id,
-      status: inspection.status,
-      inspectionDate: inspection.inspection_date ?? null,
-      inspectionTime: inspection.inspection_time ?? null,
-      assignedStaff: inspection.assigned_staff ?? null,
-      inspectionNotes: inspection.inspection_notes ?? null,
-      inspectionResult: inspection.inspection_result ?? null,
-      damageConfirmed: inspection.damage_confirmed ?? null,
-      damageDescription: inspection.damage_description ?? null,
-      resolutionType: inspection.resolution_type ?? null,
-      resolutionNotes: inspection.resolution_notes ?? null,
-      completedAt: inspection.completed_at ?? null,
-    }
-  : null
-  const resolutions = Array.isArray(request.return_resolutions)
-  ? request.return_resolutions
-  : request.return_resolutions
-    ? [request.return_resolutions]
-    : []
-
-const resolution = resolutions[0]
-
-const resolutionItems = resolution?.return_resolution_items ?? []
-
-const resolutionDetails = resolution
-  ? {
-      id: resolution.id,
-      resolutionType: resolution.resolution_type,
-      resolutionStatus: resolution.resolution_status,
-      resolutionNotes: resolution.resolution_notes ?? null,
-      createdAt: resolution.created_at,
-      completedAt: resolution.completed_at ?? null,
-
-      items: resolutionItems.map((item) => {
-        const material = Array.isArray(item.inventory_materials)
-          ? item.inventory_materials[0]
-          : item.inventory_materials
-
-        const laborService = Array.isArray(item.labor_services)
-          ? item.labor_services[0]
-          : item.labor_services
-
-        return {
-          id: item.id,
-          itemType: item.item_type,
-          inventoryMaterialId: item.inventory_material_id ?? null,
-          laborServiceId: item.labor_service_id ?? null,
-          materialName: material?.material_name ?? null,
-          laborServiceName: laborService?.service_name ?? null,
-          quantity: Number(item.quantity ?? 0),
-          width: item.width !== null ? Number(item.width) : null,
-          height: item.height !== null ? Number(item.height) : null,
-          depth: item.depth !== null ? Number(item.depth) : null,
-          dimensionUnit: item.dimension_unit ?? null,
-          notes: item.notes ?? null,
+      ? {
+          id: inspection.id,
+          status: inspection.status,
+          inspectionDate: inspection.inspection_date ?? null,
+          inspectionTime: inspection.inspection_time ?? null,
+          assignedStaff: inspection.assigned_staff ?? null,
+          inspectionNotes: inspection.inspection_notes ?? null,
+          inspectionResult: inspection.inspection_result ?? null,
+          damageConfirmed: inspection.damage_confirmed ?? null,
+          damageDescription: inspection.damage_description ?? null,
+          resolutionType: inspection.resolution_type ?? null,
+          resolutionNotes: inspection.resolution_notes ?? null,
+          completedAt: inspection.completed_at ?? null,
         }
-      }),
-    }
-  : null
+      : null
+    const resolutions = Array.isArray(request.return_resolutions)
+      ? request.return_resolutions
+      : request.return_resolutions
+        ? [request.return_resolutions]
+        : []
+
+    const resolution = resolutions[0]
+
+    const resolutionItems = resolution?.return_resolution_items ?? []
+
+    const resolutionDetails = resolution
+      ? {
+          id: resolution.id,
+          resolutionType: resolution.resolution_type,
+          resolutionStatus: resolution.resolution_status,
+          resolutionNotes: resolution.resolution_notes ?? null,
+          createdAt: resolution.created_at,
+          completedAt: resolution.completed_at ?? null,
+
+          items: resolutionItems.map((item) => {
+            const material = Array.isArray(item.inventory_materials)
+              ? item.inventory_materials[0]
+              : item.inventory_materials
+
+            const laborService = Array.isArray(item.labor_services)
+              ? item.labor_services[0]
+              : item.labor_services
+
+            return {
+              id: item.id,
+              itemType: item.item_type,
+              inventoryMaterialId: item.inventory_material_id ?? null,
+              laborServiceId: item.labor_service_id ?? null,
+              materialName: material?.material_name ?? null,
+              laborServiceName: laborService?.service_name ?? null,
+              quantity: Number(item.quantity ?? 0),
+              width: item.width !== null ? Number(item.width) : null,
+              height: item.height !== null ? Number(item.height) : null,
+              depth: item.depth !== null ? Number(item.depth) : null,
+              dimensionUnit: item.dimension_unit ?? null,
+              notes: item.notes ?? null,
+            }
+          }),
+        }
+      : null
 
     const activeInspection = inspections.find(
       (inspection) => inspection.status === "scheduled"
@@ -296,7 +298,7 @@ const resolutionDetails = resolution
       status: mapStatus(request.status, Boolean(activeInspection)),
       inspectionId: inspection?.id ?? null,
       inspection: inspectionDetails,
-resolution: resolutionDetails,
+      resolution: resolutionDetails,
     })
   }
 
@@ -816,37 +818,38 @@ export async function createReturnResolution(
       }
     }
 
-const { data: resolution, error: insertError } = await supabase
-  .from("return_resolutions")
-  .insert({
-    return_request_id: returnRequestId,
-    inspection_id: inspectionId,
-    resolution_type: data.resolutionType,
-    resolution_status: "pending",
-    resolution_notes: data.resolutionNotes.trim(),
-    created_by: adminProfile.id,
-  })
-  .select("id")
-  .single()
+    const { data: resolution, error: insertError } = await supabase
+      .from("return_resolutions")
+      .insert({
+        return_request_id: returnRequestId,
+        inspection_id: inspectionId,
+        resolution_type: data.resolutionType,
+        resolution_status: "pending",
+        resolution_notes: data.resolutionNotes.trim(),
+        created_by: adminProfile.id,
+      })
+      .select("id")
+      .single()
 
-if (insertError) {
-  return {
-    data: null,
-    error: insertError.message,
-  }
-}
+    if (insertError) {
+      return {
+        data: null,
+        error: insertError.message,
+      }
+    }
 
-if (!resolution) {
-  return {
-    data: null,
-    error: "The return resolution was created but its ID could not be retrieved.",
-  }
-}
+    if (!resolution) {
+      return {
+        data: null,
+        error:
+          "The return resolution was created but its ID could not be retrieved.",
+      }
+    }
 
-return {
-  data: resolution.id,
-  error: null,
-}
+    return {
+      data: resolution.id,
+      error: null,
+    }
   } catch (error) {
     console.error("Failed to create return resolution:", error)
 
@@ -885,18 +888,17 @@ export async function startReturnResolution(
     }
   }
 
-  const { data: resolution, error: resolutionError } =
-    await supabase
-      .from("return_resolutions")
-      .select(
-        `
-          id,
-          resolution_status,
-          resolution_type
-        `
-      )
-      .eq("return_request_id", returnRequestId)
-      .maybeSingle()
+  const { data: resolution, error: resolutionError } = await supabase
+    .from("return_resolutions")
+    .select(
+      `
+      id,
+      resolution_status,
+      resolution_type
+      `
+    )
+    .eq("return_request_id", returnRequestId)
+    .maybeSingle()
 
   if (resolutionError) {
     return {
@@ -906,8 +908,7 @@ export async function startReturnResolution(
 
   if (!resolution) {
     return {
-      error:
-        "A resolution could not be found for this return request.",
+      error: "A resolution could not be found for this return request.",
     }
   }
 
@@ -916,24 +917,58 @@ export async function startReturnResolution(
     resolution.resolution_type !== "replacement"
   ) {
     return {
-      error:
-        "This resolution does not require production.",
+      error: "This resolution does not require processing.",
     }
   }
 
   if (resolution.resolution_status !== "pending") {
     return {
-      error:
-        "Only a pending resolution can be started.",
+      error: "Only a pending resolution can be started.",
     }
   }
 
-  const { data: existingJob, error: existingJobError } =
-    await supabase
-      .from("return_production_jobs")
-      .select("id")
-      .eq("resolution_id", resolution.id)
-      .maybeSingle()
+  /*
+   * ========================================================
+   * REPAIR
+   * ========================================================
+   *
+   * Repairs do not automatically require production.
+   *
+   * The repair can be completed directly using labor,
+   * inventory materials, or both.
+   */
+  if (resolution.resolution_type === "repair") {
+    const { error: resolutionUpdateError } = await supabase
+      .from("return_resolutions")
+      .update({
+        resolution_status: "in_progress",
+      })
+      .eq("id", resolution.id)
+
+    if (resolutionUpdateError) {
+      return {
+        error: resolutionUpdateError.message,
+      }
+    }
+
+    return {
+      error: null,
+    }
+  }
+
+  /*
+   * ========================================================
+   * REPLACEMENT
+   * ========================================================
+   *
+   * Replacements require a production job.
+   */
+
+  const { data: existingJob, error: existingJobError } = await supabase
+    .from("return_production_jobs")
+    .select("id")
+    .eq("resolution_id", resolution.id)
+    .maybeSingle()
 
   if (existingJobError) {
     return {
@@ -943,8 +978,7 @@ export async function startReturnResolution(
 
   if (existingJob) {
     return {
-      error:
-        "A production job already exists for this resolution.",
+      error: "A production job already exists for this resolution.",
     }
   }
 
@@ -965,13 +999,12 @@ export async function startReturnResolution(
     }
   }
 
-  const { error: resolutionUpdateError } =
-    await supabase
-      .from("return_resolutions")
-      .update({
-        resolution_status: "in_progress",
-      })
-      .eq("id", resolution.id)
+  const { error: resolutionUpdateError } = await supabase
+    .from("return_resolutions")
+    .update({
+      resolution_status: "in_progress",
+    })
+    .eq("id", resolution.id)
 
   if (resolutionUpdateError) {
     /*
@@ -1004,6 +1037,12 @@ export async function completeReturnResolution(
     }
   }
 
+  /*
+   * ========================================================
+   * GET RETURN REQUEST
+   * ========================================================
+   */
+
   const { data: returnRequest, error: requestError } = await supabase
     .from("return_requests")
     .select("id, status")
@@ -1011,11 +1050,15 @@ export async function completeReturnResolution(
     .single()
 
   if (requestError) {
-    return { error: requestError.message }
+    return {
+      error: requestError.message,
+    }
   }
 
   if (!returnRequest) {
-    return { error: "Return request could not be found." }
+    return {
+      error: "Return request could not be found.",
+    }
   }
 
   if (returnRequest.status !== "Replacement Processing") {
@@ -1025,14 +1068,22 @@ export async function completeReturnResolution(
     }
   }
 
+  /*
+   * ========================================================
+   * GET RESOLUTION
+   * ========================================================
+   */
+
   const { data: resolution, error: resolutionError } = await supabase
     .from("return_resolutions")
-    .select("id, resolution_status")
+    .select("id, resolution_status, resolution_type")
     .eq("return_request_id", returnRequestId)
     .maybeSingle()
 
   if (resolutionError) {
-    return { error: resolutionError.message }
+    return {
+      error: resolutionError.message,
+    }
   }
 
   if (!resolution) {
@@ -1043,84 +1094,133 @@ export async function completeReturnResolution(
 
   if (resolution.resolution_status !== "in_progress") {
     return {
-      error:
-        "Only an in-progress resolution can be completed.",
+      error: "Only an in-progress resolution can be completed.",
     }
   }
 
-  const { data: productionJob, error: productionJobError } =
-    await supabase
-      .from("return_production_jobs")
-      .select("id, production_stage")
-      .eq("resolution_id", resolution.id)
-      .maybeSingle()
+  /*
+   * ========================================================
+   * DIRECT REPAIR
+   * ========================================================
+   *
+   * The database RPC handles:
+   * - material consumption
+   * - inventory locking
+   * - resolution completion
+   * - direct return delivery creation
+   *
+   * No production job is created.
+   */
 
-  if (productionJobError) {
+  if (resolution.resolution_type === "repair") {
+    const { error: repairError } = await supabase.rpc(
+      "complete_return_repair",
+      {
+        p_return_request_id: returnRequestId,
+      }
+    )
+
+    if (repairError) {
+      return {
+        error: repairError.message,
+      }
+    }
+
     return {
-      error: productionJobError.message,
+      error: null,
     }
   }
 
-  if (!productionJob) {
+  /*
+   * ========================================================
+   * REPLACEMENT
+   * ========================================================
+   *
+   * Existing replacement flow remains unchanged.
+   */
+
+  if (resolution.resolution_type === "replacement") {
+    const { data: productionJob, error: productionJobError } =
+      await supabase
+        .from("return_production_jobs")
+        .select("id, production_stage")
+        .eq("resolution_id", resolution.id)
+        .maybeSingle()
+
+    if (productionJobError) {
+      return {
+        error: productionJobError.message,
+      }
+    }
+
+    if (!productionJob) {
+      return {
+        error: "Production has not been started for this replacement.",
+      }
+    }
+
+    if (productionJob.production_stage !== "ready_for_delivery") {
+      return {
+        error:
+          "The return production job must be ready for delivery before the replacement can be completed.",
+      }
+    }
+
+    const now = new Date().toISOString()
+
+    const { error: resolutionUpdateError } = await supabase
+      .from("return_resolutions")
+      .update({
+        resolution_status: "completed",
+        completed_at: now,
+      })
+      .eq("id", resolution.id)
+
+    if (resolutionUpdateError) {
+      return {
+        error: resolutionUpdateError.message,
+      }
+    }
+
+    const finalStatus = "Replacement Delivered"
+
+    const { error: requestUpdateError } = await supabase
+      .from("return_requests")
+      .update({
+        status: finalStatus,
+        reviewed_at: now,
+        reviewed_by: profileId,
+      })
+      .eq("id", returnRequestId)
+
+    if (requestUpdateError) {
+      return {
+        error: requestUpdateError.message,
+      }
+    }
+
+    const { error: timelineError } = await supabase
+      .from("return_request_timeline")
+      .insert({
+        return_request_id: returnRequestId,
+        status: finalStatus,
+        created_by: profileId,
+      })
+
+    if (timelineError) {
+      return {
+        error: timelineError.message,
+      }
+    }
+
     return {
-      error:
-        "Production has not been started for this resolution.",
+      error: null,
     }
   }
 
-  if (productionJob.production_stage !== "ready_for_delivery") {
-    return {
-      error:
-        "The return production job must be ready for delivery before the resolution can be completed.",
-    }
+  return {
+    error: "This resolution type cannot be completed.",
   }
-
-  const now = new Date().toISOString()
-
-  const { error: resolutionUpdateError } = await supabase
-    .from("return_resolutions")
-    .update({
-      resolution_status: "completed",
-      completed_at: now,
-    })
-    .eq("id", resolution.id)
-
-  if (resolutionUpdateError) {
-    return {
-      error: resolutionUpdateError.message,
-    }
-  }
-
-  const { error: requestUpdateError } = await supabase
-    .from("return_requests")
-    .update({
-      status: "Replacement Delivered",
-      reviewed_at: now,
-      reviewed_by: profileId,
-    })
-    .eq("id", returnRequestId)
-
-  if (requestUpdateError) {
-    return {
-      error: requestUpdateError.message,
-    }
-  }
-
-  const { error: timelineError } = await supabase
-    .from("return_request_timeline")
-    .insert({
-      return_request_id: returnRequestId,
-      status: "Replacement Delivered",
-      created_by: profileId,
-    })
-
-  if (timelineError) {
-    return {
-      error: timelineError.message,
-    }
-  }
-
-  return { error: null }
 }
 export async function getReturnResolutionMaterials(
   returnRequestId: string
@@ -1392,13 +1492,8 @@ export async function addReturnResolutionItems(
     resolution_id: resolutionId,
     item_type: item.itemType,
     inventory_material_id:
-      item.itemType === "material"
-        ? item.inventoryMaterialId
-        : null,
-    labor_service_id:
-      item.itemType === "labor"
-        ? item.laborServiceId
-        : null,
+      item.itemType === "material" ? item.inventoryMaterialId : null,
+    labor_service_id: item.itemType === "labor" ? item.laborServiceId : null,
     quantity: item.quantity,
     width: item.width ?? null,
     height: item.height ?? null,
@@ -1407,9 +1502,7 @@ export async function addReturnResolutionItems(
     notes: item.notes?.trim() || null,
   }))
 
-  const { error } = await supabase
-    .from("return_resolution_items")
-    .insert(rows)
+  const { error } = await supabase.from("return_resolution_items").insert(rows)
 
   if (error) {
     return {

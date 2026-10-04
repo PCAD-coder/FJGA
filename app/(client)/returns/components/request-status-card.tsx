@@ -27,6 +27,9 @@ const badgeStyles: Record<string, string> = {
 
   "Replacement Delivered":
     "bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100",
+
+  "Repair Delivered":
+    "bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100",
 };
 
 export default function RequestStatusCard({

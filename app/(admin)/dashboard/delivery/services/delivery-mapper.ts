@@ -86,8 +86,8 @@ export interface DeliveryQueryResult {
 
 export interface ReturnDeliveryQueryResult {
   id: string
-  return_request_id: string
-  production_job_id: string
+  return_request_id: string 
+  production_job_id: string | null
   delivery_status: string
   scheduled_date: string | null
   scheduled_time: string | null
@@ -105,6 +105,17 @@ export interface ReturnDeliveryQueryResult {
         order_id: string
         status: string
 
+        return_resolutions:
+          | {
+              id: string
+              resolution_type: string
+            }
+          | {
+              id: string
+              resolution_type: string
+            }[]
+          | null
+
         orders: DeliveryOrder | DeliveryOrder[] | null
       }
     | {
@@ -112,6 +123,17 @@ export interface ReturnDeliveryQueryResult {
         return_number: string
         order_id: string
         status: string
+
+        return_resolutions:
+          | {
+              id: string
+              resolution_type: string
+            }
+          | {
+              id: string
+              resolution_type: string
+            }[]
+          | null
 
         orders: DeliveryOrder | DeliveryOrder[] | null
       }[]
@@ -234,9 +256,9 @@ function buildAddress(order: DeliveryOrder) {
 function getResolutionType(
   row: ReturnDeliveryQueryResult
 ): ReturnResolutionType | null {
-  const job = getReturnProductionJob(row)
+  const returnRequest = getReturnRequest(row)
 
-  const resolution = getFirstRelation(job.return_resolutions)
+  const resolution = getFirstRelation(returnRequest.return_resolutions)
 
   if (
     resolution?.resolution_type === "repair" ||

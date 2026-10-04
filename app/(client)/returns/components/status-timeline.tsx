@@ -6,7 +6,7 @@ interface Props {
   currentStatus: ReturnStatus;
 }
 
-const steps: ReturnStatus[] = [
+const replacementSteps: ReturnStatus[] = [
   "Request Received",
   "Under Review",
   "Approved",
@@ -14,9 +14,22 @@ const steps: ReturnStatus[] = [
   "Replacement Delivered",
 ];
 
+const repairSteps: ReturnStatus[] = [
+  "Request Received",
+  "Under Review",
+  "Approved",
+  "Replacement Processing",
+  "Repair Delivered",
+];
+
 export default function StatusTimeline({
   currentStatus,
 }: Props) {
+  const steps =
+    currentStatus === "Repair Delivered"
+      ? repairSteps
+      : replacementSteps;
+
   const currentStep = steps.indexOf(currentStatus);
 
   return (

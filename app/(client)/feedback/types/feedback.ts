@@ -1,13 +1,14 @@
-export type FeedbackStatus = "pending" | "published" | "archived"
+export type FeedbackStatus =
+  | "pending"
+  | "published"
+  | "archived"
 
 export interface Feedback {
   id: string
 
   orderId: string
-  customerId: string
-
-  clientName: string
   orderNumber: string
+
   projectName: string
 
   rating: number
@@ -21,4 +22,14 @@ export interface Feedback {
 
   adminReply: string | null
   repliedAt: string | null
+}
+
+export interface FeedbackOrder {
+  id: string
+
+  orderNumber: string
+
+  projectName: string
+
+  deliveredDate: string
 }

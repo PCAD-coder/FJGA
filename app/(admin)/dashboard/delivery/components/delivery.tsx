@@ -42,6 +42,8 @@ import ScheduleDeliveryDialog from "./schedule-delivery-dialog"
 
 import DeliveryFinalPaymentDialog from "./delivery-final-payment-dialog"
 
+import { completeReturnDelivery } from "../services/delivery-payment-actions"
+
 export default function DeliveryModule() {
   const [deliveries, setDeliveries] = useState<Delivery[]>([])
 
@@ -131,95 +133,131 @@ export default function DeliveryModule() {
     (currentPage - 1) * deliveriesPerPage,
     currentPage * deliveriesPerPage
   )
-const handleViewDetails = async (delivery: Delivery) => {
-  try {
-    setSelectedDelivery(delivery)
-    setSelectedDeliveryDetails(null)
-    setViewOpen(true)
-    setDetailsLoading(true)
+  const handleViewDetails = async (delivery: Delivery) => {
+    try {
+      setSelectedDelivery(delivery)
+      setSelectedDeliveryDetails(null)
+      setViewOpen(true)
+      setDetailsLoading(true)
 
-    if (delivery.deliveryType === "return") {
-      const data = await getDeliveryDetailsAction(
-        delivery.id,
-        "return"
-      )
+      if (delivery.deliveryType === "return") {
+        const data = await getDeliveryDetailsAction(delivery.id, "return")
 
-      const details = mapReturnToDeliveryDetails(
-        data as ReturnDeliveryQueryResult
-      )
+        const details = mapReturnToDeliveryDetails(
+          data as ReturnDeliveryQueryResult
+        )
 
-      setSelectedDeliveryDetails(details)
-    } else {
-      const data = await getDeliveryDetailsAction(
-        delivery.id,
-        "order"
-      )
+        setSelectedDeliveryDetails(details)
+      } else {
+        const data = await getDeliveryDetailsAction(delivery.id, "order")
 
-      const details = mapOrderToDeliveryDetails(
-        data as DeliveryQueryResult
-      )
+        const details = mapOrderToDeliveryDetails(data as DeliveryQueryResult)
 
-      setSelectedDeliveryDetails(details)
+        setSelectedDeliveryDetails(details)
+      }
+    } catch (error) {
+      console.error("Failed to load delivery details:", error)
+    } finally {
+      setDetailsLoading(false)
     }
-  } catch (error) {
-    console.error("Failed to load delivery details:", error)
-  } finally {
-    setDetailsLoading(false)
   }
-}
 
-  const handleUpdateStatus = async (status: DeliveryStatus, notes: string) => {
-    if (!selectedDelivery) {
-      return
-    }
+const handleUpdateStatus = async (
+  status: DeliveryStatus,
+  notes: string
+) => {
+  if (!selectedDelivery) {
+    return
+  }
 
-    /*
-     * Completing a delivery requires the final payment.
-     * The dedicated final-payment dialog handles both
-     * the payment and delivery status transaction.
-     */
-    if (status === "delivered") {
-      setUpdateOpen(false)
-      setFinalPaymentOpen(true)
-      return
-    }
-
+  /*
+   * Return deliveries do not require customer payment.
+   * They use the dedicated return delivery completion RPC.
+   */
+  if (
+    status === "delivered" &&
+    selectedDelivery.deliveryType === "return"
+  ) {
     try {
       setError(null)
 
-      await updateDeliveryStatus(selectedDelivery.id, status, notes)
-
-      setDeliveries((prev) =>
-        prev.map((delivery) =>
-          delivery.id === selectedDelivery.id
-            ? {
-                ...delivery,
-                status,
-              }
-            : delivery
-        )
-      )
-
-      setSelectedDelivery((prev) =>
-        prev
-          ? {
-              ...prev,
-              status,
-            }
-          : null
-      )
+      await completeReturnDelivery({
+        deliveryId: selectedDelivery.id,
+        deliveryDate: new Date().toISOString().split("T")[0],
+        notes: notes.trim() || null,
+      })
 
       setUpdateOpen(false)
+      setSelectedDelivery(null)
+
+      await loadDeliveries()
     } catch (error) {
-      console.error("Failed to update delivery status:", error)
+      console.error(
+        "Failed to complete return delivery:",
+        error
+      )
 
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to update delivery status"
+          : "Failed to complete return delivery"
       )
     }
+
+    return
   }
+
+  /*
+   * Normal order deliveries require final payment.
+   * The dedicated payment dialog handles the transaction.
+   */
+  if (status === "delivered") {
+    setUpdateOpen(false)
+    setFinalPaymentOpen(true)
+    return
+  }
+
+  try {
+    setError(null)
+
+    await updateDeliveryStatus(
+      selectedDelivery.id,
+      status,
+      notes,
+      selectedDelivery.deliveryType
+    )
+
+    setDeliveries((prev) =>
+      prev.map((delivery) =>
+        delivery.id === selectedDelivery.id
+          ? {
+              ...delivery,
+              status,
+            }
+          : delivery
+      )
+    )
+
+    setSelectedDelivery((prev) =>
+      prev
+        ? {
+            ...prev,
+            status,
+          }
+        : null
+    )
+
+    setUpdateOpen(false)
+  } catch (error) {
+    console.error("Failed to update delivery status:", error)
+
+    setError(
+      error instanceof Error
+        ? error.message
+        : "Failed to update delivery status"
+    )
+  }
+}
 
   const totalDeliveries = deliveries.length
 

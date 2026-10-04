@@ -33,22 +33,23 @@ export const clientMenu = [
     title: "My Orders",
     url: "my-orders",
     icon: Package,
-  },
+  },/*
   {
     title: "Order Monitoring",
     url: "/order-monitoring",
     icon: ListChecks,
-  },
+  },*/
   {
     title: "Payments",
     url: "/payments",
     icon: CreditCard,
   },
+  /*
   {
     title: "Delivery Tracking",
     url: "#",
     icon: Truck,
-  },
+  },*/
   {
     title: "Notifications",
     url: "#",
@@ -56,7 +57,7 @@ export const clientMenu = [
   },
   {
     title: "Feedback",
-    url: "#",
+    url: "/feedback",
     icon: MessageSquare,
   },
   {

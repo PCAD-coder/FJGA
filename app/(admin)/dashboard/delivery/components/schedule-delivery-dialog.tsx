@@ -166,16 +166,17 @@ export default function ScheduleDeliveryDialog({
       setError(null)
 
       await scheduleDelivery({
-        deliveryId: delivery.id,
-        scheduledDate,
-        scheduledTime,
-        assignedDriver:
-          assignedDriver.trim() || null,
-        assignedTruck:
-          assignedTruck.trim() || null,
-        deliveryNotes:
-          deliveryNotes.trim() || null,
-      })
+  deliveryId: delivery.id,
+  deliveryType: delivery.deliveryType,
+  scheduledDate,
+  scheduledTime,
+  assignedDriver:
+    assignedDriver.trim() || null,
+  assignedTruck:
+    assignedTruck.trim() || null,
+  deliveryNotes:
+    deliveryNotes.trim() || null,
+})
 
       onOpenChange(false)
       onSaved()
