@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
+import { CheckCircle2, Circle } from "lucide-react"
 
 export default function SignUp() {
   const supabase = createClient()
@@ -21,6 +22,19 @@ export default function SignUp() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+
+  const passwordRequirements = [
+    { label: "At least 12 characters", met: password.length >= 12 },
+    { label: "An uppercase letter (A-Z)", met: /[A-Z]/.test(password) },
+    { label: "A lowercase letter (a-z)", met: /[a-z]/.test(password) },
+    { label: "A number (0-9)", met: /[0-9]/.test(password) },
+    {
+      label: "A special character (e.g. !, @, #)",
+      met: /[^a-zA-Z0-9\s]/.test(password),
+    },
+  ]
+  const isPasswordValid = passwordRequirements.every(({ met }) => met)
+  const passwordsMatch = password.length > 0 && password === confirmPassword
 
   const handleGoogleSignIn = async () => {
     setLoading(true)
@@ -37,17 +51,17 @@ export default function SignUp() {
       setLoading(false)
     }
     const { data: existing } = await supabase
-  .from("profiles")
-  .select("id")
-  .eq("email", email)
-  .maybeSingle();
+      .from("profiles")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle()
 
-if (existing) {
-  setError("This email is already registered. Please sign in instead.");
-  return;
-}
+    if (existing) {
+      setError("This email is already registered. Please sign in instead.")
+      return
+    }
   }
-  
+
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
@@ -58,7 +72,12 @@ if (existing) {
       return
     }
 
-    if (password !== confirmPassword) {
+    if (!isPasswordValid) {
+      setError("Please meet all password requirements.")
+      return
+    }
+
+    if (!passwordsMatch) {
       setError("Passwords do not match.")
       return
     }
@@ -66,24 +85,26 @@ if (existing) {
     setLoading(true)
 
     try {
-        //check email if already exists in the profiles table
+      //check email if already exists in the profiles table
       const { data: existingUser, error: lookupError } = await supabase
-  .from("profiles")
-  .select("id")
-  .eq("email", email.trim().toLowerCase())
-  .maybeSingle()
+        .from("profiles")
+        .select("id")
+        .eq("email", email.trim().toLowerCase())
+        .maybeSingle()
 
-if (lookupError) {
-  setError("Something went wrong. Please try again.")
-  setLoading(false)
-  return
-}
+      if (lookupError) {
+        setError("Something went wrong. Please try again.")
+        setLoading(false)
+        return
+      }
 
-if (existingUser) {
-  setError("An account with this email already exists. Please sign in instead.")
-  setLoading(false)
-  return
-}
+      if (existingUser) {
+        setError(
+          "An account with this email already exists. Please sign in instead."
+        )
+        setLoading(false)
+        return
+      }
       // Create the authentication account
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -97,7 +118,7 @@ if (existingUser) {
           },
         },
       })
-      
+
       console.log("DATA:", JSON.stringify(data, null, 2))
       console.log("ERROR:", JSON.stringify(error, null, 2))
 
@@ -214,9 +235,35 @@ if (existingUser) {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+                minLength={12}
+                aria-describedby="password-requirements"
                 required
                 className="input sz-md variant-mixed"
               />
+              <ul
+                id="password-requirements"
+                className="space-y-1 pt-2 text-xs"
+                aria-label="Password requirements"
+              >
+                {passwordRequirements.map(({ label, met }) => {
+                  const Icon = met ? CheckCircle2 : Circle
+                  return (
+                    <li
+                      key={label}
+                      className={`flex items-center gap-2 ${met ? "text-green-700 dark:text-green-400" : "text-muted-foreground"}`}
+                    >
+                      <Icon className="size-4 shrink-0" aria-hidden="true" />
+                      <span>
+                        <span className="sr-only">
+                          {met ? "Met: " : "Not met: "}
+                        </span>
+                        {label}
+                      </span>
+                    </li>
+                  )
+                })}
+              </ul>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPwd" className="block text-sm">
@@ -227,13 +274,28 @@ if (existingUser) {
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                autoComplete="new-password"
                 required
                 className="input sz-md variant-mixed"
               />
             </div>
+            <p
+              className={`flex items-center gap-2 text-xs ${passwordsMatch ? "text-green-700 dark:text-green-400" : "text-muted-foreground"}`}
+            >
+              {passwordsMatch ? (
+                <CheckCircle2 className="size-4" aria-hidden="true" />
+              ) : (
+                <Circle className="size-4" aria-hidden="true" />
+              )}
+              {passwordsMatch ? "Passwords match" : "Passwords must match"}
+            </p>
             {error && <p className="text-sm text-red-500">{error}</p>}
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading || !isPasswordValid || !passwordsMatch}
+            >
               {loading ? "Creating Account..." : "Create Account"}
             </Button>
           </div>

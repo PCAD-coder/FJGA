@@ -1,5 +1,5 @@
 export interface DashboardSummary {
-  activeQuotations: number
+  readyForDelivery: number
 
   ordersInProduction: number
 
@@ -30,7 +30,7 @@ export interface ClientNotification {
 }
 
 export interface RecentOrder {
-  id: number
+  id: string
 
   orderNumber: string
 
@@ -40,9 +40,13 @@ export interface RecentOrder {
 
   status:
     | "Pending"
+    | "Quoted"
+    | "Approved"
     | "In Production"
-    | "Installation Scheduled"
-    | "Completed"
+    | "Ready for Delivery"
+    | "Delivered"
+    | "Cancelled"
+    | "Denied"
 
   date: string
 }

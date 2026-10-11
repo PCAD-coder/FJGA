@@ -1,18 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
-import {
-  FileText,
-  Package,
-  Wallet,
-} from "lucide-react"
+import { FileText, Package, Wallet } from "lucide-react"
 
 import DashboardSummaryCard from "./components/dashboard-summary-card"
 import ProjectStatusChart from "./components/project-status-chart"
 import NotificationsList from "./components/notifications-list"
 import RecentOrdersTable from "./components/recent-orders-table"
-
 
 import {
   ProjectStatus,
@@ -20,30 +15,18 @@ import {
   RecentOrder,
 } from "./types/client-dashboard"
 
-const projectStatusData: ProjectStatus[] = [
-  {
-    name: "Completed",
-    value: 65,
-  },
-
-  {
-    name: "In Progress",
-    value: 25,
-  },
-
-  {
-    name: "Pending",
-    value: 10,
-  },
-]
+import {
+  getClientDashboardSummary,
+  getClientProjectStatus,
+  getClientRecentOrders,
+} from "./services/client-dashboard-service"
 
 const notificationsData: ClientNotification[] = [
   {
     id: 1,
 
-    title:
-      "Admin has sent a quote for Glass Partition Project",
-    
+    title: "Admin has sent a quote for Glass Partition Project",
+
     message:
       "You have received a new quotation for your Glass Partition project. Click to view details and respond.",
 
@@ -55,12 +38,10 @@ const notificationsData: ClientNotification[] = [
   {
     id: 2,
 
-    title:
-      "Production started for Aluminum Window Frame",
+    title: "Production started for Aluminum Window Frame",
 
-      message:
+    message:
       "You have received a new quotation for your Glass Partition project. Click to view details and respond.",
-
 
     time: "5 hours ago",
 
@@ -70,12 +51,10 @@ const notificationsData: ClientNotification[] = [
   {
     id: 3,
 
-    title:
-      "Your custom dining table design has been approved",
-    
+    title: "Your custom dining table design has been approved",
+
     message:
       "You have received a new quotation for your Glass Partition project. Click to view details and respond.",
-
 
     time: "1 day ago",
 
@@ -85,12 +64,10 @@ const notificationsData: ClientNotification[] = [
   {
     id: 4,
 
-    title:
-      "Payment reminder: Invoice #12345 is due in 3 days",
-    
+    title: "Payment reminder: Invoice #12345 is due in 3 days",
+
     message:
       "You have received a new quotation for your Glass Partition project. Click to view details and respond.",
-
 
     time: "1 day ago",
 
@@ -100,12 +77,10 @@ const notificationsData: ClientNotification[] = [
   {
     id: 5,
 
-    title:
-      "Your order is ready for delivery - Schedule pickup",
-    
+    title: "Your order is ready for delivery - Schedule pickup",
+
     message:
       "You have received a new quotation for your Glass Partition project. Click to view details and respond.",
-
 
     time: "2 days ago",
 
@@ -113,150 +88,124 @@ const notificationsData: ClientNotification[] = [
   },
 ]
 
-const recentOrdersData: RecentOrder[] = [
-  {
-    id: 1,
-
-    orderNumber: "ORD-2401",
-
-    productName: "Glass Partition",
-
-    product: "Glass Partition",
-
-    date: "May 10, 2026",
-
-    status: "In Production",
-  },
-
-  {
-    id: 2,
-
-    orderNumber: "ORD-2402",
-
-    productName: "Sliding Window",
-
-    product: "Sliding Window",
-
-    date: "May 12, 2026",
-
-    status:
-      "Installation Scheduled",
-  },
-
-  {
-    id: 3,
-
-    orderNumber: "ORD-2403",
-
-    productName: "Tempered Glass Door",
-
-    product: "Tempered Glass Door",
-
-    date: "May 14, 2026",
-
-    status: "Pending",
-  },
-
-  {
-    id: 4,
-
-    orderNumber: "ORD-2404",
-
-    productName: "Storefront Glass",
-
-    product: "Storefront Glass",
-
-    date: "May 15, 2026",
-
-    status: "Completed",
-  },
-]
-
-interface Props{
-  profile:any
+interface Props {
+  profile: any
 }
 
-export default function ClientDashboard({ profile, }:Props) {
-  const [activeQuotations] =
-    useState(5)
+export default function ClientDashboard({ profile }: Props) {
+  const [readyForDelivery, setReadyForDelivery] = useState(0)
 
-  const [ordersInProduction] =
-    useState(3)
+  const [ordersInProduction, setOrdersInProduction] = useState(0)
 
-  const [totalBalance] =
-    useState(125450)
+  const [totalBalance, setTotalBalance] = useState(0)
+
+  const [projectStatusData, setProjectStatusData] = useState<ProjectStatus[]>(
+    []
+  )
+
+  const [recentOrdersData, setRecentOrdersData] = useState<RecentOrder[]>([])
+
+  const [loading, setLoading] = useState(true)
+
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function loadDashboard() {
+      try {
+        setLoading(true)
+        setError(null)
+
+        const [summary, projectStatus, recentOrders] = await Promise.all([
+          getClientDashboardSummary(),
+          getClientProjectStatus(),
+          getClientRecentOrders(),
+        ])
+
+        setReadyForDelivery(summary.readyForDelivery)
+
+        setOrdersInProduction(summary.ordersInProduction)
+
+        setTotalBalance(summary.totalBalance)
+
+        setProjectStatusData(projectStatus)
+
+        setRecentOrdersData(recentOrders)
+      } catch (error) {
+        console.error("CLIENT DASHBOARD ERROR:", error)
+
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Failed to load dashboard data"
+        )
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadDashboard()
+  }, [])
 
   return (
     <div className="space-y-6">
-
       {/* HEADER */}
 
       <div>
-
-        <h1 className="text-3xl font-bold">
-          Client Overview
-        </h1>
+        <h1 className="text-3xl font-bold">Client Overview</h1>
 
         <p className="text-muted-foreground">
           Welcome back! Here's what's happening with your projects.
         </p>
-
       </div>
+
+      {/* ERROR */}
+
+      {error && (
+        <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+          {error}
+        </div>
+      )}
 
       {/* SUMMARY CARDS */}
 
       <div className="grid gap-4 md:grid-cols-3">
-
         <DashboardSummaryCard
-          title="Active Quotations"
-          value={activeQuotations}
-          icon={
-            <FileText className="h-6 w-6 text-blue-500" />
-          }
+          title="Ready for Delivery"
+          value={loading ? "..." : readyForDelivery}
+          icon={<FileText className="h-6 w-6 text-blue-500" />}
         />
 
         <DashboardSummaryCard
           title="Orders in Production"
-          value={ordersInProduction}
-          icon={
-            <Package className="h-6 w-6 text-green-500" />
-          }
+          value={loading ? "..." : ordersInProduction}
+          icon={<Package className="h-6 w-6 text-green-500" />}
         />
 
         <DashboardSummaryCard
           title="Total Balance"
-          value={`₱${totalBalance.toLocaleString()}`}
-          icon={
-            <Wallet className="h-6 w-6 text-purple-500" />
+          value={
+            loading
+              ? "..."
+              : `₱${totalBalance.toLocaleString("en-PH", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}`
           }
+          icon={<Wallet className="h-6 w-6 text-purple-500" />}
         />
-
       </div>
-
-      {/* QUICK ACTIONS */}
 
       {/* CHART + NOTIFICATIONS */}
 
       <div className="grid gap-6 xl:grid-cols-[1.3fr_.9fr]">
+        <ProjectStatusChart data={projectStatusData} />
 
-        <ProjectStatusChart
-          data={projectStatusData}
-        />
-
-        <NotificationsList
-          notifications={
-            notificationsData
-          }
-        />
-
+        <NotificationsList notifications={notificationsData} />
       </div>
 
       {/* RECENT ORDERS */}
 
-      <RecentOrdersTable
-        orders={recentOrdersData}
-      />
-
+      <RecentOrdersTable orders={recentOrdersData} />
     </div>
   )
 }
