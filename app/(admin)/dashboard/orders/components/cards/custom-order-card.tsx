@@ -1,170 +1,192 @@
 "use client"
 
 import Image from "next/image"
+import { Eye } from "lucide-react"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { FileText } from "lucide-react"
 
-import { Eye, CheckCircle2, XCircle } from "lucide-react"
-
-import { CustomOrder } from "../../types/custom-order"
+import type { CustomOrder } from "../../types/custom-order"
 
 interface Props {
   order: CustomOrder
-
   onView: () => void
+}
 
-  onApprove: () => void
+const statusStyles: Record<CustomOrder["status"], string> = {
+  pending:
+    "border-yellow-200 bg-yellow-100 text-yellow-700",
+  quoted:
+    "border-blue-200 bg-blue-100 text-blue-700",
+  approved:
+    "border-green-200 bg-green-100 text-green-700",
+  denied:
+    "border-red-200 bg-red-100 text-red-700",
+}
 
-  onDeny: () => void
+const statusLabels: Record<CustomOrder["status"], string> = {
+  pending: "Pending Review",
+  quoted: "Quoted",
+  approved: "Accepted",
+  denied: "Denied",
+}
 
-  onGeneratedQuote: () => void
+function formatCategory(category: string | null) {
+  if (!category) return "Not specified"
+
+  return category
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
+function formatDimensions(order: CustomOrder) {
+  const unit = order.dimensionUnit ?? ""
+
+  const dimensions = [
+    order.width,
+    order.height,
+    order.depth,
+  ].filter(
+    (value): value is number => value !== null
+  )
+
+  if (dimensions.length === 0) {
+    return "Not specified"
+  }
+
+  return `${dimensions.join(" × ")}${unit ? ` ${unit}` : ""}`
 }
 
 export default function CustomOrderCard({
   order,
   onView,
-  onApprove,
-  onDeny,
-  onGeneratedQuote,
 }: Props) {
-  const statusStyles = {
-    pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
-    quoted: "bg-blue-100 text-blue-700 border-blue-200",
-    approved: "bg-green-100 text-green-700 border-green-200",
-    denied: "bg-red-100 text-red-700 border-red-200",
-  }
+  const primaryImage = order.images[0]?.signedUrl
 
   return (
     <Card>
       <CardContent className="p-5">
-        {/* Header */}
-
-        <div className="mb-4 flex items-start justify-between">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h3 className="text-lg font-semibold">{order.projectName}</h3>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-lg font-semibold">
+                {order.requestNumber ?? "Custom Request"}
+              </h3>
+
+              <Badge
+                variant="outline"
+                className={statusStyles[order.status]}
+              >
+                {statusLabels[order.status]}
+              </Badge>
+            </div>
+
+            <p className="mt-1 font-medium">
+              {order.projectName}
+            </p>
 
             <p className="text-sm text-muted-foreground">
               Client: {order.clientName}
             </p>
           </div>
 
-          <p className="text-sm text-muted-foreground">{order.submittedAt}</p>
+          <p className="text-sm text-muted-foreground">
+            {new Date(order.createdAt).toLocaleDateString(
+              "en-PH",
+              {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              }
+            )}
+          </p>
         </div>
 
-        {/* Content */}
-
-        <div className="grid gap-5 md:grid-cols-[320px_1fr]">
-          {/* Image */}
-
-          <div>
-            <div className="relative h-[250px] w-full overflow-hidden rounded-lg border">
+        <div className="grid gap-5 md:grid-cols-[220px_1fr_auto] md:items-center">
+          <div className="relative h-36 overflow-hidden rounded-lg border bg-muted">
+            {primaryImage ? (
               <Image
-                src={order.image ?? "null"}
+                src={primaryImage}
                 alt={order.projectName}
                 fill
                 className="object-cover"
               />
-            </div>
-
-            <p className="mt-2 text-xs text-muted-foreground">
-              Reference Design Image
-            </p>
-          </div>
-
-          {/* Details */}
-
-          <div className="space-y-4">
-            <div>
-              <p className="mb-2 text-sm font-medium">Dimensions</p>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-md bg-muted p-3">
-                  <p className="text-xs text-muted-foreground">Width</p>
-
-                  <p className="font-semibold">{order.width} ft</p>
-                </div>
-
-                <div className="rounded-md bg-muted p-3">
-                  <p className="text-xs text-muted-foreground">Height</p>
-
-                  <p className="font-semibold">{order.height} ft</p>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <p className="mb-2 text-sm font-medium">Client Notes</p>
-
-              <div className="rounded-md bg-muted p-3">
-                <p className="text-sm">{order.notes}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium">Status:</span>
-
-              <Badge className={statusStyles[order.status]}>
-                {order.status}
-              </Badge>
-            </div>
-
-            {order.status === "denied" && order.denialReason && (
-              <div>
-                <p className="mb-1 text-sm font-medium">Denial Reason</p>
-
-                <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">
-                  {order.denialReason}
-                </div>
+            ) : (
+              <div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted-foreground">
+                No reference image
               </div>
             )}
+          </div>
 
-            {/* Actions */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="text-xs text-muted-foreground">
+                Category
+              </p>
+              <p className="font-medium">
+                {formatCategory(order.productCategory)}
+              </p>
+            </div>
 
-            <div className="flex flex-wrap gap-3 pt-2">
-              {order.status === "pending" && (
-                <>
-                  <Button variant="secondary" onClick={onGeneratedQuote}>
-                    <FileText className="mr-2 h-4 w-4" />
-                    Generate Quote
-                  </Button>
+            <div>
+              <p className="text-xs text-muted-foreground">
+                Quantity
+              </p>
+              <p className="font-medium">
+                {order.quantity}
+              </p>
+            </div>
 
-                  <Button variant="outline" onClick={onView}>
-                    <Eye className="mr-2 h-4 w-4" />
-                    View Details
-                  </Button>
+            <div>
+              <p className="text-xs text-muted-foreground">
+                Dimensions
+              </p>
+              <p className="font-medium">
+                {formatDimensions(order)}
+              </p>
+            </div>
 
-                  <Button variant="destructive" onClick={onDeny}>
-                    <XCircle className="mr-2 h-4 w-4" />
-                    Deny
-                  </Button>
-                </>
-              )}
-              {order.status === "quoted" && (
-                <>
-                  <Button onClick={onApprove}>
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Approve & Move to Production
-                  </Button>
+            <div>
+              <p className="text-xs text-muted-foreground">
+                References
+              </p>
+              <p className="font-medium">
+                {order.images.length}
+              </p>
+            </div>
 
-                  <Button variant="outline" onClick={onView}>
-                    <Eye className="mr-2 h-4 w-4" />
-                    View Details
-                  </Button>
-                </>
-              )}
+            <div className="sm:col-span-2">
+              <p className="text-xs text-muted-foreground">
+                Description
+              </p>
 
-              {order.status !== "pending" && (
-                <Button variant="outline" onClick={onView}>
-                  <Eye className="mr-2 h-4 w-4" />
-                  View Details
-                </Button>
-              )}
+              <p className="line-clamp-2 text-sm">
+                {order.description ||
+                  "No project description provided."}
+              </p>
             </div>
           </div>
+
+          <Button
+            variant="outline"
+            onClick={onView}
+            className="md:self-center"
+          >
+            <Eye className="mr-2 h-4 w-4" />
+            View Request
+          </Button>
         </div>
+
+        {order.status === "denied" &&
+          order.denialReason && (
+            <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              <span className="font-medium">
+                Denial reason:
+              </span>{" "}
+              {order.denialReason}
+            </div>
+          )}
       </CardContent>
     </Card>
   )

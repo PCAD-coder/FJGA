@@ -1,6 +1,14 @@
 "use client"
 import { useEffect, useMemo, useState } from "react"
 import { CustomOrderWizard } from "./request-form/custom-order-wizard"
+import ClientQuotationDialog from "./quotation/client-quotation-dialog"
+
+import {
+  getClientQuotationById,
+  getQuotationForCustomRequest,
+} from "../services/custom-order-quotation.service"
+
+import type { ClientQuotationDetail } from "../types/custom-order-request"
 
 import {
   ArrowRight,
@@ -57,90 +65,165 @@ const statusConfig: Record<
 function CustomOrderCard({
   request,
   onViewDetails,
+  onQuotationAccepted,
 }: {
   request: CustomOrderRequestListItem
   onViewDetails: (requestId: string) => void
+  onQuotationAccepted: () => void | Promise<void>
 }) {
   const status = statusConfig[request.status]
 
+  const [quotationDialogOpen, setQuotationDialogOpen] = useState(false)
+
+  const [selectedQuotation, setSelectedQuotation] =
+    useState<ClientQuotationDetail | null>(null)
+
+  const [quotationLoading, setQuotationLoading] = useState(false)
+
+  const [quotationError, setQuotationError] = useState<string | null>(null)
+
+  async function handleViewQuotation(requestId: string) {
+    setSelectedQuotation(null)
+    setQuotationError(null)
+    setQuotationLoading(true)
+    setQuotationDialogOpen(true)
+
+    try {
+      const summary = await getQuotationForCustomRequest(requestId)
+
+      if (!summary) {
+        throw new Error("No quotation is available for this request.")
+      }
+
+      const detail = await getClientQuotationById(summary.id)
+
+      setSelectedQuotation(detail)
+    } catch (error) {
+      console.error("Failed to load quotation:", error)
+
+      setQuotationError(
+        error instanceof Error ? error.message : "Failed to load quotation."
+      )
+    } finally {
+      setQuotationLoading(false)
+    }
+  }
+
   return (
-    <Card className="overflow-hidden transition-shadow hover:shadow-sm">
-      <CardContent className="p-0">
-        <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
-          {/* Reference Image */}
-          <div className="h-32 w-full shrink-0 overflow-hidden rounded-lg border bg-muted sm:h-28 sm:w-40">
-            {request.reference_image_url ? (
-              <img
-                src={request.reference_image_url}
-                alt={`${request.project_name} reference`}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center">
-                <FileText className="h-8 w-8 text-muted-foreground" />
-              </div>
-            )}
-          </div>
-
-          {/* Request Information */}
-          <div className="min-w-0 flex-1 space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="font-semibold">
-                {request.request_number ?? "Custom Request"}
-              </p>
-
-              <Badge variant="outline" className={status.className}>
-                {status.label}
-              </Badge>
+    <>
+      <Card className="overflow-hidden transition-shadow hover:shadow-sm">
+        <CardContent className="p-0">
+          <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
+            {/* Reference Image */}
+            <div className="h-32 w-full shrink-0 overflow-hidden rounded-lg border bg-muted sm:h-28 sm:w-40">
+              {request.reference_image_url ? (
+                <img
+                  src={request.reference_image_url}
+                  alt={`${request.project_name} reference`}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center">
+                  <FileText className="h-8 w-8 text-muted-foreground" />
+                </div>
+              )}
             </div>
 
-            <div>
-              <h3 className="text-lg font-semibold">{request.project_name}</h3>
+            {/* Request Information */}
+            <div className="min-w-0 flex-1 space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-semibold">
+                  {request.request_number ?? "Custom Request"}
+                </p>
 
-              <p className="text-sm text-muted-foreground">
-                {formatCategory(request.product_category)}
-                <span className="mx-2">•</span>
-                Quantity: {request.quantity}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Clock3 className="h-4 w-4" />
-
-                <span>Submitted {formatDate(request.created_at)}</span>
+                <Badge variant="outline" className={status.className}>
+                  {status.label}
+                </Badge>
               </div>
 
-              <span>{formatDimensions(request)}</span>
+              <div>
+                <h3 className="text-lg font-semibold">
+                  {request.project_name}
+                </h3>
+
+                <p className="text-sm text-muted-foreground">
+                  {formatCategory(request.product_category)}
+                  <span className="mx-2">•</span>
+                  Quantity: {request.quantity}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <Clock3 className="h-4 w-4" />
+
+                  <span>Submitted {formatDate(request.created_at)}</span>
+                </div>
+
+                <span>{formatDimensions(request)}</span>
+              </div>
+            </div>
+
+            {/* Right Action */}
+            <div className="flex shrink-0 flex-col items-start gap-3 sm:items-end">
+              {request.status === "quoted" ||
+request.status === "approved" ? (
+  <Button
+    type="button"
+    onClick={() =>
+      void handleViewQuotation(request.id)
+    }
+  >
+    {request.status === "approved"
+      ? "View Accepted Quotation"
+      : "View Quotation"}
+
+    <ArrowRight className="ml-2 h-4 w-4" />
+  </Button>
+) : (
+  <Button
+    type="button"
+    variant="ghost"
+    onClick={() =>
+      onViewDetails(request.id)
+    }
+  >
+    View Details
+    <ArrowRight className="ml-2 h-4 w-4" />
+  </Button>
+)}
             </div>
           </div>
+        </CardContent>
+      </Card>
 
-          {/* Right Action */}
-          <div className="flex shrink-0 flex-col items-start gap-3 sm:items-end">
-            {request.status === "quoted" ? (
-              <Button>
-                View Quotation
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            ) : (
-              <Button variant="ghost" onClick={() => onViewDetails(request.id)}>
-                View Details
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      <ClientQuotationDialog
+        open={quotationDialogOpen}
+        onOpenChange={(open) => {
+          setQuotationDialogOpen(open)
+
+          if (!open) {
+            setSelectedQuotation(null)
+            setQuotationError(null)
+          }
+        }}
+        quotation={selectedQuotation}
+        loading={quotationLoading}
+        error={quotationError}
+        onAccepted={onQuotationAccepted}
+      />
+    </>
   )
 }
 
 function RequestList({
   requests,
   onViewDetails,
+  onQuotationAccepted,
 }: {
   requests: CustomOrderRequestListItem[]
   onViewDetails: (requestId: string) => void
+  onQuotationAccepted: () => void | Promise<void>
 }) {
   if (requests.length === 0) {
     return (
@@ -167,6 +250,7 @@ function RequestList({
           key={request.id}
           request={request}
           onViewDetails={onViewDetails}
+          onQuotationAccepted={onQuotationAccepted}
         />
       ))}
     </div>
@@ -337,26 +421,16 @@ export default function CustomOrder() {
       >
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <TabsList className="h-auto flex-wrap justify-start">
-  <TabsTrigger value="all">
-    All Requests
-  </TabsTrigger>
+            <TabsTrigger value="all">All Requests</TabsTrigger>
 
-  <TabsTrigger value="pending">
-    Pending Review
-  </TabsTrigger>
+            <TabsTrigger value="pending">Pending Review</TabsTrigger>
 
-  <TabsTrigger value="quoted">
-    Quote Ready
-  </TabsTrigger>
+            <TabsTrigger value="quoted">Quote Ready</TabsTrigger>
 
-  <TabsTrigger value="approved">
-    Accepted
-  </TabsTrigger>
+            <TabsTrigger value="approved">Accepted</TabsTrigger>
 
-  <TabsTrigger value="denied">
-    Denied
-  </TabsTrigger>
-</TabsList>
+            <TabsTrigger value="denied">Denied</TabsTrigger>
+          </TabsList>
 
           <div className="relative w-full lg:w-72">
             <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -403,10 +477,14 @@ export default function CustomOrder() {
               onViewDetails={(requestId) => {
                 void handleViewDetails(requestId)
               }}
+              onQuotationAccepted={async () => {
+                await loadRequests()
+              }}
             />
           )}
         </TabsContent>
       </Tabs>
+
       <CustomOrderDetailsDialog
         open={isDetailsOpen}
         onOpenChange={(open) => {

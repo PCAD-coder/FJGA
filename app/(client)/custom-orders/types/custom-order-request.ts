@@ -110,3 +110,46 @@ export interface CustomOrderRequestDetail {
 
   images: CustomOrderRequestImageDetail[]
 }
+export type ClientQuotationStatus =
+  | "draft"
+  | "sent"
+  | "accepted"
+  | "declined"
+
+export interface ClientQuotationSummary {
+  id: string
+  quotationNumber: string
+  customRequestId: string
+  status: ClientQuotationStatus
+  projectName: string
+  subtotal: number
+  deliveryFee: number
+  totalAmount: number
+  sentAt: string | null
+  acceptedAt: string | null
+  declinedAt: string | null
+}
+export interface ClientQuotationItem {
+  id: string
+  itemNumber: number
+  itemName: string
+  details: string | null
+
+  width: number | null
+  height: number | null
+  depth: number | null
+  dimensionUnit: string | null
+
+  quantity: number
+  unitPrice: number
+  lineTotal: number
+}
+
+export interface ClientQuotationDetail
+  extends ClientQuotationSummary {
+  customerAddressSnapshot: string | null
+  notes: string | null
+  createdAt: string
+
+  items: ClientQuotationItem[]
+}

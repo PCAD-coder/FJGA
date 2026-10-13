@@ -1,18 +1,17 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react"
 
 import {
-  approveCustomOrderRequest,
   denyCustomOrderRequest,
   getCustomOrderRequests,
-  saveQuotation,
 } from "../services/custom-order-requests"
 
-import type {
-  CustomOrder,
-  Quotation,
-} from "../types/custom-order"
+import type { CustomOrder } from "../types/custom-order"
 
 export function useCustomOrderRequests() {
   const [requests, setRequests] =
@@ -42,7 +41,7 @@ export function useCustomOrderRequests() {
 
         setError(
           err.message ??
-            "Failed to load requests"
+            "Failed to load custom order requests"
         )
       } finally {
         setLoading(false)
@@ -52,16 +51,6 @@ export function useCustomOrderRequests() {
   useEffect(() => {
     loadRequests()
   }, [loadRequests])
-
-  const approve = async (
-    requestId: string
-  ) => {
-    await approveCustomOrderRequest(
-      requestId
-    )
-
-    await loadRequests()
-  }
 
   const deny = async (
     requestId: string,
@@ -75,27 +64,12 @@ export function useCustomOrderRequests() {
     await loadRequests()
   }
 
-  const generateQuote = async (
-    requestId: string,
-    quotation: Quotation
-  ) => {
-    await saveQuotation(
-      requestId,
-      quotation
-    )
-
-    await loadRequests()
-  }
-
   return {
     requests,
     loading,
     error,
 
     refresh: loadRequests,
-
-    approve,
     deny,
-    generateQuote,
   }
 }
