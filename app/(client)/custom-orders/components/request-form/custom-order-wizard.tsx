@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 import { ProjectDetailsData, ProjectDetailsStep } from "./project-details-step"
+
 import { WizardProgress } from "./wizard-progress"
 
 import {
@@ -14,10 +15,38 @@ import {
   DesignReferenceStep,
 } from "./design-reference-step"
 
+import { DeliveryStep } from "./delivery-step"
+
+import type { DeliveryAddressInput } from "@/types/delivery-address"
+
+import type { DeliveryZoneResult } from "@/app/services/delivery/delivery-zone-service"
+
 import { SpecificationsData, SpecificationsStep } from "./specifications-step"
 
 import { ReviewStep } from "./review-step"
 import { createCustomOrderRequest } from "../../services/custom-order-request.service"
+
+const initialDeliveryAddress: DeliveryAddressInput = {
+  houseBuildingNumber: "",
+  street: "",
+  buildingSubdivision: "",
+  unitFloor: "",
+
+  regionPsgcCode: "",
+  regionName: "",
+
+  provincePsgcCode: null,
+  provinceName: null,
+
+  cityPsgcCode: "",
+  cityName: "",
+
+  barangayPsgcCode: "",
+  barangayName: "",
+
+  postalCode: "",
+  landmark: "",
+}
 
 interface CustomOrderWizardProps {
   onCancel: () => void
@@ -69,6 +98,8 @@ export function CustomOrderWizard({
         projectDetails,
         designReference,
         specifications,
+        contactNumber: contactNumber.trim(),
+        deliveryAddress,
       })
 
       onSuccess()
@@ -95,6 +126,25 @@ export function CustomOrderWizard({
   const [specifications, setSpecifications] = useState<SpecificationsData>(
     initialSpecifications
   )
+
+const [contactNumber, setContactNumber] = useState("")
+
+const [deliveryAddress, setDeliveryAddress] =
+  useState<DeliveryAddressInput>(
+    initialDeliveryAddress
+  )
+
+const [deliveryZone, setDeliveryZone] =
+  useState<DeliveryZoneResult | null>(null)
+
+const isDeliveryValid =
+  contactNumber.trim() !== "" &&
+  deliveryAddress.houseBuildingNumber.trim() !== "" &&
+  deliveryAddress.street.trim() !== "" &&
+  deliveryAddress.regionPsgcCode !== "" &&
+  deliveryAddress.cityPsgcCode !== "" &&
+  deliveryAddress.barangayPsgcCode !== "" &&
+  deliveryZone !== null
 
   const [error, setError] = useState<string | null>(null)
 
@@ -157,27 +207,78 @@ export function CustomOrderWizard({
     setError(null)
     return true
   }
+  function validateDelivery() {
+      const normalizedContactNumber = contactNumber.replace(
+    /[\s()-]/g,
+    ""
+  )
+
+  if (!contactNumber.trim()) {
+    setError("Please enter your contact number.")
+    return false
+  }
+
+  if (!/^(\+639|09)\d{9}$/.test(normalizedContactNumber)) {
+    setError(
+      "Please enter a valid Philippine mobile number, such as 09171234567."
+    )
+    return false
+  }
+
+    if (!deliveryAddress.houseBuildingNumber.trim()) {
+      setError("Please enter your house or building number.")
+      return false
+    }
+
+    if (!deliveryAddress.street.trim()) {
+      setError("Please enter your street.")
+      return false
+    }
+
+    if (!deliveryAddress.regionPsgcCode) {
+      setError("Please select your region.")
+      return false
+    }
+
+    if (!deliveryAddress.cityPsgcCode) {
+      setError("Please select your city or municipality.")
+      return false
+    }
+
+    if (!deliveryAddress.barangayPsgcCode) {
+      setError("Please select your barangay.")
+      return false
+    }
+
+    if (!deliveryZone) {
+      setError(
+        "Delivery is not currently available for the selected city or municipality."
+      )
+      return false
+    }
+
+    setError(null)
+    return true
+  }
 
   function handleContinue() {
-    if (currentStep === 1) {
-      if (!validateProjectDetails()) {
-        return
-      }
+    if (currentStep === 1 && !validateProjectDetails()) {
+      return
     }
 
-    if (currentStep === 2) {
-      if (!validateDesignReference()) {
-        return
-      }
+    if (currentStep === 2 && !validateDesignReference()) {
+      return
     }
 
-    if (currentStep === 3) {
-      if (!validateSpecifications()) {
-        return
-      }
+    if (currentStep === 3 && !validateSpecifications()) {
+      return
     }
 
-    if (currentStep < 4) {
+    if (currentStep === 4 && !validateDelivery()) {
+      return
+    }
+
+    if (currentStep < 5) {
       setCurrentStep((step) => step + 1)
       setError(null)
     }
@@ -222,14 +323,15 @@ export function CustomOrderWizard({
         <CardHeader className="border-b">
           <div>
             <p className="text-sm font-medium text-primary">
-              Step {currentStep} of 4
+              Step {currentStep} of 5
             </p>
 
             <CardTitle className="mt-1">
               {currentStep === 1 && "Project Details"}
               {currentStep === 2 && "Design Reference"}
               {currentStep === 3 && "Specifications"}
-              {currentStep === 4 && "Review Request"}
+              {currentStep === 4 && "Delivery"}
+              {currentStep === 5 && "Review Request"}
             </CardTitle>
 
             <p className="mt-1 text-sm text-muted-foreground">
@@ -243,6 +345,9 @@ export function CustomOrderWizard({
                 "Provide dimensions and your preferred materials."}
 
               {currentStep === 4 &&
+                "Provide the delivery location for your custom project."}
+
+              {currentStep === 5 &&
                 "Review everything before submitting your request."}
             </p>
           </div>
@@ -300,10 +405,36 @@ export function CustomOrderWizard({
           )}
 
           {currentStep === 4 && (
+            <DeliveryStep
+  contactNumber={contactNumber}
+  onContactNumberChange={(value) => {
+    setContactNumber(value)
+
+    if (error) {
+      setError(null)
+    }
+  }}
+  data={deliveryAddress}
+  onChange={(data) => {
+    setDeliveryAddress(data)
+
+    if (error) {
+      setError(null)
+    }
+  }}
+  deliveryZone={deliveryZone}
+  onDeliveryZoneChange={setDeliveryZone}
+/>
+          )}
+
+          {currentStep === 5 && deliveryZone && (
             <ReviewStep
               projectDetails={projectDetails}
               designReference={designReference}
               specifications={specifications}
+              contactNumber={contactNumber}
+              deliveryAddress={deliveryAddress}
+              deliveryZone={deliveryZone}
               onEdit={(step) => {
                 setCurrentStep(step)
                 setError(null)
@@ -331,8 +462,12 @@ export function CustomOrderWizard({
               )}
             </div>
 
-            {currentStep < 4 ? (
-              <Button type="button" onClick={handleContinue}>
+            {currentStep < 5 ? (
+              <Button
+                type="button"
+                onClick={handleContinue}
+                disabled={currentStep === 4 && !isDeliveryValid}
+              >
                 Continue
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>

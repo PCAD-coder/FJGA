@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/select"
 
 import { Search } from "lucide-react"
+import { formatCustomerName } from "../utils/format-customer-name"
 
 export default function OrdersModule() {
   const { orders, loading, error, approve, deny, changeStatus } = useOrders()
@@ -264,10 +265,7 @@ const [
                       {order.order_number}
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Customer:{" "}
-                      {order.profiles
-                        ? `${order.profiles.first_name} ${order.profiles.last_name}`
-                        : order.customer_id}
+                      Customer: {formatCustomerName(order.profiles)}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       Type: {order.order_type}

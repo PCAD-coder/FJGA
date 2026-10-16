@@ -313,7 +313,7 @@ function formatPaymentMethod(method: string): string {
 
     case "card":
       return "Card"
-      
+
     case "cash":
       return "Cash"
 

@@ -11,7 +11,7 @@ export default function PaymentSummaryCards({
 }: Props) {
   const cards = [
     {
-      title: "Total Pending",
+      title: "Payment Required",
       value: `₱${summary.totalPending.toLocaleString()}`,
       icon: Wallet,
       iconClass:
@@ -25,7 +25,7 @@ export default function PaymentSummaryCards({
         "bg-green-100 text-green-600 dark:bg-green-950 dark:text-green-400",
     },
     {
-      title: "Outstanding Invoices",
+      title: "Orderd Awaiting Payment",
       value: summary.outstandingInvoices,
       icon: CreditCard,
       iconClass:

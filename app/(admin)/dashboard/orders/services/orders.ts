@@ -98,7 +98,8 @@ export async function getOrders() {
         profiles (
           id,
           first_name,
-          last_name
+          last_name,
+          full_name
         ),
         order_items (
           *

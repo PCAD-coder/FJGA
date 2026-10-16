@@ -12,8 +12,8 @@ interface Props {
 const tabs = [
   "All",
   "Active",
-  "Completed",
   "Approved",
+  "Completed",
   "Declined",
   "Cancelled",
 ]
@@ -24,25 +24,40 @@ export default function OrderFilterTabs({
   counts = {},
 }: Props) {
   return (
-    <div className="flex flex-wrap gap-3 rounded-xl border bg-card p-3">
-      {tabs.map((tab) => (
-        <button
-          key={tab}
-          onClick={() => onChange(tab)}
-          className={cn(
-            "flex items-center gap-2 rounded-lg px-4 py-2 text-sm transition-all",
-            activeTab === tab
-              ? "bg-primary text-primary-foreground"
-              : "hover:bg-muted"
-          )}
-        >
-          {tab}
+    <div className="overflow-x-auto">
+      <div className="inline-flex min-w-full items-center gap-1 rounded-lg border bg-card p-1 sm:min-w-0">
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab
+          const count = counts[tab] ?? 0
 
-          <Badge variant="secondary">
-            {counts[tab] ?? 0}
-          </Badge>
-        </button>
-      ))}
+          return (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => onChange(tab)}
+              className={cn(
+                "flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-xs font-medium transition-colors",
+                isActive
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <span>{tab}</span>
+
+              <Badge
+                variant="secondary"
+                className={cn(
+                  "h-4 min-w-4 justify-center rounded-full px-1 text-[10px]",
+                  isActive &&
+                    "bg-primary-foreground/15 text-primary-foreground"
+                )}
+              >
+                {count}
+              </Badge>
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }

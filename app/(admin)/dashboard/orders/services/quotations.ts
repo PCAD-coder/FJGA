@@ -29,15 +29,17 @@ interface QuotationRow {
   declined_at: string | null
 
   profiles:
-    | {
-        first_name: string | null
-        last_name: string | null
-      }
-    | {
-        first_name: string | null
-        last_name: string | null
-      }[]
-    | null
+  | {
+      first_name: string | null
+      last_name: string | null
+      full_name: string | null
+    }
+  | {
+      first_name: string | null
+      last_name: string | null
+      full_name: string | null
+    }[]
+  | null
 
   custom_order_requests:
     | {
@@ -112,6 +114,43 @@ function getSingleRelation<T>(
 
   return relation
 }
+function getClientName(
+  profile: {
+    first_name: string | null
+    last_name: string | null
+    full_name: string | null
+  } | null
+): string {
+  if (!profile) {
+    return "Unknown Client"
+  }
+
+  const firstName =
+    profile.first_name?.trim() ?? ""
+
+  const lastName =
+    profile.last_name?.trim() ?? ""
+
+  const structuredName = [
+    firstName,
+    lastName,
+  ]
+    .filter(Boolean)
+    .join(" ")
+
+  if (structuredName) {
+    return structuredName
+  }
+
+  const fullName =
+    profile.full_name?.trim() ?? ""
+
+  if (fullName) {
+    return fullName
+  }
+
+  return "Unknown Client"
+}
 
 export async function getQuotations(): Promise<
   QuotationListItem[]
@@ -135,7 +174,8 @@ export async function getQuotations(): Promise<
       declined_at,
       profiles!quotations_customer_id_fkey (
         first_name,
-        last_name
+        last_name,
+        full_name
       ),
       custom_order_requests!quotations_custom_request_id_fkey (
         request_number
@@ -148,56 +188,94 @@ export async function getQuotations(): Promise<
   if (error) {
     throw new Error(error.message)
   }
+  
 
   const rows = (data ?? []) as QuotationRow[]
 
-  return rows.map((row) => {
-    const profile = getSingleRelation(row.profiles)
+  const revisionNumbers =
+  new Map<string, number>()
 
-    const request = getSingleRelation(
-      row.custom_order_requests
-    )
+const groupedByRequest =
+  new Map<string, QuotationRow[]>()
 
-    const firstName =
-      profile?.first_name?.trim() ?? ""
+for (const row of rows) {
+  if (
+    row.source_type !== "custom_request" ||
+    !row.custom_request_id
+  ) {
+    continue
+  }
 
-    const lastName =
-      profile?.last_name?.trim() ?? ""
+  const existing =
+    groupedByRequest.get(
+      row.custom_request_id
+    ) ?? []
 
-    const clientName =
-      [firstName, lastName]
-        .filter(Boolean)
-        .join(" ") || "Unknown Client"
+  existing.push(row)
 
-    return {
-      id: row.id,
-      quotationNumber: row.quotation_number,
+  groupedByRequest.set(
+    row.custom_request_id,
+    existing
+  )
+}
 
-      customerId: row.customer_id,
-      clientName,
+for (const quotations of groupedByRequest.values()) {
+  const chronological = [...quotations].sort(
+    (a, b) =>
+      new Date(a.created_at).getTime() -
+      new Date(b.created_at).getTime()
+  )
 
-      sourceType: row.source_type,
-      customRequestId: row.custom_request_id,
-      requestNumber:
-        request?.request_number ?? null,
-
-      projectName: row.project_name,
-      status: row.status,
-
-      subtotal: Number(row.subtotal ?? 0),
-      deliveryFee: Number(
-        row.delivery_fee ?? 0
-      ),
-      totalAmount: Number(
-        row.total_amount ?? 0
-      ),
-
-      createdAt: row.created_at,
-      sentAt: row.sent_at,
-      acceptedAt: row.accepted_at,
-      declinedAt: row.declined_at,
+  chronological.forEach(
+    (quotation, index) => {
+      revisionNumbers.set(
+        quotation.id,
+        index + 1
+      )
     }
-  })
+  )
+}
+
+
+return rows.map((row) => {
+  const profile = getSingleRelation(row.profiles)
+
+  const request = getSingleRelation(
+    row.custom_order_requests
+  )
+
+  const clientName = getClientName(profile)
+
+  return {
+    id: row.id,
+    quotationNumber: row.quotation_number,
+
+    customerId: row.customer_id,
+    clientName,
+
+    sourceType: row.source_type,
+    customRequestId: row.custom_request_id,
+
+    revisionNumber:
+      row.source_type === "custom_request"
+        ? revisionNumbers.get(row.id) ?? 1
+        : null,
+
+    requestNumber: request?.request_number ?? null,
+
+    projectName: row.project_name,
+    status: row.status,
+
+    subtotal: Number(row.subtotal ?? 0),
+    deliveryFee: Number(row.delivery_fee ?? 0),
+    totalAmount: Number(row.total_amount ?? 0),
+
+    createdAt: row.created_at,
+    sentAt: row.sent_at,
+    acceptedAt: row.accepted_at,
+    declinedAt: row.declined_at,
+  }
+})
 }
 
 export async function getQuotationById(
@@ -225,7 +303,8 @@ export async function getQuotationById(
 
       profiles!quotations_customer_id_fkey (
         first_name,
-        last_name
+        last_name,
+        full_name
       ),
 
       custom_order_requests!quotations_custom_request_id_fkey (
@@ -265,24 +344,16 @@ export async function getQuotationById(
 
   const row = data as QuotationDetailRow
 
-  const profile = getSingleRelation(
-    row.profiles
-  )
+  const profile =
+  getSingleRelation(row.profiles)
 
-  const request = getSingleRelation(
+const request =
+  getSingleRelation(
     row.custom_order_requests
   )
 
-  const firstName =
-    profile?.first_name?.trim() ?? ""
-
-  const lastName =
-    profile?.last_name?.trim() ?? ""
-
-  const clientName =
-    [firstName, lastName]
-      .filter(Boolean)
-      .join(" ") || "Unknown Client"
+const clientName =
+  getClientName(profile)
 
   const items: QuotationDetailItem[] =
     (row.quotation_items ?? []).map(

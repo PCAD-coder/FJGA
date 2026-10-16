@@ -115,7 +115,10 @@ export interface Order {
     id: string
     first_name: string
     last_name: string
+    full_name: string | null
   } | null
+
+  source_request_id: string | null
 }
 
 export interface CreateOrderItemInput {

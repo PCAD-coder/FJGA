@@ -157,18 +157,11 @@ export async function getPaymentPageData(): Promise<PaymentPageData> {
 
     const totalAmount = Number(order.total_amount ?? 0)
 
-    const paidAmount = (order.order_payments ?? []).reduce(
-      (sum, payment) => sum + Number(payment.amount ?? 0),
-      0
-    )
-
     // 50% of the order total is required before production can start.
     const requiredPayment = totalAmount * 0.5
 
-    const remainingAmount = Math.max(totalAmount - amountPaid, 0)
-
-    // Only show the amount still needed to reach the 50% requirement.
-    const remainingPayment = Math.max(requiredPayment - paidAmount, 0)
+    // Amount still required before production can begin.
+    const remainingPayment = Math.max(requiredPayment - amountPaid, 0)
 
     /*
      * Payment deadline:
@@ -205,7 +198,7 @@ export async function getPaymentPageData(): Promise<PaymentPageData> {
         status,
       })
 
-      totalPending += remainingAmount
+      totalPending += remainingPayment
     }
 
     /*
@@ -225,10 +218,12 @@ export async function getPaymentPageData(): Promise<PaymentPageData> {
 
       history.push({
         paymentId: payment.id,
-        invoiceId: order.order_number,
+        orderNumber: order.order_number,
+        referenceNumber: payment.reference_number ?? null,
         amount: paymentAmount,
         method: formatPaymentMethod(payment.payment_method),
         paymentDate: formatDate(payment.payment_date),
+        paymentDateRaw: payment.payment_date,
         status: "Completed",
       })
     }
@@ -238,7 +233,10 @@ export async function getPaymentPageData(): Promise<PaymentPageData> {
    * Newest payment first.
    */
   history.sort((a, b) => {
-    return new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()
+    return (
+      new Date(b.paymentDateRaw).getTime() -
+      new Date(a.paymentDateRaw).getTime()
+    )
   })
 
   const summary: PaymentSummary = {

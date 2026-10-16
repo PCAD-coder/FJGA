@@ -11,13 +11,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-import { FileText, XCircle } from "lucide-react"
+import { MapPin, FileText, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 
 import type { CustomOrder } from "../../types/custom-order"
+import { useState, useEffect } from "react"
 
 interface Props {
   order: CustomOrder | null
@@ -29,14 +30,10 @@ interface Props {
 }
 
 const statusStyles: Record<CustomOrder["status"], string> = {
-  pending:
-    "border-yellow-200 bg-yellow-100 text-yellow-700",
-  quoted:
-    "border-blue-200 bg-blue-100 text-blue-700",
-  approved:
-    "border-green-200 bg-green-100 text-green-700",
-  denied:
-    "border-red-200 bg-red-100 text-red-700",
+  pending: "border-yellow-200 bg-yellow-100 text-yellow-700",
+  quoted: "border-blue-200 bg-blue-100 text-blue-700",
+  approved: "border-green-200 bg-green-100 text-green-700",
+  denied: "border-red-200 bg-red-100 text-red-700",
 }
 
 const statusLabels: Record<CustomOrder["status"], string> = {
@@ -81,9 +78,7 @@ function formatLabel(value: string) {
     .replace(/([a-z])([A-Z])/g, "$1 $2")
     .replace(/_/g, " ")
     .replace(/-/g, " ")
-    .replace(/\b\w/g, (letter) =>
-      letter.toUpperCase()
-    )
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
 function getPreferenceLabel(value: string | null) {
@@ -101,11 +96,7 @@ function formatCategory(category: string | null) {
 function formatDimensions(order: CustomOrder) {
   const unit = order.dimensionUnit ?? ""
 
-  const dimensions = [
-    order.width,
-    order.height,
-    order.depth,
-  ].filter(
+  const dimensions = [order.width, order.height, order.depth].filter(
     (value): value is number => value !== null
   )
 
@@ -125,79 +116,57 @@ export default function ViewRequestDialog({
 }: Props) {
   if (!order) return null
 
-  const specificationEntries = Object.entries(
-    order.specifications
-  ).filter(
-    ([, value]) =>
-      typeof value === "string" &&
-      value.trim().length > 0
+  const specificationEntries = Object.entries(order.specifications).filter(
+    ([, value]) => typeof value === "string" && value.trim().length > 0
   )
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
-      <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] !max-w-3xl overflow-y-auto">
         <DialogHeader>
           <div className="flex flex-wrap items-center gap-2">
             <DialogTitle>
               {order.requestNumber ?? order.projectName}
             </DialogTitle>
 
-            <Badge
-              variant="outline"
-              className={statusStyles[order.status]}
-            >
+            <Badge variant="outline" className={statusStyles[order.status]}>
               {statusLabels[order.status]}
             </Badge>
           </div>
 
           <DialogDescription>
-            Review the customer's project details,
-            specifications, preferences, and design
-            references.
+            Review the customer's project details, specifications, preferences,
+            and design references.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           <section className="space-y-3">
-            <h3 className="font-semibold">
-              Project Information
-            </h3>
+            <h3 className="font-semibold">Project Information</h3>
 
-            <div className="grid gap-4 rounded-lg border p-4 sm:grid-cols-2 lg:grid-cols-4">
-              <InfoItem
-                label="Project"
-                value={order.projectName}
-              />
+            <div className="grid gap-4 rounded-lg border p-4 sm:grid-cols-2 lg:grid-cols-3">
+              <InfoItem label="Project" value={order.projectName} />
+
+              <InfoItem label="Client" value={order.clientName} />
 
               <InfoItem
-                label="Client"
-                value={order.clientName}
-              />
+  label="Contact Number"
+  value={order.contactNumber ?? "Not provided"}
+/>
 
               <InfoItem
                 label="Category"
-                value={formatCategory(
-                  order.productCategory
-                )}
+                value={formatCategory(order.productCategory)}
               />
 
-              <InfoItem
-                label="Quantity"
-                value={String(order.quantity)}
-              />
+              <InfoItem label="Quantity" value={String(order.quantity)} />
             </div>
 
             <div className="rounded-lg border p-4">
-              <p className="mb-1 text-sm font-medium">
-                Project Description
-              </p>
+              <p className="mb-1 text-sm font-medium">Project Description</p>
 
-              <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                {order.description ||
-                  "No project description provided."}
+              <p className="text-sm whitespace-pre-wrap text-muted-foreground">
+                {order.description || "No project description provided."}
               </p>
             </div>
           </section>
@@ -205,15 +174,10 @@ export default function ViewRequestDialog({
           <Separator />
 
           <section className="space-y-3">
-            <h3 className="font-semibold">
-              Dimensions
-            </h3>
+            <h3 className="font-semibold">Dimensions</h3>
 
             <div className="grid gap-4 rounded-lg border p-4 sm:grid-cols-2">
-              <InfoItem
-                label="Measurements"
-                value={formatDimensions(order)}
-              />
+              <InfoItem label="Measurements" value={formatDimensions(order)} />
 
               <InfoItem
                 label="Measurement Type"
@@ -229,29 +193,21 @@ export default function ViewRequestDialog({
           <Separator />
 
           <section className="space-y-3">
-            <h3 className="font-semibold">
-              Product Specifications
-            </h3>
+            <h3 className="font-semibold">Product Specifications</h3>
 
             {specificationEntries.length > 0 ? (
               <div className="grid gap-4 rounded-lg border p-4 sm:grid-cols-2">
-                {specificationEntries.map(
-                  ([key, value]) => (
-                    <InfoItem
-                      key={key}
-                      label={
-                        specificationLabels[key] ??
-                        formatLabel(key)
-                      }
-                      value={formatLabel(value)}
-                    />
-                  )
-                )}
+                {specificationEntries.map(([key, value]) => (
+                  <InfoItem
+                    key={key}
+                    label={specificationLabels[key] ?? formatLabel(key)}
+                    value={formatLabel(value)}
+                  />
+                ))}
               </div>
             ) : (
               <div className="rounded-lg border p-4 text-sm text-muted-foreground">
-                No additional product specifications
-                provided.
+                No additional product specifications provided.
               </div>
             )}
           </section>
@@ -260,60 +216,110 @@ export default function ViewRequestDialog({
 
           <section className="space-y-3">
             <div>
-              <h3 className="font-semibold">
-                Client Material Preferences
-              </h3>
+              <h3 className="font-semibold">Client Material Preferences</h3>
 
               <p className="text-sm text-muted-foreground">
-                These are customer preferences only. The
-                actual materials used in the quotation will
-                be selected by FJGA.
+                These are customer preferences only. The actual materials used
+                in the quotation will be selected by FJGA.
               </p>
             </div>
 
             {order.letFjgaRecommend ? (
               <div className="rounded-lg border p-4">
-                <p className="font-medium">
-                  Let FJGA recommend materials
-                </p>
+                <p className="font-medium">Let FJGA recommend materials</p>
 
                 <p className="mt-1 text-sm text-muted-foreground">
-                  The customer requested FJGA to recommend
-                  the appropriate materials and finish.
+                  The customer requested FJGA to recommend the appropriate
+                  materials and finish.
                 </p>
               </div>
             ) : (
               <div className="grid gap-4 rounded-lg border p-4 sm:grid-cols-3">
                 <InfoItem
                   label="Preferred Frame"
-                  value={getPreferenceLabel(
-                    order.preferredFrame
-                  )}
+                  value={getPreferenceLabel(order.preferredFrame)}
                 />
 
                 <InfoItem
                   label="Preferred Glass"
-                  value={getPreferenceLabel(
-                    order.preferredGlass
-                  )}
+                  value={getPreferenceLabel(order.preferredGlass)}
                 />
 
                 <InfoItem
                   label="Preferred Finish"
-                  value={getPreferenceLabel(
-                    order.preferredFinish
-                  )}
+                  value={getPreferenceLabel(order.preferredFinish)}
                 />
               </div>
             )}
+            
+
+            {/* Delivery Information */}
+            <div className="space-y-4 rounded-lg border p-4">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <h3 className="font-semibold">Delivery Information</h3>
+              </div>
+
+              {order.deliveryAddress ? (
+                <>
+                  <div>
+                    <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                      Delivery Address
+                    </p>
+
+                    <p className="mt-1 text-sm font-medium whitespace-pre-line">
+                      {[
+                        [
+                          order.deliveryAddress.houseBuildingNumber,
+                          order.deliveryAddress.street,
+                          order.deliveryAddress.buildingSubdivision,
+                          order.deliveryAddress.unitFloor,
+                        ]
+                          .filter(Boolean)
+                          .join(", "),
+
+                        [
+                          order.deliveryAddress.barangayName,
+                          order.deliveryAddress.cityName,
+                          order.deliveryAddress.provinceName,
+                          order.deliveryAddress.regionName,
+                        ]
+                          .filter(Boolean)
+                          .join(", "),
+
+                        order.deliveryAddress.postalCode
+                          ? `Postal Code ${order.deliveryAddress.postalCode}`
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join("\n")}
+                    </p>
+                  </div>
+
+                  {order.deliveryAddress.landmark && (
+                    <div>
+                      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                        Landmark
+                      </p>
+
+                      <p className="mt-1 text-sm font-medium">
+                        {order.deliveryAddress.landmark}
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No delivery address was recorded for this request.
+                </p>
+              )}
+            </div>
 
             {order.otherPreferences && (
               <div className="rounded-lg border p-4">
-                <p className="mb-1 text-sm font-medium">
-                  Other Preferences
-                </p>
+                <p className="mb-1 text-sm font-medium">Other Preferences</p>
 
-                <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                <p className="text-sm whitespace-pre-wrap text-muted-foreground">
                   {order.otherPreferences}
                 </p>
               </div>
@@ -324,14 +330,11 @@ export default function ViewRequestDialog({
 
           <section className="space-y-3">
             <div>
-              <h3 className="font-semibold">
-                Design References
-              </h3>
+              <h3 className="font-semibold">Design References</h3>
 
               <p className="text-sm text-muted-foreground">
                 {order.images.length} reference
-                {order.images.length === 1 ? "" : "s"}{" "}
-                uploaded
+                {order.images.length === 1 ? "" : "s"} uploaded
               </p>
             </div>
 
@@ -365,54 +368,42 @@ export default function ViewRequestDialog({
 
             {order.referenceNotes && (
               <div className="rounded-lg border p-4">
-                <p className="mb-1 text-sm font-medium">
-                  Reference Notes
-                </p>
+                <p className="mb-1 text-sm font-medium">Reference Notes</p>
 
-                <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                <p className="text-sm whitespace-pre-wrap text-muted-foreground">
                   {order.referenceNotes}
                 </p>
               </div>
             )}
           </section>
 
-          {order.status === "denied" &&
-            order.denialReason && (
-              <>
-                <Separator />
+          {order.status === "denied" && order.denialReason && (
+            <>
+              <Separator />
 
-                <section className="space-y-2">
-                  <h3 className="font-semibold">
-                    Denial Reason
-                  </h3>
+              <section className="space-y-2">
+                <h3 className="font-semibold">Denial Reason</h3>
 
-                  <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                    {order.denialReason}
-                  </div>
-                </section>
-              </>
-            )}
+                <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                  {order.denialReason}
+                </div>
+              </section>
+            </>
+          )}
         </div>
         {order.status === "pending" && (
-  <DialogFooter className="border-t pt-4">
-    <Button
-      type="button"
-      variant="destructive"
-      onClick={onDeny}
-    >
-      <XCircle className="mr-2 h-4 w-4" />
-      Deny Request
-    </Button>
+          <DialogFooter className="border-t pt-4">
+            <Button type="button" variant="destructive" onClick={onDeny}>
+              <XCircle className="mr-2 h-4 w-4" />
+              Deny Request
+            </Button>
 
-    <Button
-      type="button"
-      onClick={onCreateQuotation}
-    >
-      <FileText className="mr-2 h-4 w-4" />
-      Create Quotation
-    </Button>
-  </DialogFooter>
-)}
+            <Button type="button" onClick={onCreateQuotation}>
+              <FileText className="mr-2 h-4 w-4" />
+              Create Quotation
+            </Button>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   )
@@ -423,19 +414,12 @@ interface InfoItemProps {
   value: string
 }
 
-function InfoItem({
-  label,
-  value,
-}: InfoItemProps) {
+function InfoItem({ label, value }: InfoItemProps) {
   return (
     <div>
-      <p className="text-xs text-muted-foreground">
-        {label}
-      </p>
+      <p className="text-xs text-muted-foreground">{label}</p>
 
-      <p className="mt-1 font-medium">
-        {value}
-      </p>
+      <p className="mt-1 font-medium">{value}</p>
     </div>
   )
 }

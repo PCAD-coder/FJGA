@@ -288,6 +288,8 @@ export async function getMyOrders(): Promise<Order[]> {
         order_number,
         customer_id,
         order_type,
+        source_request_id,
+        customer_contact_number,
         status,
         subtotal,
         labor_total,
@@ -317,6 +319,19 @@ export async function getMyOrders(): Promise<Order[]> {
           line_total,
           materials_snapshot,
           labor_snapshot
+        ),
+
+        order_addresses (
+          house_building_number,
+          street,
+          building_subdivision,
+          unit_floor,
+          region_name,
+          province_name,
+          city_name,
+          barangay_name,
+          postal_code,
+          landmark
         ),
 
         order_payments (
@@ -457,6 +472,28 @@ export async function getMyOrders(): Promise<Order[]> {
       if (productImage?.image_url) {
         image = productImage.image_url
       }
+    } else if (order.order_type === "custom" && order.source_request_id) {
+      const { data: referenceImage, error: referenceImageError } =
+        await supabase
+          .from("custom_order_images")
+          .select("image_url")
+          .eq("request_id", order.source_request_id)
+          .order("display_order", {
+            ascending: true,
+          })
+          .limit(1)
+          .maybeSingle()
+
+      if (referenceImage?.image_url) {
+        const { data: signedImage, error: signedImageError } =
+          await supabase.storage
+            .from("custom-order-references")
+            .createSignedUrl(referenceImage.image_url, 60 * 60)
+
+        if (signedImage?.signedUrl) {
+          image = signedImage.signedUrl
+        }
+      }
     }
 
     /*
@@ -566,6 +603,27 @@ export async function getMyOrders(): Promise<Order[]> {
       }
     })
 
+    const address = Array.isArray(order.order_addresses)
+  ? order.order_addresses[0] ?? null
+  : order.order_addresses ?? null
+
+    const deliveryAddress = address
+      ? {
+          houseBuildingNumber: address.house_building_number,
+          street: address.street,
+          buildingSubdivision: address.building_subdivision ?? null,
+          unitFloor: address.unit_floor ?? null,
+
+          regionName: address.region_name,
+          provinceName: address.province_name ?? null,
+          cityName: address.city_name,
+          barangayName: address.barangay_name,
+
+          postalCode: address.postal_code ?? null,
+          landmark: address.landmark ?? null,
+        }
+      : null
+
     /*
      * ==========================================================
      * FINAL ORDER OBJECT
@@ -576,6 +634,12 @@ export async function getMyOrders(): Promise<Order[]> {
       id: order.id,
 
       orderNumber: order.order_number,
+
+      orderType: order.order_type === "custom" ? "custom" : "standard",
+
+      sourceRequestId: order.source_request_id ?? null,
+
+      customerContactNumber: order.customer_contact_number ?? null,
 
       productName: item.product_name_snapshot,
 
@@ -593,6 +657,8 @@ export async function getMyOrders(): Promise<Order[]> {
 
       dimensionUnit: item.dimension_unit ?? "cm",
 
+      createdAt: order.created_at,
+
       orderedAt: new Date(order.created_at).toLocaleDateString("en-PH", {
         year: "numeric",
         month: "short",
@@ -601,7 +667,17 @@ export async function getMyOrders(): Promise<Order[]> {
 
       estimatedDelivery: order.estimated_completion_date ?? null,
 
+      subtotal: Number(order.subtotal ?? 0),
+
+      deliveryFee: Number(order.delivery_fee ?? 0),
+
+      unitPrice: Number(item.unit_price_snapshot ?? 0),
+
+      lineTotal: Number(item.line_total ?? 0),
+
       total: totalAmount,
+
+      deliveryAddress,
 
       currentStage,
 

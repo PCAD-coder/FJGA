@@ -1,3 +1,7 @@
+import type {
+  DeliveryAddressInput,
+} from "@/types/delivery-address"
+
 export interface OrderAddress {
   id: string
   order_id: string
@@ -49,24 +53,5 @@ export interface CreateOrderAddressInput {
   postal_code?: string | null
   landmark?: string | null
 }
-export interface OrderAddressFormInput {
-  houseBuildingNumber: string
-  street: string
-  buildingSubdivision: string
-  unitFloor: string
-
-  regionPsgcCode: string
-  regionName: string
-
-  provincePsgcCode: string | null
-  provinceName: string | null
-
-  cityPsgcCode: string
-  cityName: string
-
-  barangayPsgcCode: string
-  barangayName: string
-
-  postalCode: string
-  landmark: string
-}
+export type OrderAddressFormInput =
+  DeliveryAddressInput

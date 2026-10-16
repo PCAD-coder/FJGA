@@ -16,6 +16,27 @@ export interface CustomOrderReferenceImage {
   displayOrder: number
   signedUrl: string | null
 }
+export interface CustomOrderDeliveryAddress {
+  houseBuildingNumber: string
+  street: string
+  buildingSubdivision: string | null
+  unitFloor: string | null
+
+  regionPsgcCode: string
+  regionName: string
+
+  provincePsgcCode: string | null
+  provinceName: string | null
+
+  cityPsgcCode: string
+  cityName: string
+
+  barangayPsgcCode: string
+  barangayName: string
+
+  postalCode: string | null
+  landmark: string | null
+}
 
 export interface CustomOrder {
   id: string
@@ -23,10 +44,13 @@ export interface CustomOrder {
 
   customerId: string
   clientName: string
+  contactNumber: string | null
 
   projectName: string
   productCategory: string | null
   quantity: number
+
+  deliveryAddress: CustomOrderDeliveryAddress | null
 
   description: string | null
 
@@ -51,6 +75,7 @@ export interface CustomOrder {
   denialReason: string | null
 
   createdAt: string
+  
 }
 
 export interface QuotationListItem {
@@ -75,4 +100,6 @@ export interface QuotationListItem {
   sentAt: string | null
   acceptedAt: string | null
   declinedAt: string | null
+
+  revisionNumber: number | null
 }

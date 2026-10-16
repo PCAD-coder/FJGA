@@ -1,20 +1,20 @@
 import {
   FileImage,
   Info,
+  MapPin,
   Package,
   Pencil,
   Ruler,
   Sparkles,
 } from "lucide-react"
 
+import type { DeliveryAddressInput } from "@/types/delivery-address"
+
+import type { DeliveryZoneResult } from "@/app/services/delivery/delivery-zone-service"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 import type {
   ProductCategory,
@@ -27,6 +27,9 @@ interface ReviewStepProps {
   projectDetails: ProjectDetailsData
   designReference: DesignReferenceData
   specifications: SpecificationsData
+  contactNumber: string
+  deliveryAddress: DeliveryAddressInput
+  deliveryZone: DeliveryZoneResult
   onEdit: (step: number) => void
 }
 
@@ -127,11 +130,49 @@ export function ReviewStep({
   projectDetails,
   designReference,
   specifications,
+  contactNumber,
+  deliveryAddress,
+  deliveryZone,
   onEdit,
 }: ReviewStepProps) {
   const dynamicSpecifications = Object.entries(
     specifications.specifications
   ).filter(([, value]) => Boolean(value))
+
+  const streetAddress = [
+    deliveryAddress.houseBuildingNumber,
+    deliveryAddress.street,
+    deliveryAddress.buildingSubdivision,
+    deliveryAddress.unitFloor,
+  ]
+    .filter(Boolean)
+    .join(", ")
+
+  const localityAddress = [
+    deliveryAddress.barangayName,
+    deliveryAddress.cityName,
+    deliveryAddress.provinceName,
+    deliveryAddress.regionName,
+  ]
+    .filter(Boolean)
+    .join(", ")
+
+  const postalAddress = deliveryAddress.postalCode
+    ? `Postal Code ${deliveryAddress.postalCode}`
+    : ""
+
+  const formattedDeliveryAddress = [
+    streetAddress,
+    localityAddress,
+    postalAddress,
+  ]
+    .filter(Boolean)
+    .join("\n")
+
+  const formattedDeliveryFee = new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+  }).format(deliveryZone.deliveryFee)
 
   return (
     <div className="space-y-6">
@@ -142,15 +183,13 @@ export function ReviewStep({
         </div>
 
         <div>
-          <p className="font-semibold">
-            Review your custom request
-          </p>
+          <p className="font-semibold">Review your custom request</p>
 
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            This is a request for quotation, not a confirmed
-            order. FJGA will review your design, dimensions,
-            specifications, and material preferences before
-            preparing the official quotation.
+            This is a request for quotation, not a confirmed order. FJGA will
+            review your design, dimensions, specifications, material
+            preferences, and delivery location before preparing the official
+            quotation.
           </p>
         </div>
       </div>
@@ -179,9 +218,7 @@ export function ReviewStep({
           <ReviewField
             label="Quantity"
             value={`${projectDetails.quantity} ${
-              projectDetails.quantity === 1
-                ? "unit"
-                : "units"
+              projectDetails.quantity === 1 ? "unit" : "units"
             }`}
           />
         </div>
@@ -193,6 +230,49 @@ export function ReviewStep({
           />
         </div>
       </ReviewCard>
+      {/* Delivery Information */}
+      <ReviewCard
+        icon={MapPin}
+        title="Delivery Information"
+        onEdit={() => onEdit(4)}
+      >
+        <div className="space-y-1">
+  <p className="text-sm text-muted-foreground">
+    Contact Number
+  </p>
+  <p className="font-medium">
+    {contactNumber || "Not provided"}
+  </p>
+</div>
+
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="sm:col-span-2">
+            <ReviewField
+              label="Delivery Address"
+              value={formattedDeliveryAddress}
+            />
+          </div>
+
+          <ReviewField label="Delivery Zone" value={deliveryZone.zoneName} />
+
+          <ReviewField
+            label="Estimated Delivery Fee"
+            value={formattedDeliveryFee}
+          />
+
+          {deliveryAddress.landmark && (
+            <ReviewField label="Landmark" value={deliveryAddress.landmark} />
+          )}
+        </div>
+
+        <div className="mt-5 border-t pt-4">
+          <p className="text-xs leading-5 text-muted-foreground">
+            The delivery fee shown here is based on your selected delivery area.
+            FJGA will confirm the applicable delivery fee when preparing your
+            official quotation.
+          </p>
+        </div>
+      </ReviewCard>
 
       {/* Design References */}
       <ReviewCard
@@ -201,24 +281,22 @@ export function ReviewStep({
         onEdit={() => onEdit(2)}
       >
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {designReference.images.map(
-            (image, index) => (
-              <div
-                key={image.id}
-                className="relative aspect-square overflow-hidden rounded-lg border bg-muted"
-              >
-                <img
-                  src={image.previewUrl}
-                  alt={`Reference ${index + 1}`}
-                  className="h-full w-full object-cover"
-                />
+          {designReference.images.map((image, index) => (
+            <div
+              key={image.id}
+              className="relative aspect-square overflow-hidden rounded-lg border bg-muted"
+            >
+              <img
+                src={image.previewUrl}
+                alt={`Reference ${index + 1}`}
+                className="h-full w-full object-cover"
+              />
 
-                <div className="absolute bottom-2 left-2 rounded-md bg-background/90 px-2 py-1 text-xs font-medium shadow-sm backdrop-blur-sm">
-                  Reference {index + 1}
-                </div>
+              <div className="absolute bottom-2 left-2 rounded-md bg-background/90 px-2 py-1 text-xs font-medium shadow-sm backdrop-blur-sm">
+                Reference {index + 1}
               </div>
-            )
-          )}
+            </div>
+          ))}
         </div>
 
         {designReference.notes && (
@@ -258,19 +336,15 @@ export function ReviewStep({
           />
 
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
               Measurement Status
             </p>
 
             <div className="mt-2">
               {specifications.measurementsApproximate ? (
-                <Badge variant="secondary">
-                  Approximate
-                </Badge>
+                <Badge variant="secondary">Approximate</Badge>
               ) : (
-                <Badge variant="outline">
-                  Provided Measurement
-                </Badge>
+                <Badge variant="outline">Provided Measurement</Badge>
               )}
             </div>
           </div>
@@ -278,25 +352,16 @@ export function ReviewStep({
 
         {dynamicSpecifications.length > 0 && (
           <div className="mt-5 border-t pt-5">
-            <p className="mb-4 text-sm font-semibold">
-              Product Specifications
-            </p>
+            <p className="mb-4 text-sm font-semibold">Product Specifications</p>
 
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {dynamicSpecifications.map(
-                ([key, value]) => (
-                  <ReviewField
-                    key={key}
-                    label={
-                      specificationLabels[key] ?? key
-                    }
-                    value={
-                      specificationValueLabels[value] ??
-                      value
-                    }
-                  />
-                )
-              )}
+              {dynamicSpecifications.map(([key, value]) => (
+                <ReviewField
+                  key={key}
+                  label={specificationLabels[key] ?? key}
+                  value={specificationValueLabels[value] ?? value}
+                />
+              ))}
             </div>
           </div>
         )}
@@ -310,14 +375,11 @@ export function ReviewStep({
       >
         {specifications.letFjgaRecommend ? (
           <div className="rounded-lg border bg-muted/30 p-4">
-            <p className="font-medium">
-              FJGA Recommendation Requested
-            </p>
+            <p className="font-medium">FJGA Recommendation Requested</p>
 
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              You asked FJGA to recommend suitable
-              materials based on the design, intended use,
-              and quotation.
+              You asked FJGA to recommend suitable materials based on the
+              design, intended use, and quotation.
             </p>
           </div>
         ) : (
@@ -326,9 +388,8 @@ export function ReviewStep({
               label="Preferred Frame / Aluminum"
               value={
                 specifications.preferredFrame
-                  ? frameLabels[
-                      specifications.preferredFrame
-                    ] ?? specifications.preferredFrame
+                  ? (frameLabels[specifications.preferredFrame] ??
+                    specifications.preferredFrame)
                   : "No preference"
               }
             />
@@ -337,9 +398,8 @@ export function ReviewStep({
               label="Preferred Glass"
               value={
                 specifications.preferredGlass
-                  ? glassLabels[
-                      specifications.preferredGlass
-                    ] ?? specifications.preferredGlass
+                  ? (glassLabels[specifications.preferredGlass] ??
+                    specifications.preferredGlass)
                   : "No preference"
               }
             />
@@ -348,9 +408,8 @@ export function ReviewStep({
               label="Preferred Finish / Color"
               value={
                 specifications.preferredFinish
-                  ? finishLabels[
-                      specifications.preferredFinish
-                    ] ?? specifications.preferredFinish
+                  ? (finishLabels[specifications.preferredFinish] ??
+                    specifications.preferredFinish)
                   : "No preference"
               }
             />
@@ -369,15 +428,13 @@ export function ReviewStep({
 
       {/* What Happens Next */}
       <div className="rounded-xl border bg-muted/20 p-5">
-        <h3 className="font-semibold">
-          What happens after you submit?
-        </h3>
+        <h3 className="font-semibold">What happens after you submit?</h3>
 
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           <NextStep
             number="1"
             title="FJGA reviews your request"
-            description="The team checks your design, dimensions, and requested specifications."
+            description="The team checks your design, dimensions, requested specifications, and delivery location."
           />
 
           <NextStep
@@ -418,17 +475,10 @@ function ReviewCard({
             <Icon className="h-4 w-4 text-muted-foreground" />
           </div>
 
-          <CardTitle className="text-base">
-            {title}
-          </CardTitle>
+          <CardTitle className="text-base">{title}</CardTitle>
         </div>
 
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onEdit}
-        >
+        <Button type="button" variant="ghost" size="sm" onClick={onEdit}>
           <Pencil className="mr-2 h-4 w-4" />
           Edit
         </Button>
@@ -439,20 +489,14 @@ function ReviewCard({
   )
 }
 
-function ReviewField({
-  label,
-  value,
-}: {
-  label: string
-  value: string
-}) {
+function ReviewField({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
         {label}
       </p>
 
-      <p className="mt-1 whitespace-pre-wrap text-sm font-medium leading-6">
+      <p className="mt-1 text-sm leading-6 font-medium whitespace-pre-wrap">
         {value || "-"}
       </p>
     </div>
@@ -475,9 +519,7 @@ function NextStep({
       </div>
 
       <div>
-        <p className="text-sm font-semibold">
-          {title}
-        </p>
+        <p className="text-sm font-semibold">{title}</p>
 
         <p className="mt-1 text-sm leading-5 text-muted-foreground">
           {description}

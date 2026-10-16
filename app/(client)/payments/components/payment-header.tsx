@@ -6,7 +6,7 @@ export default function PaymentHeader() {
       </h1>
 
       <p className="text-muted-foreground">
-        Manage your invoices and payment methods
+        Manage your order payments and check payment history
       </p>
     </div>
   );

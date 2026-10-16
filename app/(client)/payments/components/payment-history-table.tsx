@@ -1,3 +1,4 @@
+import { Badge } from "@/components/ui/badge"
 import {
   Table,
   TableBody,
@@ -5,29 +6,61 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/ui/table"
 
-import { PaymentHistory } from "../types/payment";
+import type { PaymentHistory } from "../types/payment"
 
 interface Props {
-  history: PaymentHistory[];
+  history: PaymentHistory[]
 }
 
-export default function PaymentHistoryTable({
-  history,
-}: Props) {
-  return (
-    <div className="space-y-4">
-      <h2 className="text-2xl font-semibold">
-        Payment History
-      </h2>
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value)
+}
 
-      <div className="rounded-lg border">
+function getStatusVariant(
+  status: string
+): "default" | "secondary" | "destructive" | "outline" {
+  switch (status.toLowerCase()) {
+    case "paid":
+    case "completed":
+    case "verified":
+      return "default"
+
+    case "failed":
+    case "rejected":
+      return "destructive"
+
+    case "pending":
+      return "secondary"
+
+    default:
+      return "outline"
+  }
+}
+
+export default function PaymentHistoryTable({ history }: Props) {
+  return (
+    <section className="space-y-4">
+      <div>
+        <h2 className="text-xl font-semibold">Payment History</h2>
+
+        <p className="mt-1 text-sm text-muted-foreground">
+          Review payments recorded for your orders
+        </p>
+      </div>
+
+      <div className="overflow-hidden rounded-xl border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Payment ID</TableHead>
-              <TableHead>Invoice</TableHead>
+              <TableHead>Order</TableHead>
+              <TableHead>Reference</TableHead>
               <TableHead>Method</TableHead>
               <TableHead>Amount</TableHead>
               <TableHead>Date</TableHead>
@@ -36,21 +69,57 @@ export default function PaymentHistoryTable({
           </TableHeader>
 
           <TableBody>
-            {history.map((payment) => (
-              <TableRow key={payment.paymentId}>
-                <TableCell>{payment.paymentId}</TableCell>
-                <TableCell>{payment.invoiceId}</TableCell>
-                <TableCell>{payment.method}</TableCell>
-                <TableCell>
-                  ₱{payment.amount.toLocaleString()}
+            {history.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="h-28 text-center">
+                  <div>
+                    <p className="text-sm font-medium">
+                      No payment history yet
+                    </p>
+
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Completed payments will appear here.
+                    </p>
+                  </div>
                 </TableCell>
-                <TableCell>{payment.paymentDate}</TableCell>
-                <TableCell>{payment.status}</TableCell>
               </TableRow>
-            ))}
+            ) : (
+              history.map((payment) => (
+                <TableRow key={payment.paymentId}>
+                  <TableCell className="font-medium whitespace-nowrap">
+                    {payment.orderNumber}
+                  </TableCell>
+
+                  <TableCell>
+                    <span
+                      className="block max-w-[220px] truncate"
+                      title={payment.referenceNumber ?? undefined}
+                    >
+                      {payment.referenceNumber || "—"}
+                    </span>
+                  </TableCell>
+
+                  <TableCell>{payment.method}</TableCell>
+
+                  <TableCell className="font-medium">
+                    {formatCurrency(payment.amount)}
+                  </TableCell>
+
+                  <TableCell className="whitespace-nowrap">
+                    {payment.paymentDate}
+                  </TableCell>
+
+                  <TableCell>
+                    <Badge variant={getStatusVariant(payment.status)}>
+                      {payment.status}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
-    </div>
-  );
+    </section>
+  )
 }

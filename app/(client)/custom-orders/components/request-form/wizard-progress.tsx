@@ -19,6 +19,10 @@ const steps = [
   },
   {
     number: 4,
+    label: "Delivery",
+  },
+  {
+    number: 5,
     label: "Review",
   },
 ]

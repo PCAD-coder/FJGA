@@ -9,11 +9,7 @@ import PaymentMethods from "./payment-methods"
 import PaymentHistoryTable from "./payment-history-table"
 import PendingInvoices from "./pending-invoices"
 
-import type {
-  PaymentSummary,
-  Invoice,
-  PaymentHistory,
-} from "../types/payment"
+import type { PaymentSummary, Invoice, PaymentHistory } from "../types/payment"
 
 import { getPaymentPageData } from "../services/payment-service"
 

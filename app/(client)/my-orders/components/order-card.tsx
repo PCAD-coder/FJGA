@@ -1,10 +1,16 @@
 "use client"
 
 import Image from "next/image"
+import {
+  ArrowRight,
+  CalendarDays,
+  Package,
+  PhilippinePeso,
+} from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
 
-import OrderProgress from "./order-progress"
 import OrderStatusBadge from "./order-status-badge"
 import OrderDetailsDialog from "./order-details-dialog"
 
@@ -14,95 +20,126 @@ interface Props {
   order: Order
 }
 
-export default function OrderCard({ order }: Props) {
-  return (
-    <div className="rounded-xl border bg-card p-5 shadow-sm">
-      <div className="flex gap-6">
-        {/* Product Image */}
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    minimumFractionDigits: 2,
+  }).format(value)
+}
 
-        <div className="relative h-36 w-36 shrink-0 overflow-hidden rounded-lg">
+export default function OrderCard({ order }: Props) {
+  const isCustomOrder = order.orderType === "custom"
+
+  return (
+    <div className="group overflow-hidden rounded-xl border bg-card shadow-sm transition-shadow hover:shadow-md">
+      <div className="flex flex-col gap-5 p-5 sm:flex-row">
+        {/* Image */}
+        <div className="relative h-48 w-full shrink-0 overflow-hidden rounded-lg bg-muted sm:h-40 sm:w-40">
           <Image
             src={order.image}
             alt={order.productName}
             fill
-            className="object-cover"
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           />
+
+          {isCustomOrder && (
+            <div className="absolute bottom-2 left-2">
+              <Badge
+                variant="secondary"
+                className="bg-background/90 text-xs shadow-sm backdrop-blur-sm"
+              >
+                Reference Image
+              </Badge>
+            </div>
+          )}
         </div>
 
-        {/* Information */}
-
-        <div className="flex flex-1 flex-col justify-between">
-          {/* Top */}
-
-          <div className="flex justify-between gap-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-semibold">
+        {/* Content */}
+        <div className="min-w-0 flex-1">
+          {/* Header */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="truncate text-lg font-semibold tracking-tight">
                   {order.productName}
                 </h2>
 
-                {order.madeToOrder && (
-                  <Badge>
-                    Made-to-Order
+                {isCustomOrder && (
+                  <Badge variant="outline">
+                    Custom Order
                   </Badge>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-x-10 gap-y-1 text-sm text-muted-foreground">
-                <p>
-                  Placed: {order.orderedAt}
-                </p>
-
-                <p>
-                  Order #{order.orderNumber}
-                </p>
-
-                <p>
-                  Total: ₱
-                  {order.total.toLocaleString("en-PH", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </p>
-
-                <p>
-                  Qty: {order.quantity}
-                </p>
-              </div>
+              <p className="text-sm font-medium text-muted-foreground">
+                {order.orderNumber}
+              </p>
             </div>
 
-            <OrderStatusBadge
-              status={order.status}
-            />
+            <OrderStatusBadge status={order.status} />
           </div>
 
-          {/* Progress */}
+          {/* Metadata */}
+          <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4" />
+              <span>{order.orderedAt}</span>
+            </div>
 
-          <OrderProgress
-            quotation={order.progress.quotation}
-            production={order.progress.production}
-            delivery={order.progress.delivery}
-            completed={order.progress.completed}
-          />
-
-          {/* Bottom */}
-
-          <div className="flex items-center justify-between gap-4">
-            <div className="text-sm text-muted-foreground">
-              Current Stage
-
-              <span className="ml-2 font-semibold text-foreground">
-                {order.currentStage}
+            <div className="flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              <span>
+                Qty {order.quantity}
               </span>
+            </div>
+          </div>
 
-              <span className="ml-2">
-                ({order.progressPercentage}%)
+          {/* Current progress */}
+          <div className="mt-5 rounded-lg border bg-muted/30 p-4">
+            <div className="mb-3 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Current Stage
+                </p>
+
+                <p className="mt-1 text-sm font-semibold">
+                  {order.currentStage}
+                </p>
+              </div>
+
+              <span className="text-sm font-medium text-muted-foreground">
+                {order.progressPercentage}%
               </span>
             </div>
 
-            <OrderDetailsDialog
-              order={order}
-            />
+            <Progress value={order.progressPercentage} />
+          </div>
+
+          {/* Footer */}
+          <div className="mt-5 flex flex-col gap-4 border-t pt-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <PhilippinePeso className="h-3.5 w-3.5" />
+                Order Total
+              </div>
+
+              <p className="mt-1 text-xl font-semibold tracking-tight">
+                {formatCurrency(order.total)}
+              </p>
+
+              {order.deliveryFee > 0 && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Includes {formatCurrency(order.deliveryFee)} delivery fee
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <OrderDetailsDialog order={order} />
+
+              <ArrowRight className="hidden h-4 w-4 text-muted-foreground sm:block" />
+            </div>
           </div>
         </div>
       </div>

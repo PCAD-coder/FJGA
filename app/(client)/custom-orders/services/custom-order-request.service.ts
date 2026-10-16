@@ -1,5 +1,8 @@
 import { createClient } from "@/lib/supabase/client"
 
+import type {
+  DeliveryAddressInput,
+} from "@/types/delivery-address"
 import type { ProjectDetailsData } from "../components/request-form/project-details-step"
 import type { SpecificationsData } from "../components/request-form/specifications-step"
 import type {
@@ -10,13 +13,14 @@ import type {
 } from "../types/custom-order-request"
 import type { DesignReferenceData } from "../components/request-form/design-reference-step"
 
-
 const supabase = createClient()
 
 export interface CreateCustomOrderRequestInput {
   projectDetails: ProjectDetailsData
   designReference: DesignReferenceData
   specifications: SpecificationsData
+  contactNumber: string
+  deliveryAddress: DeliveryAddressInput
 }
 
 async function getCurrentCustomerProfileId(): Promise<string> {
@@ -93,9 +97,7 @@ async function uploadReferenceImages(
     return uploadedPaths
   } catch (error) {
     if (uploadedPaths.length > 0) {
-      await supabase.storage
-        .from(CUSTOM_ORDER_BUCKET)
-        .remove(uploadedPaths)
+      await supabase.storage.from(CUSTOM_ORDER_BUCKET).remove(uploadedPaths)
     }
 
     throw error
@@ -121,18 +123,37 @@ export async function createCustomOrderRequest(
   const customerId = await getCurrentCustomerProfileId()
 
   const {
-    projectDetails,
-    designReference,
-    specifications,
-  } = input
+  projectDetails,
+  designReference,
+  specifications,
+  deliveryAddress,
+} = input
+
+if (!deliveryAddress.houseBuildingNumber.trim()) {
+  throw new Error("House or building number is required.")
+}
+
+if (!deliveryAddress.street.trim()) {
+  throw new Error("Street is required.")
+}
+
+if (!deliveryAddress.regionPsgcCode) {
+  throw new Error("Region is required.")
+}
+
+if (!deliveryAddress.cityPsgcCode) {
+  throw new Error("City or municipality is required.")
+}
+
+if (!deliveryAddress.barangayPsgcCode) {
+  throw new Error("Barangay is required.")
+}
 
   const width = Number(specifications.width)
   const height = Number(specifications.height)
 
   const depth =
-    specifications.depth.trim() === ""
-      ? null
-      : Number(specifications.depth)
+    specifications.depth.trim() === "" ? null : Number(specifications.depth)
 
   const { data: request, error: requestError } = await supabase
     .from("custom_order_requests")
@@ -148,8 +169,7 @@ export async function createCustomOrderRequest(
       height,
       depth,
       dimension_unit: specifications.dimensionUnit,
-      measurements_approximate:
-        specifications.measurementsApproximate,
+      measurements_approximate: specifications.measurementsApproximate,
 
       specifications: specifications.specifications,
 
@@ -167,13 +187,12 @@ export async function createCustomOrderRequest(
 
       let_fjga_recommend: specifications.letFjgaRecommend,
 
-      other_preferences:
-        specifications.otherPreferences.trim() || null,
+      other_preferences: specifications.otherPreferences.trim() || null,
 
-      reference_notes:
-        designReference.notes.trim() || null,
+      reference_notes: designReference.notes.trim() || null,
 
       status: "pending",
+      contact_number: input.contactNumber.trim(),
     })
     .select("*")
     .single()
@@ -182,14 +201,66 @@ export async function createCustomOrderRequest(
     throw new Error(requestError.message)
   }
 
-  const uploadedPaths: string[] = []
+ const uploadedPaths: string[] = []
 
-  try {
-    const paths = await uploadReferenceImages(
-      user.id,
-      request.id,
-      designReference
-    )
+try {
+  const { error: addressError } = await supabase
+    .from("custom_order_request_addresses")
+    .insert({
+      request_id: request.id,
+
+      house_building_number:
+        deliveryAddress.houseBuildingNumber.trim(),
+
+      street:
+        deliveryAddress.street.trim(),
+
+      building_subdivision:
+        deliveryAddress.buildingSubdivision.trim() || null,
+
+      unit_floor:
+        deliveryAddress.unitFloor.trim() || null,
+
+      region_psgc_code:
+        deliveryAddress.regionPsgcCode,
+
+      region_name:
+        deliveryAddress.regionName,
+
+      province_psgc_code:
+        deliveryAddress.provincePsgcCode,
+
+      province_name:
+        deliveryAddress.provinceName,
+
+      city_psgc_code:
+        deliveryAddress.cityPsgcCode,
+
+      city_name:
+        deliveryAddress.cityName,
+
+      barangay_psgc_code:
+        deliveryAddress.barangayPsgcCode,
+
+      barangay_name:
+        deliveryAddress.barangayName,
+
+      postal_code:
+        deliveryAddress.postalCode.trim() || null,
+
+      landmark:
+        deliveryAddress.landmark.trim() || null,
+    })
+
+  if (addressError) {
+    throw new Error(addressError.message)
+  }
+
+  const paths = await uploadReferenceImages(
+    user.id,
+    request.id,
+    designReference
+  )
 
     uploadedPaths.push(...paths)
 
@@ -211,42 +282,43 @@ export async function createCustomOrderRequest(
 
     return request as CustomOrderRequest
   } catch (error) {
-  if (uploadedPaths.length > 0) {
-    const { error: storageCleanupError } = await supabase.storage
-      .from(CUSTOM_ORDER_BUCKET)
-      .remove(uploadedPaths)
+    if (uploadedPaths.length > 0) {
+      const { error: storageCleanupError } = await supabase.storage
+        .from(CUSTOM_ORDER_BUCKET)
+        .remove(uploadedPaths)
 
-    if (storageCleanupError) {
+      if (storageCleanupError) {
+        console.error(
+          "Failed to clean up uploaded custom-order images:",
+          storageCleanupError
+        )
+      }
+    }
+
+    const { error: requestCleanupError } = await supabase.rpc(
+      "delete_own_pending_custom_order_request",
+      {
+        p_request_id: request.id,
+      }
+    )
+
+    if (requestCleanupError) {
       console.error(
-        "Failed to clean up uploaded custom-order images:",
-        storageCleanupError
+        "Failed to clean up custom-order request:",
+        requestCleanupError
       )
     }
+
+    throw error
   }
-
-  const { error: requestCleanupError } = await supabase.rpc(
-    "delete_own_pending_custom_order_request",
-    {
-      p_request_id: request.id,
-    }
-  )
-
-  if (requestCleanupError) {
-    console.error(
-      "Failed to clean up custom-order request:",
-      requestCleanupError
-    )
-  }
-
-  throw error
-}
 }
 export async function getCustomOrderRequests(): Promise<
   CustomOrderRequestListItem[]
 > {
   const { data: requests, error: requestError } = await supabase
     .from("custom_order_requests")
-    .select(`
+    .select(
+      `
       id,
       request_number,
       project_name,
@@ -265,7 +337,8 @@ export async function getCustomOrderRequests(): Promise<
         image_url,
         display_order
       )
-    `)
+    `
+    )
     .order("created_at", { ascending: false })
 
   if (requestError) {
@@ -332,7 +405,8 @@ export async function getCustomOrderRequestById(
 ): Promise<CustomOrderRequestDetail> {
   const { data: request, error: requestError } = await supabase
     .from("custom_order_requests")
-    .select(`
+    .select(
+      `
       id,
       request_number,
       customer_id,
@@ -370,7 +444,8 @@ export async function getCustomOrderRequestById(
         image_url,
         display_order
       )
-    `)
+    `
+    )
     .eq("id", requestId)
     .single()
 
@@ -378,9 +453,9 @@ export async function getCustomOrderRequestById(
     throw new Error(requestError.message)
   }
 
-  const sortedImages = [
-    ...(request.custom_order_images ?? []),
-  ].sort((a, b) => a.display_order - b.display_order)
+  const sortedImages = [...(request.custom_order_images ?? [])].sort(
+    (a, b) => a.display_order - b.display_order
+  )
 
   const images = await Promise.all(
     sortedImages.map(async (image) => {
@@ -420,8 +495,7 @@ export async function getCustomOrderRequestById(
     dimension_unit: request.dimension_unit,
     measurements_approximate: request.measurements_approximate,
 
-    specifications:
-      (request.specifications as Record<string, string>) ?? {},
+    specifications: (request.specifications as Record<string, string>) ?? {},
 
     preferred_frame: request.preferred_frame,
     preferred_glass: request.preferred_glass,

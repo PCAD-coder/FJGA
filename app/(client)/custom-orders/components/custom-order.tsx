@@ -210,7 +210,7 @@ request.status === "approved" ? (
         quotation={selectedQuotation}
         loading={quotationLoading}
         error={quotationError}
-        onAccepted={onQuotationAccepted}
+        onQuotationChanged={onQuotationAccepted}
       />
     </>
   )

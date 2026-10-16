@@ -39,10 +39,32 @@ export interface OrderPaymentSubmission {
   rejectionReason: string | null
 }
 
+export interface OrderDeliveryAddress {
+  houseBuildingNumber: string
+  street: string
+  buildingSubdivision: string | null
+  unitFloor: string | null
+
+  regionName: string
+  provinceName: string | null
+  cityName: string
+  barangayName: string
+
+  postalCode: string | null
+  landmark: string | null
+}
+
 export interface Order {
   id: string
 
   orderNumber: string
+  orderType: "standard" | "custom"
+
+  sourceRequestId: string | null
+
+  customerContactNumber: string | null
+
+  deliveryAddress: OrderDeliveryAddress | null
 
   productName: string
 
@@ -62,6 +84,13 @@ export interface Order {
   estimatedDelivery: string | null
 
   total: number
+  subtotal: number
+
+  deliveryFee: number
+
+  unitPrice: number
+
+  lineTotal: number
 
   currentStage: string
 
@@ -72,6 +101,8 @@ export interface Order {
   progress: OrderProgress
 
   timeline: OrderTimelineItem[]
+
+  createdAt: string
 
   /*
    * ============================================================

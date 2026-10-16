@@ -23,10 +23,12 @@ export interface PaymentMethod {
 }
 
 export interface PaymentHistory {
-  paymentId: string;
-  invoiceId: string;
-  amount: number;
-  method: string;
-  paymentDate: string;
-  status: "Completed" | "Pending" | "Failed";
+  paymentId: string
+  orderNumber: string
+  referenceNumber: string | null
+  amount: number
+  method: string
+  paymentDate: string
+  paymentDateRaw: string
+  status: "Completed" | "Pending" | "Failed"
 }

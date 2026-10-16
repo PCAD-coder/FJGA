@@ -144,6 +144,11 @@ export default function QuotationCard({
               <span className="font-semibold">
                 {quotation.quotationNumber}
               </span>
+              {quotation.revisionNumber !== null && (
+  <Badge variant="outline">
+    Revision {quotation.revisionNumber}
+  </Badge>
+)}
 
               <Badge
                 variant={getStatusVariant(

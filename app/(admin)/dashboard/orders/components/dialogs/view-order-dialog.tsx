@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import StartProductionDialog from "./start-production-dialog"
 
+const CUSTOM_ORDER_BUCKET = "custom-order-references"
+
 function formatPaymentMethod(paymentMethod: string | null | undefined) {
   switch (paymentMethod) {
     case "cash_on_delivery":
@@ -34,6 +36,34 @@ function formatPaymentMethod(paymentMethod: string | null | undefined) {
       return "Not specified"
   }
 }
+function formatCustomerName(
+  profile:
+    | {
+        first_name: string | null
+        last_name: string | null
+        full_name: string | null
+      }
+    | null
+    | undefined
+) {
+  if (!profile) {
+    return "Unknown Client"
+  }
+
+  const firstName = profile.first_name?.trim() ?? ""
+
+  const lastName = profile.last_name?.trim() ?? ""
+
+  const structuredName = [firstName, lastName].filter(Boolean).join(" ")
+
+  if (structuredName) {
+    return structuredName
+  }
+
+  const fullName = profile.full_name?.trim() ?? ""
+
+  return fullName || "Unknown Client"
+}
 
 function formatMaterialVariant(material: any) {
   const parts = [material.material_name]
@@ -47,6 +77,22 @@ function formatMaterialVariant(material: any) {
   }
 
   return parts.join(" ")
+}
+function formatDimensions(
+  width: number | null | undefined,
+  height: number | null | undefined,
+  depth: number | null | undefined,
+  unit: string | null | undefined
+) {
+  const dimensions = [width, height, depth].filter(
+    (value): value is number => value !== null && value !== undefined
+  )
+
+  if (dimensions.length === 0) {
+    return null
+  }
+
+  return `${dimensions.join(" × ")} ${unit ?? "cm"}`
 }
 
 interface Props {
@@ -76,40 +122,105 @@ export default function ViewOrderDialog({
 }: Props) {
   const [supabase] = useState(() => createClient())
   const [productImages, setProductImages] = useState<Record<string, string>>({})
+  const [customReferenceImage, setCustomReferenceImage] = useState<
+    string | null
+  >(null)
   const [totalPaid, setTotalPaid] = useState(0)
   const [paymentsLoading, setPaymentsLoading] = useState(false)
 
   useEffect(() => {
     if (!order) {
       setProductImages({})
+      setCustomReferenceImage(null)
       return
     }
+    const currentOrder = order
+
+    let cancelled = false
 
     async function loadImages() {
-      const ids = (order?.items ?? [])
-        .map((item) => item.product_id)
-        .filter(Boolean)
+      try {
+        setProductImages({})
+        setCustomReferenceImage(null)
 
-      if (ids.length === 0) return
+        const productIds = (currentOrder.items ?? [])
+          .map((item) => item.product_id)
+          .filter((id): id is string => typeof id === "string")
 
-      const { data } = await supabase
-        .from("product_images")
-        .select("product_id, image_url, display_order")
-        .in("product_id", ids)
-        .order("display_order", { ascending: true })
+        if (productIds.length > 0) {
+          const { data, error } = await supabase
+            .from("product_images")
+            .select("product_id, image_url, display_order")
+            .in("product_id", productIds)
+            .order("display_order", {
+              ascending: true,
+            })
 
-      const map: Record<string, string> = {}
+          if (error) {
+            throw error
+          }
 
-      for (const image of data ?? []) {
-        if (!map[image.product_id]) {
-          map[image.product_id] = image.image_url
+          const map: Record<string, string> = {}
+
+          for (const image of data ?? []) {
+            if (!map[image.product_id]) {
+              map[image.product_id] = image.image_url
+            }
+          }
+
+          if (!cancelled) {
+            setProductImages(map)
+          }
+        }
+
+        if (
+          currentOrder.order_type === "custom" &&
+          currentOrder.source_request_id
+        ) {
+          const { data: images, error } = await supabase
+            .from("custom_order_images")
+            .select("image_url, display_order")
+            .eq("request_id", currentOrder.source_request_id)
+            .order("display_order", {
+              ascending: true,
+            })
+            .limit(1)
+
+          if (error) {
+            throw error
+          }
+
+          const firstImagePath = images?.[0]?.image_url ?? null
+
+          if (firstImagePath) {
+            const { data: signedData, error: signedError } =
+              await supabase.storage
+                .from(CUSTOM_ORDER_BUCKET)
+                .createSignedUrl(firstImagePath, 60 * 60)
+
+            if (signedError) {
+              throw signedError
+            }
+
+            if (!cancelled) {
+              setCustomReferenceImage(signedData.signedUrl)
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load order images:", error)
+
+        if (!cancelled) {
+          setCustomReferenceImage(null)
         }
       }
-
-      setProductImages(map)
     }
 
-    loadImages()
+    void loadImages()
+
+    return () => {
+      cancelled = true
+    }
   }, [order, supabase])
 
   useEffect(() => {
@@ -202,9 +313,7 @@ export default function ViewOrderDialog({
             <div>
               <p className="text-sm text-muted-foreground">Customer</p>
               <p className="font-semibold">
-                {order.profiles
-                  ? `${order.profiles.first_name} ${order.profiles.last_name}`
-                  : order.customer_id}
+                {formatCustomerName(order.profiles)}
               </p>
             </div>
 
@@ -351,115 +460,151 @@ export default function ViewOrderDialog({
             </section>
           )}
 
-          {items.map((item) => (
-            <section key={item.id} className="space-y-4 rounded-lg border p-4">
-              <div className="flex gap-4">
-                <div className="relative h-28 w-28 overflow-hidden rounded-lg border bg-muted">
-                  {productImages[item.product_id] ? (
-                    <Image
-                      src={productImages[item.product_id]}
-                      alt={item.product_name_snapshot}
-                      fill
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-                      No Image
-                    </div>
-                  )}
-                </div>
+          {items.map((item) => {
+            const productImage = item.product_id
+              ? productImages[item.product_id]
+              : null
 
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold">
-                    {item.product_name_snapshot}
-                  </h3>
+            const displayImage = productImage ?? customReferenceImage
 
-                  <p className="text-sm text-muted-foreground">
-                    Qty: {item.quantity}
-                  </p>
+            const isReferenceImage =
+              !productImage && Boolean(customReferenceImage)
 
-                  {(item.width || item.height || item.depth) && (
+            return (
+              <section
+                key={item.id}
+                className="space-y-4 rounded-lg border p-4"
+              >
+                <div className="flex gap-4">
+                  <div className="relative h-28 w-28 overflow-hidden rounded-lg border bg-muted">
+                    {displayImage ? (
+                      <>
+                        <Image
+                          src={displayImage}
+                          alt={
+                            isReferenceImage
+                              ? `${item.product_name_snapshot} reference`
+                              : item.product_name_snapshot
+                          }
+                          fill
+                          className="object-cover"
+                        />
+
+                        {isReferenceImage && (
+                          <div className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 text-center text-[10px] text-white">
+                            Reference Image
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
+                        No Image
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold">
+                      {item.product_name_snapshot}
+                    </h3>
+
                     <p className="text-sm text-muted-foreground">
-                      Dimensions: {item.width ?? "-"} × {item.height ?? "-"} ×{" "}
-                      {item.depth ?? "-"} {item.dimensionUnit ?? "cm"}
+                      Qty: {item.quantity}
                     </p>
-                  )}
-                </div>
-              </div>
 
-              <div>
-                <h4 className="font-medium">Materials</h4>
-                <div className="mt-2 space-y-2 text-sm">
-                  {(item.materials_snapshot ?? []).map((material, index) => (
-                    <div
-                      key={index}
-                      className="flex justify-between border-b pb-2"
-                    >
-                      <div>
-                        <p className="font-medium">
-                          {formatMaterialVariant(material)}
-                        </p>
-                        <p className="text-muted-foreground">
-                          {material.quantity} {material.unit} × ₱
-                          {material.unit_cost.toFixed(2)}
+                    {formatDimensions(
+                      item.width,
+                      item.height,
+                      item.depth,
+                      item.dimensionUnit
+                    ) && (
+                      <p className="text-sm text-muted-foreground">
+                        Dimensions:{" "}
+                        {formatDimensions(
+                          item.width,
+                          item.height,
+                          item.depth,
+                          item.dimensionUnit
+                        )}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-medium">Materials</h4>
+                  <div className="mt-2 space-y-2 text-sm">
+                    {(item.materials_snapshot ?? []).map((material, index) => (
+                      <div
+                        key={index}
+                        className="flex justify-between border-b pb-2"
+                      >
+                        <div>
+                          <p className="font-medium">
+                            {formatMaterialVariant(material)}
+                          </p>
+                          <p className="text-muted-foreground">
+                            {material.quantity} {material.unit} × ₱
+                            {material.unit_cost.toFixed(2)}
+                          </p>
+                        </div>
+
+                        <p className="font-semibold">
+                          ₱{material.subtotal.toFixed(2)}
                         </p>
                       </div>
-
-                      <p className="font-semibold">
-                        ₱{material.subtotal.toFixed(2)}
-                      </p>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <h4 className="font-medium">Labor</h4>
-                <div className="mt-2 space-y-2 text-sm">
-                  {(item.labor_snapshot ?? []).map((labor, index) => (
-                    <div
-                      key={index}
-                      className="flex justify-between border-b pb-2"
-                    >
-                      <div>
-                        <p className="font-medium">{labor.service_name}</p>
-                        <p className="text-muted-foreground">
-                          {labor.quantity} {labor.unit} × ₱
-                          {labor.labor_cost.toFixed(2)}
+                <div>
+                  <h4 className="font-medium">Labor</h4>
+                  <div className="mt-2 space-y-2 text-sm">
+                    {(item.labor_snapshot ?? []).map((labor, index) => (
+                      <div
+                        key={index}
+                        className="flex justify-between border-b pb-2"
+                      >
+                        <div>
+                          <p className="font-medium">{labor.service_name}</p>
+                          <p className="text-muted-foreground">
+                            {labor.quantity} {labor.unit} × ₱
+                            {labor.labor_cost.toFixed(2)}
+                          </p>
+                        </div>
+
+                        <p className="font-semibold">
+                          ₱{labor.subtotal.toFixed(2)}
                         </p>
                       </div>
-
-                      <p className="font-semibold">
-                        ₱{labor.subtotal.toFixed(2)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2 border-t pt-4 text-sm">
-                <div className="flex justify-between">
-                  <span>Material Cost</span>
-                  <span>₱{item.material_subtotal.toFixed(2)}</span>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="flex justify-between">
-                  <span>Labor Cost</span>
-                  <span>₱{item.labor_subtotal.toFixed(2)}</span>
-                </div>
+                <div className="space-y-2 border-t pt-4 text-sm">
+                  <div className="flex justify-between">
+                    <span>Material Cost</span>
+                    <span>₱{item.material_subtotal.toFixed(2)}</span>
+                  </div>
 
-                <div className="flex justify-between">
-                  <span>Markup</span>
-                  <span>₱{item.markup_amount.toFixed(2)}</span>
-                </div>
+                  <div className="flex justify-between">
+                    <span>Labor Cost</span>
+                    <span>₱{item.labor_subtotal.toFixed(2)}</span>
+                  </div>
 
-                <div className="flex justify-between border-t pt-2 font-semibold">
-                  <span>Line Total</span>
-                  <span>₱{item.line_total.toFixed(2)}</span>
+                  <div className="flex justify-between">
+                    <span>Markup</span>
+                    <span>₱{item.markup_amount.toFixed(2)}</span>
+                  </div>
+
+                  <div className="flex justify-between border-t pt-2 font-semibold">
+                    <span>Line Total</span>
+                    <span>₱{item.line_total.toFixed(2)}</span>
+                  </div>
                 </div>
-              </div>
-            </section>
-          ))}
+              </section>
+            )
+          })}
 
           <section className="space-y-2 rounded-lg border p-4">
             <h3 className="text-lg font-semibold">Order Summary</h3>
@@ -613,7 +758,7 @@ export default function ViewOrderDialog({
               )}
             </div>
           )}
-{/*
+          {/*
           {order.status === "in_production" && (
             <Button
               onClick={() => onChangeStatus?.(order.id, "ready_for_delivery")}

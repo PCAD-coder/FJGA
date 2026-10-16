@@ -270,3 +270,75 @@ export async function getQuotationForCustomRequest(
     declinedAt: row.declined_at,
   }
 }
+
+export async function declineQuotation(
+  quotationId: string
+): Promise<void> {
+  const { error } = await supabase.rpc(
+    "decline_quotation",
+    {
+      p_quotation_id: quotationId,
+    }
+  )
+
+  if (error) {
+    throw new Error(error.message)
+  }
+}
+
+export async function getQuotationHistoryForCustomRequest(
+  customRequestId: string
+): Promise<ClientQuotationSummary[]> {
+  const { data, error } = await supabase
+    .from("quotations")
+    .select(`
+      id,
+      quotation_number,
+      custom_request_id,
+      status,
+      project_name,
+      subtotal,
+      delivery_fee,
+      total_amount,
+      sent_at,
+      accepted_at,
+      declined_at
+    `)
+    .eq("custom_request_id", customRequestId)
+    .in("status", [
+      "sent",
+      "accepted",
+      "declined",
+    ])
+    .order("created_at", {
+      ascending: false,
+    })
+
+  if (error) {
+    throw error
+  }
+
+  return (data ?? []).map((quotation) => ({
+    id: quotation.id,
+    quotationNumber:
+      quotation.quotation_number,
+    customRequestId:
+      quotation.custom_request_id,
+    status:
+      quotation.status as ClientQuotationStatus,
+    projectName:
+      quotation.project_name,
+    subtotal:
+      Number(quotation.subtotal),
+    deliveryFee:
+      Number(quotation.delivery_fee),
+    totalAmount:
+      Number(quotation.total_amount),
+    sentAt:
+      quotation.sent_at,
+    acceptedAt:
+      quotation.accepted_at,
+    declinedAt:
+      quotation.declined_at,
+  }))
+}

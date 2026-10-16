@@ -1,12 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import {
-  FileText,
-  Loader2,
-  Plus,
-  Trash2,
-} from "lucide-react"
+import { FileText, Loader2, Plus, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -28,6 +23,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+
+import {
+  getDeliveryFeeForCity,
+  type DeliveryZoneResult,
+} from "@/app/services/delivery/delivery-zone-service"
 
 import type { CustomOrder } from "../../types/custom-order"
 import type {
@@ -87,29 +87,30 @@ export default function CreateQuotationDialog({
     QuotationMaterialOption[]
   >([])
 
-  const [laborOptions, setLaborOptions] = useState<
-    QuotationLaborOption[]
-  >([])
+  const [laborOptions, setLaborOptions] = useState<QuotationLaborOption[]>([])
 
-  const [materials, setMaterials] = useState<
-    SelectedQuotationMaterial[]
-  >([createEmptyMaterial()])
+  const [materials, setMaterials] = useState<SelectedQuotationMaterial[]>([
+    createEmptyMaterial(),
+  ])
 
-  const [labor, setLabor] = useState<
-    SelectedQuotationLabor[]
-  >([createEmptyLabor()])
+  const [labor, setLabor] = useState<SelectedQuotationLabor[]>([
+    createEmptyLabor(),
+  ])
 
-  const [deliveryFee, setDeliveryFee] = useState(0)
+  const [deliveryZone, setDeliveryZone] = useState<DeliveryZoneResult | null>(
+    null
+  )
 
-  const [loadingOptions, setLoadingOptions] =
-    useState(false)
+  const [loadingDelivery, setLoadingDelivery] = useState(false)
 
-  const [loadError, setLoadError] =
-    useState<string | null>(null)
-    const [notes, setNotes] = useState("")
-const [sending, setSending] = useState(false)
-const [sendError, setSendError] =
-  useState<string | null>(null)
+  const [deliveryError, setDeliveryError] = useState<string | null>(null)
+
+  const [loadingOptions, setLoadingOptions] = useState(false)
+
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [notes, setNotes] = useState("")
+  const [sending, setSending] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open) return
@@ -121,11 +122,10 @@ const [sendError, setSendError] =
         setLoadingOptions(true)
         setLoadError(null)
 
-        const [materialData, laborData] =
-          await Promise.all([
-            getQuotationMaterialOptions(),
-            getQuotationLaborOptions(),
-          ])
+        const [materialData, laborData] = await Promise.all([
+          getQuotationMaterialOptions(),
+          getQuotationLaborOptions(),
+        ])
 
         if (cancelled) return
 
@@ -152,25 +152,78 @@ const [sendError, setSendError] =
       cancelled = true
     }
   }, [open])
-useEffect(() => {
-  if (!open) {
-    setMaterials([createEmptyMaterial()])
-    setLabor([createEmptyLabor()])
-    setDeliveryFee(0)
-    setNotes("")
-    setLoadError(null)
-    setSendError(null)
-    setSending(false)
-  }
-}, [open])
+
+  useEffect(() => {
+    if (!open || !order) return
+
+    let cancelled = false
+
+    async function loadDeliveryFee() {
+      const cityPsgcCode = order?.deliveryAddress?.cityPsgcCode
+
+      if (!cityPsgcCode) {
+        setDeliveryZone(null)
+        setDeliveryError("This request does not have a valid delivery city.")
+        return
+      }
+
+      try {
+        setLoadingDelivery(true)
+        setDeliveryError(null)
+
+        const result = await getDeliveryFeeForCity(cityPsgcCode)
+
+        if (cancelled) return
+
+        if (!result) {
+          setDeliveryZone(null)
+          setDeliveryError("Delivery is not currently available for this city.")
+          return
+        }
+
+        setDeliveryZone(result)
+      } catch (error) {
+        if (cancelled) return
+
+        setDeliveryZone(null)
+        setDeliveryError(
+          error instanceof Error
+            ? error.message
+            : "Failed to load delivery information."
+        )
+      } finally {
+        if (!cancelled) {
+          setLoadingDelivery(false)
+        }
+      }
+    }
+
+    void loadDeliveryFee()
+
+    return () => {
+      cancelled = true
+    }
+  }, [open, order])
+
+  useEffect(() => {
+    if (!open) {
+      setMaterials([createEmptyMaterial()])
+      setLabor([createEmptyLabor()])
+      setDeliveryZone(null)
+      setDeliveryError(null)
+      setLoadingDelivery(false)
+      setNotes("")
+      setLoadError(null)
+      setSendError(null)
+      setSending(false)
+    }
+  }, [open])
 
   const validMaterials = useMemo(
     () =>
       materials.filter(
         (item) =>
-          item.materialId &&
-          Number.isFinite(item.quantity) &&
-          item.quantity > 0
+          item.materialId && Number.isFinite(item.quantity) && item.quantity > 0
       ),
     [materials]
   )
@@ -179,9 +232,7 @@ useEffect(() => {
     () =>
       labor.filter(
         (item) =>
-          item.serviceId &&
-          Number.isFinite(item.quantity) &&
-          item.quantity > 0
+          item.serviceId && Number.isFinite(item.quantity) && item.quantity > 0
       ),
     [labor]
   )
@@ -200,22 +251,14 @@ useEffect(() => {
     } catch {
       return null
     }
-  }, [
-    order,
-    validMaterials,
-    validLabor,
-    materialOptions,
-    laborOptions,
-  ])
+  }, [order, validMaterials, validLabor, materialOptions, laborOptions])
 
   const subtotal = pricing?.lineTotal ?? 0
 
+  const deliveryFee = deliveryZone?.deliveryFee ?? 0
+
   const totalAmount =
-    Math.round(
-      (subtotal + Math.max(deliveryFee, 0) +
-        Number.EPSILON) *
-        100
-    ) / 100
+    Math.round((subtotal + deliveryFee + Number.EPSILON) * 100) / 100
 
   function updateMaterial(
     index: number,
@@ -223,9 +266,7 @@ useEffect(() => {
   ) {
     setMaterials((current) =>
       current.map((item, itemIndex) =>
-        itemIndex === index
-          ? { ...item, ...changes }
-          : item
+        itemIndex === index ? { ...item, ...changes } : item
       )
     )
   }
@@ -236,73 +277,54 @@ useEffect(() => {
   ) {
     setLabor((current) =>
       current.map((item, itemIndex) =>
-        itemIndex === index
-          ? { ...item, ...changes }
-          : item
+        itemIndex === index ? { ...item, ...changes } : item
       )
     )
   }
   async function handleSendQuotation() {
-  if (!order || !pricing) return
+    if (!order || !pricing) return
 
-  if (
-    validMaterials.length === 0 ||
-    validLabor.length === 0
-  ) {
-    setSendError(
-      "At least one material and one labor service are required."
-    )
-    return
-  }
+    if (validMaterials.length === 0 || validLabor.length === 0) {
+      setSendError("At least one material and one labor service are required.")
+      return
+    }
 
-  try {
-    setSending(true)
-    setSendError(null)
+    try {
+      setSending(true)
+      setSendError(null)
 
-    const result =
-      await sendCustomRequestQuotation({
+      const result = await sendCustomRequestQuotation({
         requestId: order.id,
         materials: validMaterials,
         labor: validLabor,
-        deliveryFee: Math.max(deliveryFee, 0),
+        deliveryFee: 0,
         notes,
       })
 
-    await onSent?.(
-      result.quotationNumber,
-      result.totalAmount
-    )
+      await onSent?.(result.quotationNumber, result.totalAmount)
 
-    onOpenChange(false)
-  } catch (error) {
-    setSendError(
-      error instanceof Error
-        ? error.message
-        : "Failed to send quotation."
-    )
-  } finally {
-    setSending(false)
+      onOpenChange(false)
+    } catch (error) {
+      setSendError(
+        error instanceof Error ? error.message : "Failed to send quotation."
+      )
+    } finally {
+      setSending(false)
+    }
   }
-}
 
   if (!order) return null
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] !max-w-5xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            Create Quotation
-          </DialogTitle>
+          <DialogTitle>Create Quotation</DialogTitle>
 
           <DialogDescription>
             Prepare an official quotation for{" "}
-            {order.requestNumber ?? order.projectName}.
-            Material and labor quantities below represent
-            the requirements for one unit.
+            {order.requestNumber ?? order.projectName}. Material and labor
+            quantities below represent the requirements for one unit.
           </DialogDescription>
         </DialogHeader>
 
@@ -322,52 +344,35 @@ useEffect(() => {
           <div className="space-y-6">
             <section className="grid gap-4 rounded-lg border p-4 md:grid-cols-4">
               <div>
-                <p className="text-xs text-muted-foreground">
-                  Request
-                </p>
+                <p className="text-xs text-muted-foreground">Request</p>
                 <p className="font-medium">
                   {order.requestNumber ?? "Custom Request"}
                 </p>
               </div>
 
               <div>
-                <p className="text-xs text-muted-foreground">
-                  Project
-                </p>
-                <p className="font-medium">
-                  {order.projectName}
-                </p>
+                <p className="text-xs text-muted-foreground">Project</p>
+                <p className="font-medium">{order.projectName}</p>
               </div>
 
               <div>
-                <p className="text-xs text-muted-foreground">
-                  Client
-                </p>
-                <p className="font-medium">
-                  {order.clientName}
-                </p>
+                <p className="text-xs text-muted-foreground">Client</p>
+                <p className="font-medium">{order.clientName}</p>
               </div>
 
               <div>
-                <p className="text-xs text-muted-foreground">
-                  Quantity
-                </p>
-                <p className="font-medium">
-                  {order.quantity}
-                </p>
+                <p className="text-xs text-muted-foreground">Quantity</p>
+                <p className="font-medium">{order.quantity}</p>
               </div>
             </section>
 
             <section className="space-y-3">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h3 className="font-semibold">
-                    Materials
-                  </h3>
+                  <h3 className="font-semibold">Materials</h3>
 
                   <p className="text-sm text-muted-foreground">
-                    Select the actual materials FJGA will
-                    use for one unit.
+                    Select the actual materials FJGA will use for one unit.
                   </p>
                 </div>
 
@@ -389,11 +394,9 @@ useEffect(() => {
 
               <div className="space-y-3">
                 {materials.map((item, index) => {
-                  const selected =
-                    materialOptions.find(
-                      (option) =>
-                        option.id === item.materialId
-                    )
+                  const selected = materialOptions.find(
+                    (option) => option.id === item.materialId
+                  )
 
                   return (
                     <div
@@ -401,9 +404,7 @@ useEffect(() => {
                       className="grid gap-3 rounded-lg border p-4 lg:grid-cols-[minmax(0,1fr)_140px_160px_44px]"
                     >
                       <div className="space-y-2">
-                        <Label>
-                          Material
-                        </Label>
+                        <Label>Material</Label>
 
                         <Select
                           value={item.materialId}
@@ -418,36 +419,25 @@ useEffect(() => {
                           </SelectTrigger>
 
                           <SelectContent>
-                            {materialOptions.map(
-                              (material) => (
-                                <SelectItem
-                                  key={material.id}
-                                  value={material.id}
-                                >
-                                  {material.materialName}
-                                </SelectItem>
-                              )
-                            )}
+                            {materialOptions.map((material) => (
+                              <SelectItem key={material.id} value={material.id}>
+                                {material.materialName}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
 
                         {selected && (
                           <p className="text-xs text-muted-foreground">
-                            {selected.unit} · Stock:{" "}
-                            {selected.stockQuantity} ·{" "}
-                            {formatMoney(
-                              selected.unitCost
-                            )} cost ·{" "}
-                            {selected.markupPercentage}%
-                            markup
+                            {selected.unit} · Stock: {selected.stockQuantity} ·{" "}
+                            {formatMoney(selected.unitCost)} cost ·{" "}
+                            {selected.markupPercentage}% markup
                           </p>
                         )}
                       </div>
 
                       <div className="space-y-2">
-                        <Label>
-                          Quantity
-                        </Label>
+                        <Label>Quantity</Label>
 
                         <Input
                           type="number"
@@ -459,27 +449,21 @@ useEffect(() => {
                               quantity:
                                 event.target.value === ""
                                   ? 0
-                                  : Number(
-                                      event.target.value
-                                    ),
+                                  : Number(event.target.value),
                             })
                           }
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <Label>
-                          Selling Amount
-                        </Label>
+                        <Label>Selling Amount</Label>
 
                         <div className="flex h-9 items-center rounded-md border bg-muted px-3 text-sm font-medium">
                           {selected
                             ? formatMoney(
                                 selected.unitCost *
                                   item.quantity *
-                                  (1 +
-                                    selected.markupPercentage /
-                                      100)
+                                  (1 + selected.markupPercentage / 100)
                               )
                             : "—"}
                         </div>
@@ -490,14 +474,11 @@ useEffect(() => {
                           type="button"
                           variant="ghost"
                           size="icon"
-                          disabled={
-                            materials.length === 1
-                          }
+                          disabled={materials.length === 1}
                           onClick={() =>
                             setMaterials((current) =>
                               current.filter(
-                                (_, itemIndex) =>
-                                  itemIndex !== index
+                                (_, itemIndex) => itemIndex !== index
                               )
                             )
                           }
@@ -516,13 +497,10 @@ useEffect(() => {
             <section className="space-y-3">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h3 className="font-semibold">
-                    Labor
-                  </h3>
+                  <h3 className="font-semibold">Labor</h3>
 
                   <p className="text-sm text-muted-foreground">
-                    Select the labor services required for
-                    one unit.
+                    Select the labor services required for one unit.
                   </p>
                 </div>
 
@@ -531,10 +509,7 @@ useEffect(() => {
                   variant="outline"
                   size="sm"
                   onClick={() =>
-                    setLabor((current) => [
-                      ...current,
-                      createEmptyLabor(),
-                    ])
+                    setLabor((current) => [...current, createEmptyLabor()])
                   }
                 >
                   <Plus className="mr-2 h-4 w-4" />
@@ -544,11 +519,9 @@ useEffect(() => {
 
               <div className="space-y-3">
                 {labor.map((item, index) => {
-                  const selected =
-                    laborOptions.find(
-                      (option) =>
-                        option.id === item.serviceId
-                    )
+                  const selected = laborOptions.find(
+                    (option) => option.id === item.serviceId
+                  )
 
                   return (
                     <div
@@ -556,9 +529,7 @@ useEffect(() => {
                       className="grid gap-3 rounded-lg border p-4 lg:grid-cols-[minmax(0,1fr)_140px_160px_44px]"
                     >
                       <div className="space-y-2">
-                        <Label>
-                          Labor Service
-                        </Label>
+                        <Label>Labor Service</Label>
 
                         <Select
                           value={item.serviceId}
@@ -573,36 +544,24 @@ useEffect(() => {
                           </SelectTrigger>
 
                           <SelectContent>
-                            {laborOptions.map(
-                              (service) => (
-                                <SelectItem
-                                  key={service.id}
-                                  value={service.id}
-                                >
-                                  {service.serviceName}
-                                </SelectItem>
-                              )
-                            )}
+                            {laborOptions.map((service) => (
+                              <SelectItem key={service.id} value={service.id}>
+                                {service.serviceName}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
 
                         {selected && (
                           <p className="text-xs text-muted-foreground">
-                            {selected.unit} ·{" "}
-                            {formatMoney(
-                              selected.laborCost
-                            )}{" "}
-                            cost ·{" "}
-                            {selected.markupPercentage}%
-                            markup
+                            {selected.unit} · {formatMoney(selected.laborCost)}{" "}
+                            cost · {selected.markupPercentage}% markup
                           </p>
                         )}
                       </div>
 
                       <div className="space-y-2">
-                        <Label>
-                          Quantity
-                        </Label>
+                        <Label>Quantity</Label>
 
                         <Input
                           type="number"
@@ -614,27 +573,21 @@ useEffect(() => {
                               quantity:
                                 event.target.value === ""
                                   ? 0
-                                  : Number(
-                                      event.target.value
-                                    ),
+                                  : Number(event.target.value),
                             })
                           }
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <Label>
-                          Selling Amount
-                        </Label>
+                        <Label>Selling Amount</Label>
 
                         <div className="flex h-9 items-center rounded-md border bg-muted px-3 text-sm font-medium">
                           {selected
                             ? formatMoney(
                                 selected.laborCost *
                                   item.quantity *
-                                  (1 +
-                                    selected.markupPercentage /
-                                      100)
+                                  (1 + selected.markupPercentage / 100)
                               )
                             : "—"}
                         </div>
@@ -649,8 +602,7 @@ useEffect(() => {
                           onClick={() =>
                             setLabor((current) =>
                               current.filter(
-                                (_, itemIndex) =>
-                                  itemIndex !== index
+                                (_, itemIndex) => itemIndex !== index
                               )
                             )
                           }
@@ -668,102 +620,107 @@ useEffect(() => {
 
             <section className="grid gap-6 lg:grid-cols-[1fr_360px]">
               <div className="space-y-5">
-  <div className="space-y-2">
-    <Label htmlFor="delivery-fee">
-      Delivery Fee
-    </Label>
+                <div className="space-y-2">
+                  <Label>Delivery</Label>
 
-    <Input
-      id="delivery-fee"
-      type="number"
-      min="0"
-      step="0.01"
-      value={deliveryFee}
-      onChange={(event) =>
-        setDeliveryFee(
-          event.target.value === ""
-            ? 0
-            : Number(event.target.value)
-        )
-      }
-      className="max-w-xs"
-    />
+                  <div className="rounded-lg border bg-muted/30 p-4">
+                    {loadingDelivery ? (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Loading delivery information...
+                      </div>
+                    ) : deliveryError ? (
+                      <p className="text-sm text-destructive">
+                        {deliveryError}
+                      </p>
+                    ) : deliveryZone ? (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="text-sm text-muted-foreground">
+                            Delivery Zone
+                          </span>
 
-    <p className="text-xs text-muted-foreground">
-      Enter 0 if delivery is free or not
-      applicable.
-    </p>
-  </div>
+                          <span className="text-sm font-medium">
+                            {deliveryZone.zoneName}
+                          </span>
+                        </div>
 
-  <div className="space-y-2">
-    <Label htmlFor="quotation-notes">
-      Quotation Notes
-    </Label>
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="text-sm text-muted-foreground">
+                            Delivery Fee
+                          </span>
 
-    <Textarea
-      id="quotation-notes"
-      value={notes}
-      onChange={(event) =>
-        setNotes(event.target.value)
-      }
-      placeholder="Optional notes for this quotation..."
-      rows={4}
-    />
-  </div>
-</div>
+                          <span className="font-semibold">
+                            {formatMoney(deliveryZone.deliveryFee)}
+                          </span>
+                        </div>
+
+                        <p className="pt-2 text-xs text-muted-foreground">
+                          The official delivery fee is verified again by the
+                          system when the quotation is sent.
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        No delivery information available.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="quotation-notes">Quotation Notes</Label>
+
+                  <Textarea
+                    id="quotation-notes"
+                    value={notes}
+                    onChange={(event) => setNotes(event.target.value)}
+                    placeholder="Optional notes for this quotation..."
+                    rows={4}
+                  />
+                </div>
+              </div>
 
               <div className="space-y-3 rounded-lg border p-4">
-                <h3 className="font-semibold">
-                  Quotation Summary
-                </h3>
+                <h3 className="font-semibold">Quotation Summary</h3>
 
                 <SummaryRow
                   label="Materials / unit"
-                  value={formatMoney(
-                    pricing?.materialSubtotal ?? 0
-                  )}
+                  value={formatMoney(pricing?.materialSubtotal ?? 0)}
                 />
 
                 <SummaryRow
                   label="Labor / unit"
-                  value={formatMoney(
-                    pricing?.laborSubtotal ?? 0
-                  )}
+                  value={formatMoney(pricing?.laborSubtotal ?? 0)}
                 />
 
                 <SummaryRow
                   label="Unit Price"
-                  value={formatMoney(
-                    pricing?.unitPrice ?? 0
-                  )}
+                  value={formatMoney(pricing?.unitPrice ?? 0)}
                 />
 
-                <SummaryRow
-                  label={`Quantity`}
-                  value={String(order.quantity)}
-                />
+                <SummaryRow label={`Quantity`} value={String(order.quantity)} />
 
                 <Separator />
 
-                <SummaryRow
-                  label="Subtotal"
-                  value={formatMoney(subtotal)}
-                />
+                <SummaryRow label="Subtotal" value={formatMoney(subtotal)} />
 
                 <SummaryRow
                   label="Delivery Fee"
-                  value={formatMoney(
-                    Math.max(deliveryFee, 0)
-                  )}
+                  value={
+                    loadingDelivery
+                      ? "Loading..."
+                      : deliveryZone
+                        ? formatMoney(deliveryFee)
+                        : "—"
+                  }
                 />
 
                 <Separator />
 
                 <div className="flex items-center justify-between gap-4 text-lg font-bold">
                   <span>Total</span>
-                  <span>
-                    {formatMoney(totalAmount)}
-                  </span>
+                  <span>{formatMoney(totalAmount)}</span>
                 </div>
               </div>
             </section>
@@ -780,38 +737,32 @@ useEffect(() => {
           </Button>
 
           <Button
-  type="button"
-  disabled={
-    sending ||
-    loadingOptions ||
-    Boolean(loadError) ||
-    validMaterials.length === 0 ||
-    validLabor.length === 0 ||
-    !pricing
-  }
-  onClick={handleSendQuotation}
->
-  {sending ? (
-    <>
-      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-      Sending...
-    </>
-  ) : (
-    <>
-      <FileText className="mr-2 h-4 w-4" />
-      Send Quotation
-    </>
-  )}
-
+            type="button"
+            disabled={
+              sending ||
+              loadingOptions ||
+              loadingDelivery ||
+              Boolean(loadError) ||
+              Boolean(deliveryError) ||
+              !deliveryZone ||
+              validMaterials.length === 0 ||
+              validLabor.length === 0 ||
+              !pricing
+            }
+            onClick={handleSendQuotation}
+          >
+            {sending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Sending...
+              </>
+            ) : (
+              <>
+                <FileText className="mr-2 h-4 w-4" />
+                Send Quotation
+              </>
+            )}
           </Button>
-          <Button
-  type="button"
-  variant="outline"
-  disabled={sending}
-  onClick={() => onOpenChange(false)}
->
-  Cancel
-</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -823,19 +774,12 @@ interface SummaryRowProps {
   value: string
 }
 
-function SummaryRow({
-  label,
-  value,
-}: SummaryRowProps) {
+function SummaryRow({ label, value }: SummaryRowProps) {
   return (
     <div className="flex items-center justify-between gap-4 text-sm">
-      <span className="text-muted-foreground">
-        {label}
-      </span>
+      <span className="text-muted-foreground">{label}</span>
 
-      <span className="font-medium">
-        {value}
-      </span>
+      <span className="font-medium">{value}</span>
     </div>
   )
 }
