@@ -43,9 +43,7 @@ interface FeedbackQueryResult {
     | null
 }
 
-function getFirstRelation<T>(
-  relation: T | T[] | null
-): T | null {
+function getFirstRelation<T>(relation: T | T[] | null): T | null {
   if (Array.isArray(relation)) {
     return relation[0] ?? null
   }
@@ -53,24 +51,22 @@ function getFirstRelation<T>(
   return relation
 }
 
-function getClientName(
-  profile: FeedbackQueryResult["profiles"]
-): string {
+function getClientName(profile: FeedbackQueryResult["profiles"]): string {
   const customer = getFirstRelation(profile)
 
   if (!customer) {
     return "Unknown Client"
   }
 
-  return [customer.first_name, customer.last_name]
-    .filter(Boolean)
-    .join(" ")
-    .trim() || "Unknown Client"
+  return (
+    [customer.first_name, customer.last_name]
+      .filter(Boolean)
+      .join(" ")
+      .trim() || "Unknown Client"
+  )
 }
 
-function getProjectName(
-  orders: FeedbackQueryResult["orders"]
-): string {
+function getProjectName(orders: FeedbackQueryResult["orders"]): string {
   const order = getFirstRelation(orders)
 
   if (!order || !order.order_items?.length) {
@@ -122,7 +118,8 @@ export async function getFeedbacks(): Promise<Feedback[]> {
 
   const { data, error } = await supabase
     .from("feedback")
-    .select(`
+    .select(
+      `
       id,
       order_id,
       customer_id,
@@ -143,20 +140,17 @@ export async function getFeedbacks(): Promise<Feedback[]> {
           product_name_snapshot
         )
       )
-    `)
+    `
+    )
     .order("created_at", { ascending: false })
 
   if (error) {
     throw error
   }
 
-  return (data ?? []).map((row) =>
-    mapFeedback(row as FeedbackQueryResult)
-  )
+  return (data ?? []).map((row) => mapFeedback(row as FeedbackQueryResult))
 }
-export async function approveFeedback(
-  feedbackId: string
-): Promise<void> {
+export async function approveFeedback(feedbackId: string): Promise<void> {
   const supabase = createClient()
 
   const { error } = await supabase
@@ -170,9 +164,7 @@ export async function approveFeedback(
     throw error
   }
 }
-export async function archiveFeedback(
-  feedbackId: string
-): Promise<void> {
+export async function archiveFeedback(feedbackId: string): Promise<void> {
   const supabase = createClient()
 
   const { error } = await supabase

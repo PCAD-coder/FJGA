@@ -42,7 +42,8 @@ export async function getDeliveries(): Promise<GetDeliveriesResult> {
           profiles (
             id,
             first_name,
-            last_name
+            last_name,
+            full_name
           ),
           order_addresses (
             house_building_number,
@@ -109,7 +110,8 @@ export async function getDeliveries(): Promise<GetDeliveriesResult> {
       profiles (
         id,
         first_name,
-        last_name
+        last_name,
+        full_name
       ),
       order_addresses (
         house_building_number,
@@ -207,7 +209,8 @@ export async function getDeliveryDetails(
       profiles (
         id,
         first_name,
-        last_name
+        last_name,
+        full_name
       ),
       order_addresses (
         house_building_number,
@@ -281,7 +284,8 @@ export async function getDeliveryDetails(
         profiles (
           id,
           first_name,
-          last_name
+          last_name,
+          full_name
         ),
         order_addresses (
           house_building_number,

@@ -3,9 +3,12 @@ export type ReturnStatus =
   | "Under Review"
   | "Approved"
   | "Rejected"
+  | "Repair Processing"
+  | "Repair Ready for Delivery"
+  | "Repair Delivered"
   | "Replacement Processing"
-  | "Replacement Delivered"
-  | "Repair Delivered";
+  | "Replacement Ready for Delivery"
+  | "Replacement Delivered";
 
 export interface CustomerOrder {
   id: string;

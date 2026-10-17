@@ -22,6 +22,10 @@ function formatAmount(value: number | string | null): number {
   return Number(value)
 }
 
+function isResolutionProcessingStatus(status: string): boolean {
+  return status === "Repair Processing" || status === "Replacement Processing"
+}
+
 function mapStatus(
   status: string,
   hasInspection: boolean
@@ -34,9 +38,7 @@ function mapStatus(
     return hasInspection ? "inspection-scheduled" : "approved"
   }
 
-  if (status === "Replacement Delivered" ||
-    status === "Repair Delivered"
-  ) {
+  if (status === "Replacement Delivered" || status === "Repair Delivered") {
     return "resolved"
   }
 
@@ -463,241 +465,23 @@ export async function completeReturnInspection(
   returnRequestId: string,
   inspection: CompleteInspectionData
 ): Promise<{ data: boolean | null; error: string | null }> {
-  const supabase = createClient()
-
   try {
-    /*
-     * ========================================================
-     * GET CURRENT ADMIN
-     * ========================================================
-     */
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return {
-        data: null,
-        error: "You must be signed in to complete an inspection.",
+    const { error } = await supabase.rpc(
+      "complete_return_inspection",
+      {
+        p_return_request_id: returnRequestId,
+        p_inspection_result: inspection.inspectionResult,
+        p_damage_confirmed: inspection.damageConfirmed,
+        p_damage_description: inspection.damageDescription.trim(),
+        p_resolution_type: inspection.resolutionType,
+        p_resolution_notes: inspection.resolutionNotes.trim(),
       }
-    }
+    )
 
-    const { data: adminProfile, error: profileError } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("auth_user_id", user.id)
-      .eq("role", "admin")
-      .single()
-
-    if (profileError || !adminProfile) {
+    if (error) {
       return {
         data: null,
-        error: "Admin profile could not be found.",
-      }
-    }
-
-    /*
-     * ========================================================
-     * GET RETURN REQUEST
-     * ========================================================
-     */
-
-    const { data: returnRequest, error: requestError } = await supabase
-      .from("return_requests")
-      .select("id, status")
-      .eq("id", returnRequestId)
-      .single()
-
-    if (requestError || !returnRequest) {
-      return {
-        data: null,
-        error: "Return request could not be found.",
-      }
-    }
-
-    /*
-     * ========================================================
-     * VALIDATE REQUEST STATUS
-     * ========================================================
-     */
-
-    if (returnRequest.status !== "Approved") {
-      return {
-        data: null,
-        error:
-          "The return request must be approved before the inspection can be completed.",
-      }
-    }
-
-    /*
-     * ========================================================
-     * GET INSPECTION
-     * ========================================================
-     */
-
-    const { data: existingInspection, error: inspectionError } = await supabase
-      .from("return_inspections")
-      .select("id, status")
-      .eq("return_request_id", returnRequestId)
-      .single()
-
-    if (inspectionError || !existingInspection) {
-      return {
-        data: null,
-        error:
-          "A scheduled inspection could not be found for this return request.",
-      }
-    }
-
-    /*
-     * ========================================================
-     * VALIDATE INSPECTION STATUS
-     * ========================================================
-     */
-
-    if (existingInspection.status !== "scheduled") {
-      return {
-        data: null,
-        error: "Only a scheduled inspection can be completed.",
-      }
-    }
-
-    /*
-     * ========================================================
-     * VALIDATE INSPECTION DATA
-     * ========================================================
-     */
-
-    if (!inspection.damageDescription.trim()) {
-      return {
-        data: null,
-        error: "Inspection findings are required.",
-      }
-    }
-
-    if (!inspection.resolutionNotes.trim()) {
-      return {
-        data: null,
-        error: "Resolution notes are required.",
-      }
-    }
-
-    if (
-      inspection.inspectionResult === "damage_confirmed" &&
-      !inspection.damageConfirmed
-    ) {
-      return {
-        data: null,
-        error: "A damage-confirmed inspection must confirm the damage.",
-      }
-    }
-
-    if (
-      inspection.inspectionResult !== "damage_confirmed" &&
-      inspection.resolutionType !== "no_action"
-    ) {
-      return {
-        data: null,
-        error:
-          "No Action must be selected when no qualifying damage is confirmed.",
-      }
-    }
-
-    /*
-     * ========================================================
-     * DETERMINE RETURN REQUEST STATUS
-     * ========================================================
-     *
-     * The current return_requests table does not have a
-     * separate Repair Processing status.
-     *
-     * Therefore both repair and replacement work use the
-     * existing Replacement Processing status for now.
-     */
-
-    const nextReturnStatus =
-      inspection.resolutionType === "no_action"
-        ? "Rejected"
-        : "Replacement Processing"
-
-    /*
-     * ========================================================
-     * UPDATE INSPECTION
-     * ========================================================
-     */
-
-    const { error: updateInspectionError } = await supabase
-      .from("return_inspections")
-      .update({
-        inspection_result: inspection.inspectionResult,
-
-        damage_confirmed: inspection.damageConfirmed,
-
-        damage_description: inspection.damageDescription.trim(),
-
-        resolution_type: inspection.resolutionType,
-
-        resolution_notes: inspection.resolutionNotes.trim(),
-
-        status: "completed",
-
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", existingInspection.id)
-
-    if (updateInspectionError) {
-      return {
-        data: null,
-        error: updateInspectionError.message,
-      }
-    }
-
-    /*
-     * ========================================================
-     * UPDATE RETURN REQUEST
-     * ========================================================
-     */
-
-    const { error: updateRequestError } = await supabase
-      .from("return_requests")
-      .update({
-        status: nextReturnStatus,
-
-        reviewed_at: new Date().toISOString(),
-
-        reviewed_by: adminProfile.id,
-
-        review_notes: inspection.resolutionNotes.trim(),
-      })
-      .eq("id", returnRequestId)
-
-    if (updateRequestError) {
-      return {
-        data: null,
-        error: updateRequestError.message,
-      }
-    }
-
-    /*
-     * ========================================================
-     * ADD TIMELINE EVENT
-     * ========================================================
-     */
-
-    const { error: timelineError } = await supabase
-      .from("return_request_timeline")
-      .insert({
-        return_request_id: returnRequestId,
-        status: nextReturnStatus,
-        created_by: adminProfile.id,
-      })
-
-    if (timelineError) {
-      return {
-        data: null,
-        error: timelineError.message,
+        error: error.message,
       }
     }
 
@@ -767,7 +551,7 @@ export async function createReturnResolution(
       }
     }
 
-    if (returnRequest.status !== "Replacement Processing") {
+    if (!isResolutionProcessingStatus(returnRequest.status)) {
       return {
         data: null,
         error:
@@ -881,10 +665,10 @@ export async function startReturnResolution(
     }
   }
 
-  if (returnRequest.status !== "Replacement Processing") {
+  if (!isResolutionProcessingStatus(returnRequest.status)) {
     return {
       error:
-        "The return request must be in replacement processing before the resolution can start.",
+        "The return request must be processing before the resolution can start.",
     }
   }
 
@@ -1061,10 +845,10 @@ export async function completeReturnResolution(
     }
   }
 
-  if (returnRequest.status !== "Replacement Processing") {
+  if (!isResolutionProcessingStatus(returnRequest.status)) {
     return {
       error:
-        "The return request must be in replacement processing before the resolution can be completed.",
+        "The return request must be processing before the resolution can be completed.",
     }
   }
 
@@ -1140,12 +924,11 @@ export async function completeReturnResolution(
    */
 
   if (resolution.resolution_type === "replacement") {
-    const { data: productionJob, error: productionJobError } =
-      await supabase
-        .from("return_production_jobs")
-        .select("id, production_stage")
-        .eq("resolution_id", resolution.id)
-        .maybeSingle()
+    const { data: productionJob, error: productionJobError } = await supabase
+      .from("return_production_jobs")
+      .select("id, production_stage")
+      .eq("resolution_id", resolution.id)
+      .maybeSingle()
 
     if (productionJobError) {
       return {
@@ -1182,7 +965,10 @@ export async function completeReturnResolution(
       }
     }
 
-    const finalStatus = "Replacement Delivered"
+    const finalStatus =
+      resolution.resolution_type === "repair"
+        ? "Repair Ready for Delivery"
+        : "Replacement Ready for Delivery"
 
     const { error: requestUpdateError } = await supabase
       .from("return_requests")

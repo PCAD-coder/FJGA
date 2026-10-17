@@ -110,6 +110,13 @@ interface Props {
       estimatedCompletionDate?: string
     }
   ) => void
+  onStartProduction?: (
+    orderId: string,
+    options: {
+      assignedTo: string
+      estimatedCompletionDate: string
+    }
+  ) => Promise<void>
 }
 
 export default function ViewOrderDialog({
@@ -119,6 +126,7 @@ export default function ViewOrderDialog({
   onApprove,
   onDeny,
   onChangeStatus,
+  onStartProduction,
 }: Props) {
   const [supabase] = useState(() => createClient())
   const [productImages, setProductImages] = useState<Record<string, string>>({})
@@ -778,7 +786,9 @@ export default function ViewOrderDialog({
           onOpenChange={setStartProductionOpen}
           projectName={items[0]?.product_name_snapshot}
           onConfirm={async (assignedTo, estimatedCompletionDate) => {
-            await onChangeStatus?.(order.id, "in_production", {
+            if (!onStartProduction) return
+
+            await onStartProduction(order.id, {
               assignedTo,
               estimatedCompletionDate,
             })

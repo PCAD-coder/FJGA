@@ -35,7 +35,7 @@ import { Search } from "lucide-react"
 import { formatCustomerName } from "../utils/format-customer-name"
 
 export default function OrdersModule() {
-  const { orders, loading, error, approve, deny, changeStatus } = useOrders()
+  const { orders, loading, error, approve, deny, changeStatus, startProduction } = useOrders()
 
   const {
     requests: customRequests,
@@ -336,22 +336,23 @@ const [
             ))}
           </div>
           <ViewOrderDialog
-            order={selectedOrder}
-            open={viewOpen}
-            onOpenChange={setViewOpen}
-            onApprove={async (id) => {
-              await approve(id)
-              setViewOpen(false)
-            }}
-            onDeny={async (id) => {
-              await deny(id, "Denied by admin")
-              setViewOpen(false)
-            }}
-            onChangeStatus={async (id, status, options) => {
-              await changeStatus(id, status, options)
-              setViewOpen(false)
-            }}
-          />
+  order={selectedOrder}
+  open={viewOpen}
+  onOpenChange={setViewOpen}
+  onApprove={async (id) => {
+    await approve(id)
+    setViewOpen(false)
+  }}
+  onDeny={async (id) => {
+    await deny(id, "Denied by admin")
+    setViewOpen(false)
+  }}
+  onChangeStatus={async (id, status, options) => {
+    await changeStatus(id, status, options)
+    setViewOpen(false)
+  }}
+  onStartProduction={startProduction}
+/>
         </TabsContent>
 
         <TabsContent value="custom-requests" className="space-y-6">

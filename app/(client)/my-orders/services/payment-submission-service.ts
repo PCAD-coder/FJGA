@@ -275,24 +275,24 @@ export async function submitPaymentProof(input: SubmitPaymentProofInput) {
    * ============================================================
    */
 
-const { data: updatedSubmission, error: updateError } =
-  await supabase.rpc("attach_payment_proof", {
-    p_submission_id: submission.id,
-    p_proof_image_path: filePath,
-  })
-
-if (updateError || !updatedSubmission) {
-  await supabase.storage.from("payment-proofs").remove([filePath])
-
-  await supabase
-    .from("order_payment_submissions")
-    .delete()
-    .eq("id", submission.id)
-
-  throw new Error(
-    updateError?.message || "Failed to save payment proof"
+  const { data: updatedSubmission, error: updateError } = await supabase.rpc(
+    "attach_payment_proof",
+    {
+      p_submission_id: submission.id,
+      p_proof_image_path: filePath,
+    }
   )
-}
 
-return updatedSubmission
+  if (updateError || !updatedSubmission) {
+    await supabase.storage.from("payment-proofs").remove([filePath])
+
+    await supabase
+      .from("order_payment_submissions")
+      .delete()
+      .eq("id", submission.id)
+
+    throw new Error(updateError?.message || "Failed to save payment proof")
+  }
+
+  return updatedSubmission
 }

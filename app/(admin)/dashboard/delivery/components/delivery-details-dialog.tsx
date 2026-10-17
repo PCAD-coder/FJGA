@@ -28,7 +28,7 @@ export default function DeliveryDetailsDialog({
   if (loading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="!max-w-3xl">
           <DialogHeader>
             <DialogTitle>Delivery Details</DialogTitle>
           </DialogHeader>
@@ -101,11 +101,13 @@ export default function DeliveryDetailsDialog({
     }
   }
 
-  const customerName = delivery.customer
-    ? [delivery.customer.firstName, delivery.customer.lastName]
-        .filter(Boolean)
-        .join(" ") || "Unknown Customer"
-    : "Unknown Customer"
+const customerName = delivery.customer
+  ? [delivery.customer.firstName, delivery.customer.lastName]
+      .filter(Boolean)
+      .join(" ") ||
+    delivery.customer.fullName?.trim() ||
+    "Unknown Customer"
+  : "Unknown Customer"
 
   const formatDate = (date: string | null) => {
     if (!date) return "Not scheduled"
@@ -158,7 +160,7 @@ export default function DeliveryDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+      <DialogContent className="max-h-[90vh] !max-w-3xl overflow-y-auto">
         <DialogHeader>
           <div className="flex flex-col gap-2 pr-8 sm:flex-row sm:items-center sm:justify-between">
             <div>

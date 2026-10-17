@@ -1,7 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
-
+import { adminSupabase } from "@/lib/supabase/admin"
 import { getProductPricingForDimensions } from "@/app/(admin)/dashboard/products/services/product-pricing-server"
 
 import type {
@@ -163,9 +163,9 @@ export async function createOrderServer(input: CreateOrderInput) {
       labor_snapshot: snapshot.labor,
     }
   })
-  const { data: orderId, error } = await supabase.rpc(
-    "create_order_transaction",
-    {
+const { data: orderId, error } = await adminSupabase.rpc(
+  "create_order_transaction",
+  {
       p_customer_id: input.customer_id,
       p_customer_contact_number: input.customer_contact_number,
       p_payment_method: input.payment_method,

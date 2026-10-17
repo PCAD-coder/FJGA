@@ -162,86 +162,36 @@ export async function updateOrderStatus(
     estimatedCompletionDate?: string
   }
 ) {
+  /*
+   * Production must only be started through
+   * startOrderProduction().
+   *
+   * That workflow uses the start_order_production RPC,
+   * which securely checks the 50% payment requirement
+   * and initializes production as "pending".
+   */
+  if (status === "in_production") {
+    throw new Error(
+      "Production must be started through the Start Production workflow"
+    )
+  }
+
   const updateData: Record<string, any> = {
     status,
     updated_at: new Date().toISOString(),
   }
 
-  if (status === "in_production") {
-    const { data: order, error: orderError } = await supabase
-      .from("orders")
-      .select("id, total_amount")
-      .eq("id", orderId)
-      .single()
+  /*
+   * Keep these optional fields for any existing status-update
+   * flows that may still provide production information.
+   */
+  if (options?.assignedTo) {
+    updateData.production_assigned_to = options.assignedTo
+  }
 
-    if (orderError || !order) {
-      throw new Error("Order not found")
-    }
-
-    const { data: payments, error: paymentsError } = await supabase
-      .from("order_payments")
-      .select("amount")
-      .eq("order_id", orderId)
-
-    if (paymentsError) {
-      throw new Error("Failed to check order payments")
-    }
-
-    const totalPaid = (payments ?? []).reduce(
-      (total, payment) => total + Number(payment.amount ?? 0),
-      0
-    )
-
-    const requiredDownPayment = Number(order.total_amount ?? 0) * 0.5
-
-    if (totalPaid < requiredDownPayment) {
-      const remaining = requiredDownPayment - totalPaid
-
-      throw new Error(
-        `Production cannot start. The customer must pay at least 50% of the order total. ${remaining.toLocaleString(
-          "en-PH",
-          {
-            style: "currency",
-            currency: "PHP",
-          }
-        )} remaining.`
-      )
-    }
-    updateData.production_started_at = new Date().toISOString()
-    updateData.production_stage = "material_prep"
-
-    if (options?.assignedTo) {
-      updateData.production_assigned_to = options.assignedTo
-    }
-
-    if (options?.estimatedCompletionDate) {
-      updateData.estimated_completion_date = options.estimatedCompletionDate
-    }
-
-    /*
-     * Material consumption happens when production starts.
-     *
-     * The database function protects against duplicate
-     * consumption, so moving the order back to Material Prep
-     * later will not deduct the same material twice.
-     */
-    const { data: consumptionResult, error: consumptionError } =
-      await supabase.rpc("consume_order_materials", {
-        p_order_id: orderId,
-        p_production_stage: "material_prep",
-      })
-
-    console.log("MATERIAL CONSUMPTION ON START PRODUCTION:", {
-      orderId,
-      consumptionResult,
-      consumptionError,
-    })
-
-    if (consumptionError) {
-      throw new Error(
-        consumptionError.message || "Failed to consume production materials"
-      )
-    }
+  if (options?.estimatedCompletionDate) {
+    updateData.estimated_completion_date =
+      options.estimatedCompletionDate
   }
 
   const { data, error } = await supabase
@@ -310,4 +260,22 @@ export async function approveOrder(orderId: string) {
   if (error) throw error
 
   return data
+}
+
+export async function startOrderProduction(
+  orderId: string,
+  assignedTo: string,
+  estimatedCompletionDate: string
+) {
+  const { error } = await supabase.rpc("start_order_production", {
+    p_order_id: orderId,
+    p_assigned_to: assignedTo.trim(),
+    p_estimated_completion_date: estimatedCompletionDate,
+  })
+
+  if (error) {
+    throw new Error(
+      error.message || "Failed to start production"
+    )
+  }
 }

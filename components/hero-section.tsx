@@ -147,7 +147,6 @@ export default function HeroSection() {
                     <Button asChild size="lg">
                       <Link href="/client-dashboard">Test Client</Link>
                     </Button>
-
                   </div>
                   <Button
                     key={2}

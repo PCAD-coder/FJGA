@@ -1,8 +1,5 @@
 import { createClient } from "@/lib/supabase/client"
-import type {
-  PaymentMethod,
-  PaymentSubmission,
-} from "../types/sales"
+import type { PaymentMethod, PaymentSubmission } from "../types/sales"
 
 const supabase = createClient()
 
@@ -52,24 +49,17 @@ export async function recordPayment(input: RecordPaymentInput) {
   return data
 }
 
-export async function approvePaymentSubmission(
-  submissionId: string
-) {
+export async function approvePaymentSubmission(submissionId: string) {
   if (!submissionId) {
     throw new Error("Payment submission ID is required")
   }
 
-  const { data, error } = await supabase.rpc(
-    "approve_payment_submission",
-    {
-      p_submission_id: submissionId,
-    }
-  )
+  const { data, error } = await supabase.rpc("approve_payment_submission", {
+    p_submission_id: submissionId,
+  })
 
   if (error) {
-    throw new Error(
-      error.message || "Failed to approve payment submission"
-    )
+    throw new Error(error.message || "Failed to approve payment submission")
   }
 
   return data
@@ -87,25 +77,18 @@ export async function rejectPaymentSubmission(
     throw new Error("A rejection reason is required")
   }
 
-  const { data, error } = await supabase.rpc(
-    "reject_payment_submission",
-    {
-      p_submission_id: submissionId,
-      p_rejection_reason: rejectionReason.trim(),
-    }
-  )
+  const { data, error } = await supabase.rpc("reject_payment_submission", {
+    p_submission_id: submissionId,
+    p_rejection_reason: rejectionReason.trim(),
+  })
 
   if (error) {
-    throw new Error(
-      error.message || "Failed to reject payment submission"
-    )
+    throw new Error(error.message || "Failed to reject payment submission")
   }
 
   return data
 }
-export async function getPaymentProofUrl(
-  proofImagePath: string
-) {
+export async function getPaymentProofUrl(proofImagePath: string) {
   if (!proofImagePath) {
     throw new Error("Payment proof path is missing")
   }
@@ -115,9 +98,7 @@ export async function getPaymentProofUrl(
     .createSignedUrl(proofImagePath, 60 * 5)
 
   if (error || !data?.signedUrl) {
-    throw new Error(
-      error?.message || "Failed to generate payment proof URL"
-    )
+    throw new Error(error?.message || "Failed to generate payment proof URL")
   }
 
   return data.signedUrl

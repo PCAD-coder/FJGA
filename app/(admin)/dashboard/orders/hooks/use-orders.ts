@@ -12,6 +12,7 @@ import {
   denyOrder,
   saveOrderQuotation,
   updateOrderStatus,
+  startOrderProduction,
 } from "../services/orders"
 
 export function useOrders() {
@@ -26,6 +27,22 @@ const changeStatus = async (
   await updateOrderStatus(orderId, status, options)
   await loadOrders()
   }
+
+  const startProduction = async (
+  orderId: string,
+  options: {
+    assignedTo: string
+    estimatedCompletionDate: string
+  }
+) => {
+  await startOrderProduction(
+    orderId,
+    options.assignedTo,
+    options.estimatedCompletionDate
+  )
+
+  await loadOrders()
+} 
 
   const approve = async (orderId: string) => {
     await approveOrder(orderId)
@@ -88,6 +105,7 @@ const changeStatus = async (
     orders,
     loading,
     error,
+    startProduction,
 
     refresh: loadOrders,
 

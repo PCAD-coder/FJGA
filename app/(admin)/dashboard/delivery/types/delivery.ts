@@ -52,6 +52,7 @@ export interface DeliveryCustomer {
   id: string
   firstName: string | null
   lastName: string | null
+  fullName: string | null
 }
 
 export interface DeliveryAddress {

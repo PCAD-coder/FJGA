@@ -37,12 +37,21 @@ export default function HomepageContentCard({ content, onEdit }: Props) {
         <div className="grid gap-6 md:grid-cols-[320px_1fr]">
           <div>
             <div className="relative h-[220px] overflow-hidden rounded-lg border">
-              <Image
-                src={content.heroImage}
-                alt="Hero Image"
-                fill
-                className="object-cover"
-              />
+              {content.heroImageUrl ? (
+  <Image
+    src={content.heroImageUrl}
+    alt={content.heroTitle}
+    width={1200}
+    height={600}
+    className="h-64 w-full rounded-lg object-cover"
+  />
+) : (
+  <div className="flex h-64 items-center justify-center rounded-lg border border-dashed bg-muted/30">
+    <span className="text-sm text-muted-foreground">
+      No hero image uploaded
+    </span>
+  </div>
+)}
             </div>
           </div>
 
@@ -59,7 +68,7 @@ export default function HomepageContentCard({ content, onEdit }: Props) {
               </p>
 
               <div className="rounded-md bg-muted p-3 text-sm">
-                {content.companyDescription}
+                {content.heroDescription}
               </div>
             </div>
           </div>

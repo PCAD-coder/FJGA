@@ -1,37 +1,99 @@
 export interface HomepageContent {
-  id: number
-
+  id: string
   heroTitle: string
-
-  companyDescription: string
-
-  heroImage: string
+  heroDescription: string
+  heroImageUrl: string | null
+  updatedBy: string | null
+  createdAt: string
+  updatedAt: string
 }
 
-export interface GalleryItem {
-  id: number
-
+export interface ContentProject {
+  id: string
   title: string
-
-  category: string
-
-  image: string
-
-  uploadedAt: string
+  description: string | null
+  category: string | null
+  imageUrl: string
+  isVisible: boolean
+  displayOrder: number
+  createdAt: string
+  updatedAt: string
 }
 
-export interface DocumentTemplate {
-  id: number
+export type SocialPlatform =
+  | "facebook"
+  | "messenger"
+  | "instagram"
+  | "tiktok"
+  | "email"
+  | "phone"
+  | "other"
 
-  name: string
+export interface ContentSocialLink {
+  id: string
+  platform: SocialPlatform
+  label: string
+  url: string
+  isVisible: boolean
+  displayOrder: number
+  createdAt: string
+  updatedAt: string
+}
 
-  type:
-    | "Quotation"
-    | "Invoice"
-    | "Receipt"
-    | "Contract"
+export type FeedbackStatus = "pending" | "approved" | "rejected"
 
-  uploadedAt: string
+export interface ContentFeedback {
+  id: string
+  orderId: string
+  orderNumber: string
+  customerId: string
+  customerName: string
+  rating: number
+  comment: string
+  status: FeedbackStatus
+  featured: boolean
+  adminReply: string | null
+  repliedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
 
-  fileName: string
+export interface CreateContentProjectInput {
+  title: string
+  description?: string | null
+  category?: string | null
+  imageUrl: string
+  isVisible?: boolean
+  displayOrder?: number
+}
+
+export interface UpdateContentProjectInput {
+  title?: string
+  description?: string | null
+  category?: string | null
+  imageUrl?: string
+  isVisible?: boolean
+  displayOrder?: number
+}
+
+export interface CreateSocialLinkInput {
+  platform: SocialPlatform
+  label: string
+  url: string
+  isVisible?: boolean
+  displayOrder?: number
+}
+
+export interface UpdateSocialLinkInput {
+  platform?: SocialPlatform
+  label?: string
+  url?: string
+  isVisible?: boolean
+  displayOrder?: number
+}
+
+export interface UpdateHomepageInput {
+  heroTitle: string
+  heroDescription: string
+  heroImageUrl: string | null
 }

@@ -17,7 +17,6 @@ export interface ReturnRequest {
 
   reportedDate: string
 
-
   status:
     | "under-review"
     | "inspection-scheduled"
@@ -28,15 +27,12 @@ export interface ReturnRequest {
   declineReason?: string
 
   archived?: boolean
-    
+
   inspectionId?: string | null
   inspection?: ReturnInspectionDetails | null
-resolution?: ReturnResolutionDetails | null
+  resolution?: ReturnResolutionDetails | null
 }
-export type ReturnResolutionType =
-  | "repair"
-  | "replacement"
-  | "no_action"
+export type ReturnResolutionType = "repair" | "replacement" | "no_action"
 
 export type ReturnResolutionStatus =
   | "pending"
@@ -63,11 +59,7 @@ export interface ReturnInspectionDetails {
   inspectionTime: string | null
   assignedStaff: string | null
   inspectionNotes: string | null
-  inspectionResult:
-    | "damage_confirmed"
-    | "no_issue"
-    | "not_covered"
-    | null
+  inspectionResult: "damage_confirmed" | "no_issue" | "not_covered" | null
   damageConfirmed: boolean | null
   damageDescription: string | null
   resolutionType: "repair" | "replacement" | "no_action" | null
@@ -93,11 +85,7 @@ export interface ReturnResolutionItem {
 export interface ReturnResolutionDetails {
   id: string
   resolutionType: "repair" | "replacement" | "no_action"
-  resolutionStatus:
-    | "pending"
-    | "in_progress"
-    | "completed"
-    | "cancelled"
+  resolutionStatus: "pending" | "in_progress" | "completed" | "cancelled"
   resolutionNotes: string | null
   createdAt: string
   completedAt: string | null

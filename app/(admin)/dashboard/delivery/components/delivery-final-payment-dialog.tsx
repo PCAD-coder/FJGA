@@ -61,7 +61,9 @@ export default function DeliveryFinalPaymentDialog({
     }
 
     setAmount(
-      delivery?.remainingBalance ? delivery.remainingBalance.toFixed(2) : ""
+      delivery?.remainingBalance != null
+        ? delivery.remainingBalance.toFixed(2)
+        : ""
     )
     setPaymentMethod("cash_on_delivery")
     setPaymentDate(new Date().toISOString().split("T")[0])
@@ -83,30 +85,25 @@ export default function DeliveryFinalPaymentDialog({
   const handleSubmit = async () => {
     setError(null)
 
-    if (Number(amount) !== delivery.remainingBalance) {
-      setError(
-        `The final payment must be exactly ₱${delivery.remainingBalance.toLocaleString(
-          "en-PH",
-          {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          }
-        )}.`
-      )
+    const paymentAmount = Number(amount)
 
+    if (!Number.isFinite(paymentAmount) || paymentAmount <= 0) {
+      setError("Enter a valid payment amount.")
       return
     }
-    if (Number(amount) > delivery.remainingBalance) {
-      setError(
-        `Payment cannot exceed the remaining balance of ₱${delivery.remainingBalance.toLocaleString(
-          "en-PH",
-          {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          }
-        )}.`
-      )
 
+    const paymentCentavos = Math.round(paymentAmount * 100)
+    const remainingCentavos = Math.round(delivery.remainingBalance * 100)
+
+    if (paymentCentavos !== remainingCentavos) {
+      setError(
+        `The final payment must be exactly ₱${(
+          remainingCentavos / 100
+        ).toLocaleString("en-PH", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}.`
+      )
       return
     }
 
@@ -134,7 +131,7 @@ export default function DeliveryFinalPaymentDialog({
 
       await completeDeliveryWithPayment({
         deliveryId: delivery.id,
-        amount: Number(amount),
+        amount: paymentCentavos / 100,
         paymentMethod,
         paymentDate,
         referenceNumber: referenceNumber.trim() || null,

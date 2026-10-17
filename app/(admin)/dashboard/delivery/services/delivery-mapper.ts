@@ -24,11 +24,13 @@ interface DeliveryOrder {
         id: string
         first_name: string | null
         last_name: string | null
+        full_name: string | null
       }[]
     | {
         id: string
         first_name: string | null
         last_name: string | null
+        full_name: string | null
       }
     | null
 
@@ -227,10 +229,19 @@ function getOrderPaymentTotal(order: DeliveryOrder) {
 function buildClientName(order: DeliveryOrder) {
   const profile = getProfile(order)
 
-  return profile
-    ? `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim() ||
-        "Unknown Customer"
-    : "Unknown Customer"
+  if (!profile) {
+    return "Unknown Customer"
+  }
+
+  const firstName = profile.first_name?.trim() ?? ""
+  const lastName = profile.last_name?.trim() ?? ""
+  const fullName = profile.full_name?.trim() ?? ""
+
+  return (
+    [firstName, lastName].filter(Boolean).join(" ") ||
+    fullName ||
+    "Unknown Customer"
+  )
 }
 
 function buildAddress(order: DeliveryOrder) {
@@ -426,6 +437,7 @@ export function mapOrderToDeliveryDetails(
           id: profile.id,
           firstName: profile.first_name,
           lastName: profile.last_name,
+          fullName: profile.full_name,
         }
       : null,
 
@@ -496,6 +508,7 @@ export function mapReturnToDeliveryDetails(
           id: profile.id,
           firstName: profile.first_name,
           lastName: profile.last_name,
+          fullName: profile.full_name,
         }
       : null,
 
