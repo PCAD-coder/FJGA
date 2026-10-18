@@ -24,10 +24,7 @@ import { RecordPaymentDialog } from "./record-payment-dialog"
 
 import { getSalesRecords } from "../services/sales-service"
 
-import type {
-  PaymentSubmission,
-  SalesRecord,
-} from "../types/sales"
+import type { PaymentSubmission, SalesRecord } from "../types/sales"
 
 import { getPendingPaymentSubmissions } from "../services/payment-verification-service"
 import PendingPaymentSubmissions from "./pending-payment-submissions"
@@ -79,8 +76,9 @@ function getPaymentMethodLabel(paymentMethod: SalesRecord["paymentMethod"]) {
 
 export default function Sales() {
   const [sales, setSales] = useState<SalesRecord[]>([])
-  const [pendingPayments, setPendingPayments] =
-  useState<PaymentSubmission[]>([])
+  const [pendingPayments, setPendingPayments] = useState<PaymentSubmission[]>(
+    []
+  )
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -96,12 +94,12 @@ export default function Sales() {
         setError(null)
 
         const data = await getSalesRecords()
-const pendingPayments = await getPendingPaymentSubmissions()
+        const pendingPayments = await getPendingPaymentSubmissions()
 
-if (!cancelled) {
-  setSales(data)
-  setPendingPayments(pendingPayments)
-}
+        if (!cancelled) {
+          setSales(data)
+          setPendingPayments(pendingPayments)
+        }
       } catch (err) {
         console.error("Failed to load sales:", err)
 
@@ -242,7 +240,7 @@ if (!cancelled) {
           </CardContent>
         </Card>
       </div>
-            {/* PENDING PAYMENT SUBMISSIONS */}
+      {/* PENDING PAYMENT SUBMISSIONS */}
 
       <PendingPaymentSubmissions
         submissions={pendingPayments}
@@ -256,10 +254,7 @@ if (!cancelled) {
             setSales(salesData)
             setPendingPayments(pendingData)
           } catch (error) {
-            console.error(
-              "Failed to refresh payment submissions:",
-              error
-            )
+            console.error("Failed to refresh payment submissions:", error)
           }
         }}
       />
@@ -408,6 +403,7 @@ if (!cancelled) {
         onRecordPayment={() => {
           if (selectedSale) {
             setPaymentSale(selectedSale)
+            setSelectedSale(null)
           }
         }}
       />
@@ -424,8 +420,13 @@ if (!cancelled) {
           setPaymentSale(null)
 
           try {
-            const data = await getSalesRecords()
-            setSales(data)
+            const [salesData, pendingData] = await Promise.all([
+              getSalesRecords(),
+              getPendingPaymentSubmissions(),
+            ])
+
+            setSales(salesData)
+            setPendingPayments(pendingData)
           } catch (error) {
             console.error("Failed to refresh sales after payment:", error)
           }

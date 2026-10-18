@@ -1,6 +1,12 @@
-import React from "react"
+"use client"
+
+import React, { useEffect, useState } from "react"
+
+import {
+  getPublicHomepageContent,
+  type PublicHomepageContent,
+} from "@/app/services/public-content"
 import Link from "next/link"
-import { ArrowRight, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import { TextEffect } from "@/components/ui/text-effect"
@@ -48,6 +54,28 @@ const transitionVariants = {
 }
 
 export default function HeroSection() {
+  const [content, setContent] = useState<PublicHomepageContent | null>(null)
+
+  useEffect(() => {
+    async function loadHomepageContent() {
+      try {
+        const data = await getPublicHomepageContent()
+        setContent(data)
+      } catch (error) {
+        console.error("Failed to load public homepage content:", error)
+      }
+    }
+
+    void loadHomepageContent()
+  }, [])
+
+  const heroTitle = content?.heroTitle || "FJ Glass and Aluminum"
+
+  const heroDescription =
+    content?.heroDescription ||
+    `We design and manufacture high-quality aluminum and glass furniture for homes, offices, and commercial spaces. FJ Glass & Aluminum specializes in designing, fabricating, and installing modern furniture and architectural fixtures using aluminum frames and tempered glass panels that will suit your needs.`
+
+  const heroImageUrl = content?.heroImageUrl
   return (
     <>
       <HeroHeader />
@@ -90,14 +118,17 @@ export default function HeroSection() {
               }}
               className="absolute inset-0 top-56 -z-20 mask-b-from-35% mask-b-to-90% lg:top-32"
             >
-              <Image
-                src="https://ik.imagekit.io/lrigu76hy/tailark/night-background.jpg?updatedAt=1745733451120"
-                alt=""
-                className="hidden size-full dark:block"
-                width="3276"
-                height="4095"
-                unoptimized
-              />
+              {heroImageUrl && (
+                <Image
+                  src={heroImageUrl}
+                  alt=""
+                  fill
+                  loading="eager"
+                  sizes="100vw"
+                  className="object-cover"
+                  unoptimized
+                />
+              )}
             </AnimatedGroup>
 
             <div
@@ -113,7 +144,7 @@ export default function HeroSection() {
                   as="h1"
                   className="mx-auto mt-8 max-w-4xl text-5xl text-balance max-md:font-semibold md:text-7xl lg:mt-16 xl:text-[5.25rem]"
                 >
-                  FJ Glass and Aluminum
+                  {heroTitle}
                 </TextEffect>
                 <TextEffect
                   per="line"
@@ -123,12 +154,7 @@ export default function HeroSection() {
                   as="p"
                   className="mx-auto mt-8 max-w-2xl text-lg text-balance"
                 >
-                  We design and manufacture high-quality aluminum and glass
-                  furniture for homes, offices, and commercial spaces. FJ Glass
-                  & Aluminum specializes in designing, fabricating, and
-                  installing modern furniture and architectural fixtures using
-                  aluminum frames and tempered glass panels that will suit your
-                  needs.
+                  {heroDescription}
                 </TextEffect>
                 <AnimatedGroup
                   variants={{

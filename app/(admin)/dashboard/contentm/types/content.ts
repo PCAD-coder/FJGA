@@ -40,7 +40,10 @@ export interface ContentSocialLink {
   updatedAt: string
 }
 
-export type FeedbackStatus = "pending" | "approved" | "rejected"
+export type FeedbackStatus =
+  | "pending"
+  | "published"
+  | "archived"
 
 export interface ContentFeedback {
   id: string

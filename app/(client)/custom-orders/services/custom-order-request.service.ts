@@ -1,8 +1,6 @@
 import { createClient } from "@/lib/supabase/client"
 
-import type {
-  DeliveryAddressInput,
-} from "@/types/delivery-address"
+import type { DeliveryAddressInput } from "@/types/delivery-address"
 import type { ProjectDetailsData } from "../components/request-form/project-details-step"
 import type { SpecificationsData } from "../components/request-form/specifications-step"
 import type {
@@ -122,32 +120,28 @@ export async function createCustomOrderRequest(
 
   const customerId = await getCurrentCustomerProfileId()
 
-  const {
-  projectDetails,
-  designReference,
-  specifications,
-  deliveryAddress,
-} = input
+  const { projectDetails, designReference, specifications, deliveryAddress } =
+    input
 
-if (!deliveryAddress.houseBuildingNumber.trim()) {
-  throw new Error("House or building number is required.")
-}
+  if (!deliveryAddress.houseBuildingNumber.trim()) {
+    throw new Error("House or building number is required.")
+  }
 
-if (!deliveryAddress.street.trim()) {
-  throw new Error("Street is required.")
-}
+  if (!deliveryAddress.street.trim()) {
+    throw new Error("Street is required.")
+  }
 
-if (!deliveryAddress.regionPsgcCode) {
-  throw new Error("Region is required.")
-}
+  if (!deliveryAddress.regionPsgcCode) {
+    throw new Error("Region is required.")
+  }
 
-if (!deliveryAddress.cityPsgcCode) {
-  throw new Error("City or municipality is required.")
-}
+  if (!deliveryAddress.cityPsgcCode) {
+    throw new Error("City or municipality is required.")
+  }
 
-if (!deliveryAddress.barangayPsgcCode) {
-  throw new Error("Barangay is required.")
-}
+  if (!deliveryAddress.barangayPsgcCode) {
+    throw new Error("Barangay is required.")
+  }
 
   const width = Number(specifications.width)
   const height = Number(specifications.height)
@@ -201,66 +195,53 @@ if (!deliveryAddress.barangayPsgcCode) {
     throw new Error(requestError.message)
   }
 
- const uploadedPaths: string[] = []
+  const uploadedPaths: string[] = []
 
-try {
-  const { error: addressError } = await supabase
-    .from("custom_order_request_addresses")
-    .insert({
-      request_id: request.id,
+  try {
+    const { error: addressError } = await supabase
+      .from("custom_order_request_addresses")
+      .insert({
+        request_id: request.id,
 
-      house_building_number:
-        deliveryAddress.houseBuildingNumber.trim(),
+        house_building_number: deliveryAddress.houseBuildingNumber.trim(),
 
-      street:
-        deliveryAddress.street.trim(),
+        street: deliveryAddress.street.trim(),
 
-      building_subdivision:
-        deliveryAddress.buildingSubdivision.trim() || null,
+        building_subdivision:
+          deliveryAddress.buildingSubdivision.trim() || null,
 
-      unit_floor:
-        deliveryAddress.unitFloor.trim() || null,
+        unit_floor: deliveryAddress.unitFloor.trim() || null,
 
-      region_psgc_code:
-        deliveryAddress.regionPsgcCode,
+        region_psgc_code: deliveryAddress.regionPsgcCode,
 
-      region_name:
-        deliveryAddress.regionName,
+        region_name: deliveryAddress.regionName,
 
-      province_psgc_code:
-        deliveryAddress.provincePsgcCode,
+        province_psgc_code: deliveryAddress.provincePsgcCode,
 
-      province_name:
-        deliveryAddress.provinceName,
+        province_name: deliveryAddress.provinceName,
 
-      city_psgc_code:
-        deliveryAddress.cityPsgcCode,
+        city_psgc_code: deliveryAddress.cityPsgcCode,
 
-      city_name:
-        deliveryAddress.cityName,
+        city_name: deliveryAddress.cityName,
 
-      barangay_psgc_code:
-        deliveryAddress.barangayPsgcCode,
+        barangay_psgc_code: deliveryAddress.barangayPsgcCode,
 
-      barangay_name:
-        deliveryAddress.barangayName,
+        barangay_name: deliveryAddress.barangayName,
 
-      postal_code:
-        deliveryAddress.postalCode.trim() || null,
+        postal_code: deliveryAddress.postalCode.trim() || null,
 
-      landmark:
-        deliveryAddress.landmark.trim() || null,
-    })
+        landmark: deliveryAddress.landmark.trim() || null,
+      })
 
-  if (addressError) {
-    throw new Error(addressError.message)
-  }
+    if (addressError) {
+      throw new Error(addressError.message)
+    }
 
-  const paths = await uploadReferenceImages(
-    user.id,
-    request.id,
-    designReference
-  )
+    const paths = await uploadReferenceImages(
+      user.id,
+      request.id,
+      designReference
+    )
 
     uploadedPaths.push(...paths)
 
@@ -280,7 +261,19 @@ try {
       }
     }
 
+    const { error: notificationError } = await supabase.rpc(
+      "notify_custom_request_submitted",
+      {
+        p_request_id: request.id,
+      }
+    )
+
+    if (notificationError) {
+      throw new Error(notificationError.message)
+    }
+
     return request as CustomOrderRequest
+    
   } catch (error) {
     if (uploadedPaths.length > 0) {
       const { error: storageCleanupError } = await supabase.storage

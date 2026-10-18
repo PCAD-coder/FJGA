@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu" 
 import { useState, useEffect } from "react"
+import { NotificationBell } from "@/components/notifications/notification-bell"
 
 const ThemeSwitcher = () => {
     const { theme, setTheme } = useTheme()
@@ -49,7 +50,8 @@ const ThemeSwitcher = () => {
 }
 const Navbar = () => {
   return (
-    <nav className="w-full sticky top-0 z-40 px-6 py-4 flex justify-end items-center">
+    <nav className="flex w-full items-center justify-end gap-2">
+      <NotificationBell />
       <ThemeSwitcher />
     </nav>
   )

@@ -12,6 +12,7 @@ const menuItems = [
   { name: 'Home', href: 'home' },
   { name: 'Projects', href: 'projects' },
   { name: 'Services', href: 'services' },
+  { name: "Testimonials", href: "feedback" },
   { name: 'Contacts', href: 'contacts' },
 ]
 
@@ -66,7 +67,7 @@ export const HeroHeader = () => {
 
             {/* Desktop Menu */}
             <div className="absolute inset-0 m-auto hidden size-fit lg:block">
-              <ul className="flex gap-8 text-sm">
+              <ul className="flex gap-6 text-sm">
                 {menuItems.map((item) => (
                   <li key={item.name}>
                     <button

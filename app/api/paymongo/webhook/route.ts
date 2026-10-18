@@ -129,10 +129,7 @@ export async function POST(request: Request) {
   try {
     event = JSON.parse(rawBody)
   } catch {
-    return Response.json(
-      { error: "Invalid JSON payload" },
-      { status: 400 }
-    )
+    return Response.json({ error: "Invalid JSON payload" }, { status: 400 })
   }
 
   const eventId = event.data?.id
@@ -149,10 +146,7 @@ export async function POST(request: Request) {
   if (!eventId) {
     console.error("PAYMONGO WEBHOOK: Missing event ID")
 
-    return Response.json(
-      { error: "Missing event ID" },
-      { status: 400 }
-    )
+    return Response.json({ error: "Missing event ID" }, { status: 400 })
   }
 
   const validSignature = verifyPayMongoSignature(
@@ -175,10 +169,7 @@ export async function POST(request: Request) {
    * Ignore events that this endpoint does not handle.
    */
   if (eventType !== "checkout_session.payment.paid") {
-    console.log(
-      "PAYMONGO WEBHOOK: Ignored event",
-      eventType
-    )
+    console.log("PAYMONGO WEBHOOK: Ignored event", eventType)
 
     return Response.json({
       received: true,
@@ -194,9 +185,7 @@ export async function POST(request: Request) {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!supabaseUrl || !serviceRoleKey) {
-    console.error(
-      "PAYMONGO WEBHOOK: Supabase server configuration missing"
-    )
+    console.error("PAYMONGO WEBHOOK: Supabase server configuration missing")
 
     return Response.json(
       { error: "Supabase configuration error" },
@@ -204,16 +193,12 @@ export async function POST(request: Request) {
     )
   }
 
-  const supabase = createClient(
-    supabaseUrl,
-    serviceRoleKey,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    }
-  )
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  })
 
   /*
    * Event-level idempotency.
@@ -221,12 +206,11 @@ export async function POST(request: Request) {
    * If PayMongo sends the exact same event again,
    * we acknowledge it without processing it again.
    */
-  const { data: existingEvent, error: existingEventError } =
-    await supabase
-      .from("paymongo_webhook_events")
-      .select("id")
-      .eq("event_id", eventId)
-      .maybeSingle()
+  const { data: existingEvent, error: existingEventError } = await supabase
+    .from("paymongo_webhook_events")
+    .select("id")
+    .eq("event_id", eventId)
+    .maybeSingle()
 
   if (existingEventError) {
     console.error(
@@ -241,10 +225,7 @@ export async function POST(request: Request) {
   }
 
   if (existingEvent) {
-    console.log(
-      "PAYMONGO WEBHOOK: Duplicate event ignored",
-      eventId
-    )
+    console.log("PAYMONGO WEBHOOK: Duplicate event ignored", eventId)
 
     return Response.json({
       received: true,
@@ -259,14 +240,9 @@ export async function POST(request: Request) {
   const session = eventAttributes?.data
 
   if (!session?.id) {
-    console.error(
-      "PAYMONGO WEBHOOK: Missing checkout session"
-    )
+    console.error("PAYMONGO WEBHOOK: Missing checkout session")
 
-    return Response.json(
-      { error: "Missing checkout session" },
-      { status: 400 }
-    )
+    return Response.json({ error: "Missing checkout session" }, { status: 400 })
   }
 
   const sessionAttributes = session.attributes
@@ -279,14 +255,9 @@ export async function POST(request: Request) {
   )
 
   if (!payment?.id) {
-    console.error(
-      "PAYMONGO WEBHOOK: Missing successful payment"
-    )
+    console.error("PAYMONGO WEBHOOK: Missing successful payment")
 
-    return Response.json(
-      { error: "Missing payment" },
-      { status: 400 }
-    )
+    return Response.json({ error: "Missing payment" }, { status: 400 })
   }
 
   const paymentAttributes = payment.attributes
@@ -315,18 +286,14 @@ export async function POST(request: Request) {
   const orderId = metadata?.order_id
 
   const orderNumber =
-    metadata?.order_number ??
-    sessionAttributes?.reference_number
+    metadata?.order_number ?? sessionAttributes?.reference_number
 
   if (!orderId) {
-    console.error(
-      "PAYMONGO WEBHOOK: Missing order_id metadata",
-      {
-        eventId,
-        sessionId: session.id,
-        orderNumber,
-      }
-    )
+    console.error("PAYMONGO WEBHOOK: Missing order_id metadata", {
+      eventId,
+      sessionId: session.id,
+      orderNumber,
+    })
 
     return Response.json(
       { error: "Missing order information" },
@@ -337,25 +304,14 @@ export async function POST(request: Request) {
   /*
    * Convert PayMongo centavos into PHP.
    */
-  const amountInCentavos = Number(
-    paymentAttributes?.amount ?? 0
-  )
+  const amountInCentavos = Number(paymentAttributes?.amount ?? 0)
 
   const amount = amountInCentavos / 100
 
-  if (
-    !Number.isFinite(amount) ||
-    amount <= 0
-  ) {
-    console.error(
-      "PAYMONGO WEBHOOK: Invalid payment amount",
-      amountInCentavos
-    )
+  if (!Number.isFinite(amount) || amount <= 0) {
+    console.error("PAYMONGO WEBHOOK: Invalid payment amount", amountInCentavos)
 
-    return Response.json(
-      { error: "Invalid payment amount" },
-      { status: 400 }
-    )
+    return Response.json({ error: "Invalid payment amount" }, { status: 400 })
   }
 
   /*
@@ -364,10 +320,7 @@ export async function POST(request: Request) {
    * This remains in addition to event-level
    * webhook idempotency.
    */
-  const {
-    data: existingPayment,
-    error: existingPaymentError,
-  } = await supabase
+  const { data: existingPayment, error: existingPaymentError } = await supabase
     .from("order_payments")
     .select("id")
     .eq("paymongo_payment_id", payment.id)
@@ -379,17 +332,11 @@ export async function POST(request: Request) {
       existingPaymentError
     )
 
-    return Response.json(
-      { error: "Payment lookup failed" },
-      { status: 500 }
-    )
+    return Response.json({ error: "Payment lookup failed" }, { status: 500 })
   }
 
   if (existingPayment) {
-    console.log(
-      "PAYMONGO WEBHOOK: Duplicate payment ignored",
-      payment.id
-    )
+    console.log("PAYMONGO WEBHOOK: Duplicate payment ignored", payment.id)
 
     /*
      * The payment already exists, so the webhook
@@ -403,10 +350,7 @@ export async function POST(request: Request) {
         livemode,
       })
 
-    if (
-      eventRecordError &&
-      eventRecordError.code !== "23505"
-    ) {
+    if (eventRecordError && eventRecordError.code !== "23505") {
       console.error(
         "PAYMONGO WEBHOOK: Failed to record duplicate event",
         eventRecordError
@@ -424,29 +368,20 @@ export async function POST(request: Request) {
   /*
    * Confirm that the order exists.
    */
-  const { data: order, error: orderError } =
-    await supabase
-      .from("orders")
-      .select(
-        "id, order_number, status, total_amount"
-      )
-      .eq("id", orderId)
-      .single()
+  const { data: order, error: orderError } = await supabase
+    .from("orders")
+    .select("id, order_number, customer_id, status, total_amount")
+    .eq("id", orderId)
+    .single()
 
   if (orderError || !order) {
-    console.error(
-      "PAYMONGO WEBHOOK: Order not found",
-      {
-        orderId,
-        orderNumber,
-        error: orderError,
-      }
-    )
+    console.error("PAYMONGO WEBHOOK: Order not found", {
+      orderId,
+      orderNumber,
+      error: orderError,
+    })
 
-    return Response.json(
-      { error: "Order not found" },
-      { status: 404 }
-    )
+    return Response.json({ error: "Order not found" }, { status: 404 })
   }
 
   /*
@@ -454,28 +389,19 @@ export async function POST(request: Request) {
    * to the expected FJGA order.
    */
   if (order.order_number !== orderNumber) {
-    console.error(
-      "PAYMONGO WEBHOOK: Order reference mismatch",
-      {
-        orderId,
-        databaseOrderNumber: order.order_number,
-        paymongoOrderNumber: orderNumber,
-      }
-    )
+    console.error("PAYMONGO WEBHOOK: Order reference mismatch", {
+      orderId,
+      databaseOrderNumber: order.order_number,
+      paymongoOrderNumber: orderNumber,
+    })
 
-    return Response.json(
-      { error: "Order reference mismatch" },
-      { status: 400 }
-    )
+    return Response.json({ error: "Order reference mismatch" }, { status: 400 })
   }
 
   /*
    * Record the verified PayMongo payment.
    */
-  const {
-    data: insertedPayment,
-    error: insertError,
-  } = await supabase
+  const { data: insertedPayment, error: insertError } = await supabase
     .from("order_payments")
     .insert({
       order_id: order.id,
@@ -483,8 +409,7 @@ export async function POST(request: Request) {
       payment_date: new Date().toISOString(),
       payment_method: paymentMethod,
       reference_number: payment.id,
-      notes:
-        `PayMongo payment received. Checkout session: ${session.id}`,
+      notes: `PayMongo payment received. Checkout session: ${session.id}`,
       received_by_employee: null,
       paymongo_payment_id: payment.id,
       paymongo_checkout_session_id: session.id,
@@ -498,28 +423,21 @@ export async function POST(request: Request) {
      * deliveries race each other.
      */
     if (insertError.code === "23505") {
-      console.log(
-        "PAYMONGO WEBHOOK: Duplicate payment detected",
-        payment.id
-      )
+      console.log("PAYMONGO WEBHOOK: Duplicate payment detected", payment.id)
 
       /*
        * The payment already exists, so it is safe
        * to mark the webhook event as processed.
        */
-      const { error: eventRecordError } =
-        await supabase
-          .from("paymongo_webhook_events")
-          .insert({
-            event_id: eventId,
-            event_type: eventType,
-            livemode,
-          })
+      const { error: eventRecordError } = await supabase
+        .from("paymongo_webhook_events")
+        .insert({
+          event_id: eventId,
+          event_type: eventType,
+          livemode,
+        })
 
-      if (
-        eventRecordError &&
-        eventRecordError.code !== "23505"
-      ) {
+      if (eventRecordError && eventRecordError.code !== "23505") {
         console.error(
           "PAYMONGO WEBHOOK: Failed to record duplicate event",
           eventRecordError
@@ -534,10 +452,7 @@ export async function POST(request: Request) {
       })
     }
 
-    console.error(
-      "PAYMONGO WEBHOOK: Payment insert failed",
-      insertError
-    )
+    console.error("PAYMONGO WEBHOOK: Payment insert failed", insertError)
 
     /*
      * Do NOT mark the event as processed here.
@@ -545,31 +460,61 @@ export async function POST(request: Request) {
      * PayMongo can retry the event because the payment
      * was not successfully recorded.
      */
-    return Response.json(
-      { error: "Failed to record payment" },
-      { status: 500 }
+    return Response.json({ error: "Failed to record payment" }, { status: 500 })
+  }
+    /*
+   * Notify the customer only after the verified PayMongo
+   * payment has been successfully recorded.
+   *
+   * Duplicate webhook deliveries return earlier through the
+   * existing event/payment idempotency checks, so they will not
+   * create duplicate notifications.
+   */
+  const { error: notificationError } = await supabase.rpc(
+    "create_notification",
+    {
+      p_recipient_profile_id: order.customer_id,
+      p_type: "payment",
+      p_title: "Payment Successful",
+      p_message: `Your online payment of ${new Intl.NumberFormat(
+        "en-PH",
+        {
+          style: "currency",
+          currency: "PHP",
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }
+      ).format(amount)} for order ${order.order_number} has been received.`,
+      p_link: "/payments",
+    }
+  )
+
+  if (notificationError) {
+    console.error(
+      "PAYMONGO WEBHOOK: Failed to create payment notification",
+      notificationError
     )
   }
   /*
- * Mark the local checkout session as paid.
- *
- * The payment has already been successfully recorded,
- * so the local active checkout session is no longer payable.
- */
-const { error: checkoutSessionUpdateError } = await supabase
-  .from("paymongo_checkout_sessions")
-  .update({
-    status: "paid",
-    updated_at: new Date().toISOString(),
-  })
-  .eq("checkout_session_id", session.id)
+   * Mark the local checkout session as paid.
+   *
+   * The payment has already been successfully recorded,
+   * so the local active checkout session is no longer payable.
+   */
+  const { error: checkoutSessionUpdateError } = await supabase
+    .from("paymongo_checkout_sessions")
+    .update({
+      status: "paid",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("checkout_session_id", session.id)
 
-if (checkoutSessionUpdateError) {
-  console.error(
-    "PAYMONGO WEBHOOK: Failed to update checkout session status",
-    checkoutSessionUpdateError
-  )
-}
+  if (checkoutSessionUpdateError) {
+    console.error(
+      "PAYMONGO WEBHOOK: Failed to update checkout session status",
+      checkoutSessionUpdateError
+    )
+  }
 
   /*
    * The payment was successfully recorded.
@@ -584,10 +529,7 @@ if (checkoutSessionUpdateError) {
       livemode,
     })
 
-  if (
-    eventRecordError &&
-    eventRecordError.code !== "23505"
-  ) {
+  if (eventRecordError && eventRecordError.code !== "23505") {
     /*
      * The payment already exists, so a later retry
      * will still be protected by paymongo_payment_id.
@@ -595,24 +537,18 @@ if (checkoutSessionUpdateError) {
      * Log this rather than treating the successful
      * payment as failed.
      */
-    console.error(
-      "PAYMONGO WEBHOOK: Failed to record event",
-      eventRecordError
-    )
+    console.error("PAYMONGO WEBHOOK: Failed to record event", eventRecordError)
   }
 
-  console.log(
-    "PAYMONGO PAYMENT RECORDED",
-    {
-      eventId,
-      paymentId: payment.id,
-      checkoutSessionId: session.id,
-      orderId: order.id,
-      amount,
-      paymentMethod,
-      orderPaymentId: insertedPayment.id,
-    }
-  )
+  console.log("PAYMONGO PAYMENT RECORDED", {
+    eventId,
+    paymentId: payment.id,
+    checkoutSessionId: session.id,
+    orderId: order.id,
+    amount,
+    paymentMethod,
+    orderPaymentId: insertedPayment.id,
+  })
 
   return Response.json({
     received: true,
@@ -620,4 +556,3 @@ if (checkoutSessionUpdateError) {
     eventId,
   })
 }
-

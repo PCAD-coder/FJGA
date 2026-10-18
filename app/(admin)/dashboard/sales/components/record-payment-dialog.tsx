@@ -53,6 +53,7 @@ export function RecordPaymentDialog({
   const [paymentDate, setPaymentDate] = useState("")
   const [referenceNumber, setReferenceNumber] = useState("")
   const [receivedByEmployee, setReceivedByEmployee] = useState("")
+  const [proofFile, setProofFile] = useState<File | null>(null)
   const [notes, setNotes] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -67,6 +68,7 @@ export function RecordPaymentDialog({
     setPaymentDate(new Date().toISOString().split("T")[0])
     setReferenceNumber("")
     setReceivedByEmployee("")
+    setProofFile(null)
     setNotes("")
     setError(null)
   }, [open, sale])
@@ -116,6 +118,12 @@ export function RecordPaymentDialog({
         )
         return
       }
+      if (paymentMethod === "cash_on_delivery" && !proofFile) {
+        setError(
+          "Please upload a payment proof or receipt for the cash payment."
+        )
+        return
+      }
 
       setSaving(true)
 
@@ -130,6 +138,7 @@ export function RecordPaymentDialog({
           paymentMethod === "cash_on_delivery"
             ? receivedByEmployee.trim()
             : null,
+        proofFile: paymentMethod === "cash_on_delivery" ? proofFile : null,
         notes,
       })
 
@@ -236,9 +245,21 @@ export function RecordPaymentDialog({
 
             <Select
               value={paymentMethod}
-              onValueChange={(value) =>
-                setPaymentMethod(value as PaymentMethod)
-              }
+              onValueChange={(value) => {
+                const nextMethod = value as PaymentMethod
+
+                setPaymentMethod(nextMethod)
+                setError(null)
+
+                if (nextMethod !== "cash_on_delivery") {
+                  setReceivedByEmployee("")
+                  setProofFile(null)
+                }
+
+                if (nextMethod === "cash_on_delivery") {
+                  setReferenceNumber("")
+                }
+              }}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -282,21 +303,59 @@ export function RecordPaymentDialog({
             </div>
           )}
           {paymentMethod === "cash_on_delivery" && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Received By Employee *
-              </label>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Received By Employee *
+                </label>
 
-              <Input
-                value={receivedByEmployee}
-                onChange={(event) => setReceivedByEmployee(event.target.value)}
-                placeholder="Enter employee name"
-              />
+                <Input
+                  value={receivedByEmployee}
+                  onChange={(event) =>
+                    setReceivedByEmployee(event.target.value)
+                  }
+                  placeholder="Enter employee name"
+                />
 
-              <p className="text-xs text-muted-foreground">
-                Enter the name of the FJGA employee who received the cash
-                payment.
-              </p>
+                <p className="text-xs text-muted-foreground">
+                  Enter the name of the FJGA employee who received the cash
+                  payment.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Payment Proof / Receipt *
+                </label>
+
+                <Input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  disabled={saving}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0] ?? null
+                    setProofFile(file)
+                    setError(null)
+                  }}
+                />
+
+                <p className="text-xs text-muted-foreground">
+                  Upload a JPG, PNG, or WebP image of the receipt or other proof
+                  that the cash payment was received. Maximum file size: 5 MB.
+                </p>
+
+                {proofFile && (
+                  <div className="rounded-md border bg-muted/30 px-3 py-2">
+                    <p className="truncate text-sm font-medium">
+                      {proofFile.name}
+                    </p>
+
+                    <p className="text-xs text-muted-foreground">
+                      {(proofFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -330,7 +389,12 @@ export function RecordPaymentDialog({
           <Button
             type="button"
             disabled={
-              saving || !amount || paymentAmount <= 0 || remainingBalance <= 0
+              saving ||
+              !amount ||
+              paymentAmount <= 0 ||
+              remainingBalance <= 0 ||
+              (paymentMethod === "cash_on_delivery" &&
+                (!receivedByEmployee.trim() || !proofFile))
             }
             onClick={handleSubmit}
           >
