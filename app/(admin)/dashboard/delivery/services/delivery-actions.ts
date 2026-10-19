@@ -109,21 +109,45 @@ export async function updateDeliveryStatus(
     orderStatus = "ready_for_delivery"
   }
 
-  if (orderStatus) {
-    const { error: orderError } = await supabase
-      .from("orders")
-      .update({
-        status: orderStatus,
-      })
-      .eq("id", delivery.order_id)
+ if (orderStatus) {
+  const { error: orderError } = await supabase
+    .from("orders")
+    .update({
+      status: orderStatus,
+    })
+    .eq("id", delivery.order_id)
 
-    if (orderError) {
-      throw new Error(
-        orderError.message ||
-          "Delivery was updated, but the order status could not be synchronized"
-      )
-    }
+  if (orderError) {
+    throw new Error(
+      orderError.message ||
+        "Delivery was updated, but the order status could not be synchronized"
+    )
   }
+}
 
-  return data
+/*
+ * Notify the client only after the delivery and related order
+ * have both been successfully updated.
+ *
+ * Delivered is intentionally excluded here because delivery
+ * completion is handled atomically by complete_delivery_with_payment().
+ */
+if (status === "out_for_delivery") {
+  const { error: notificationError } = await supabase.rpc(
+    "notify_order_delivery_status",
+    {
+      p_delivery_id: deliveryId,
+      p_status: status,
+    }
+  )
+
+  if (notificationError) {
+    console.error(
+      "Failed to create delivery notification:",
+      notificationError
+    )
+  }
+}
+
+return data
 }

@@ -190,8 +190,7 @@ export async function updateOrderStatus(
   }
 
   if (options?.estimatedCompletionDate) {
-    updateData.estimated_completion_date =
-      options.estimatedCompletionDate
+    updateData.estimated_completion_date = options.estimatedCompletionDate
   }
 
   const { data, error } = await supabase
@@ -274,8 +273,6 @@ export async function startOrderProduction(
   })
 
   if (error) {
-    throw new Error(
-      error.message || "Failed to start production"
-    )
+    throw new Error(error.message || "Failed to start production")
   }
 }

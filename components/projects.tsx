@@ -26,9 +26,7 @@ export default function ProjectsSection() {
         console.error("Failed to load public projects:", error)
 
         setError(
-          error instanceof Error
-            ? error.message
-            : "Failed to load projects."
+          error instanceof Error ? error.message : "Failed to load projects."
         )
       } finally {
         setLoading(false)
@@ -44,7 +42,7 @@ export default function ProjectsSection() {
       className="bg-gray-50 py-16 md:py-32 dark:bg-transparent"
     >
       <div className="mx-auto max-w-5xl border-t px-6">
-        <span className="text-caption -ml-6 -mt-5.5 block w-max bg-gray-50 px-6 dark:bg-transparent">
+        <span className="text-caption -mt-5.5 -ml-6 block w-max bg-gray-50 px-6 dark:bg-transparent">
           Projects
         </span>
 
@@ -85,12 +83,9 @@ export default function ProjectsSection() {
           ) : (
             <div className="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
               {projects.map((project, index) => (
-                <div
-                  key={project.id}
-                  className="group overflow-hidden"
-                >
+                <div key={project.id} className="group overflow-hidden">
                   <Image
-                    className="h-96 w-full rounded-md object-cover object-top grayscale transition-all duration-500 hover:grayscale-0 group-hover:h-[22.5rem] group-hover:rounded-xl"
+                    className="h-96 w-full rounded-md object-cover object-top grayscale transition-all duration-500 group-hover:h-[22.5rem] group-hover:rounded-xl hover:grayscale-0"
                     src={project.imageUrl}
                     alt={project.title}
                     width={826}
@@ -99,7 +94,7 @@ export default function ProjectsSection() {
                     unoptimized
                   />
 
-                  <div className="px-2 pt-2 sm:pb-0 sm:pt-4">
+                  <div className="px-2 pt-2 sm:pt-4 sm:pb-0">
                     <div className="flex justify-between gap-4">
                       <h3 className="text-base font-medium transition-all duration-500 group-hover:tracking-wider">
                         {project.title}

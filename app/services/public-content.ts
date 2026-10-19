@@ -17,11 +17,13 @@ interface HomepageRow {
 export async function getPublicHomepageContent(): Promise<PublicHomepageContent> {
   const { data, error } = await supabase
     .from("content_homepage")
-    .select(`
+    .select(
+      `
       hero_title,
       hero_description,
       hero_image_url
-    `)
+    `
+    )
     .order("created_at", { ascending: true })
     .limit(1)
     .single()
@@ -62,14 +64,16 @@ export async function getPublicContentProjects(): Promise<
 > {
   const { data, error } = await supabase
     .from("content_projects")
-    .select(`
+    .select(
+      `
       id,
       title,
       description,
       category,
       image_url,
       display_order
-    `)
+    `
+    )
     .eq("is_visible", true)
     .order("display_order", { ascending: true })
     .order("created_at", { ascending: true })
@@ -107,23 +111,19 @@ interface FeaturedFeedbackRow {
 export async function getPublicFeaturedFeedback(): Promise<
   PublicFeaturedFeedback[]
 > {
-  const { data, error } = await supabase.rpc(
-    "get_featured_feedback"
-  )
+  const { data, error } = await supabase.rpc("get_featured_feedback")
 
   if (error) {
     throw error
   }
 
-  return ((data ?? []) as FeaturedFeedbackRow[]).map(
-    (row) => ({
-      id: row.id,
-      customerName: row.customer_name,
-      rating: row.rating,
-      comment: row.comment,
-      createdAt: row.created_at,
-    })
-  )
+  return ((data ?? []) as FeaturedFeedbackRow[]).map((row) => ({
+    id: row.id,
+    customerName: row.customer_name,
+    rating: row.rating,
+    comment: row.comment,
+    createdAt: row.created_at,
+  }))
 }
 
 export type PublicSocialPlatform =
@@ -151,18 +151,18 @@ interface SocialLinkRow {
   display_order: number
 }
 
-export async function getPublicSocialLinks(): Promise<
-  PublicSocialLink[]
-> {
+export async function getPublicSocialLinks(): Promise<PublicSocialLink[]> {
   const { data, error } = await supabase
     .from("content_social_links")
-    .select(`
+    .select(
+      `
       id,
       platform,
       label,
       url,
       display_order
-    `)
+    `
+    )
     .eq("is_visible", true)
     .order("display_order", { ascending: true })
     .order("created_at", { ascending: true })
@@ -171,13 +171,11 @@ export async function getPublicSocialLinks(): Promise<
     throw error
   }
 
-  return ((data ?? []) as SocialLinkRow[]).map(
-    (row) => ({
-      id: row.id,
-      platform: row.platform,
-      label: row.label,
-      url: row.url,
-      displayOrder: row.display_order,
-    })
-  )
+  return ((data ?? []) as SocialLinkRow[]).map((row) => ({
+    id: row.id,
+    platform: row.platform,
+    label: row.label,
+    url: row.url,
+    displayOrder: row.display_order,
+  }))
 }

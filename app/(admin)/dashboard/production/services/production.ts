@@ -166,81 +166,81 @@ export async function getProductionProjects(): Promise<ProductionProject[]> {
 
     let imageUrl: string | undefined
 
-/*
- * Prefer the product image when the order item is linked
- * to a catalog product.
- */
-if (item?.product_id) {
-  const { data: image, error: imageError } = await supabase
-    .from("product_images")
-    .select("image_url")
-    .eq("product_id", item.product_id)
-    .order("display_order", { ascending: true })
-    .limit(1)
-    .maybeSingle()
+    /*
+     * Prefer the product image when the order item is linked
+     * to a catalog product.
+     */
+    if (item?.product_id) {
+      const { data: image, error: imageError } = await supabase
+        .from("product_images")
+        .select("image_url")
+        .eq("product_id", item.product_id)
+        .order("display_order", { ascending: true })
+        .limit(1)
+        .maybeSingle()
 
-  if (imageError) {
-    console.error("Failed to load product image:", imageError)
-  } else {
-    imageUrl = image?.image_url
-  }
-}
-
-/*
- * Custom orders may not have a product image.
- *
- * When no product image was found, fall back to the first
- * reference image from the original custom order request.
- */
-if (!imageUrl && order.source_request_id) {
-  const { data: referenceImage, error: referenceImageError } =
-    await supabase
-      .from("custom_order_images")
-      .select("image_url")
-      .eq("request_id", order.source_request_id)
-      .order("display_order", { ascending: true })
-      .limit(1)
-      .maybeSingle()
-
-  if (referenceImageError) {
-    console.error(
-      "Failed to load custom order reference image:",
-      referenceImageError
-    )
-  } else if (referenceImage?.image_url) {
-    const { data: signedImage, error: signedImageError } =
-      await supabase.storage
-        .from("custom-order-references")
-        .createSignedUrl(referenceImage.image_url, 60 * 60)
-
-    if (signedImageError) {
-      console.error(
-        "Failed to create custom order reference image URL:",
-        signedImageError
-      )
-    } else {
-      imageUrl = signedImage.signedUrl
+      if (imageError) {
+        console.error("Failed to load product image:", imageError)
+      } else {
+        imageUrl = image?.image_url
+      }
     }
-  }
-}
-const profile = Array.isArray(order.profiles)
-  ? order.profiles[0]
-  : order.profiles
 
-const firstName = profile?.first_name?.trim() ?? ""
-const lastName = profile?.last_name?.trim() ?? ""
-const fullName = profile?.full_name?.trim() ?? ""
+    /*
+     * Custom orders may not have a product image.
+     *
+     * When no product image was found, fall back to the first
+     * reference image from the original custom order request.
+     */
+    if (!imageUrl && order.source_request_id) {
+      const { data: referenceImage, error: referenceImageError } =
+        await supabase
+          .from("custom_order_images")
+          .select("image_url")
+          .eq("request_id", order.source_request_id)
+          .order("display_order", { ascending: true })
+          .limit(1)
+          .maybeSingle()
 
-const clientName =
-  [firstName, lastName].filter(Boolean).join(" ") ||
-  fullName ||
-  "Unknown Client"
+      if (referenceImageError) {
+        console.error(
+          "Failed to load custom order reference image:",
+          referenceImageError
+        )
+      } else if (referenceImage?.image_url) {
+        const { data: signedImage, error: signedImageError } =
+          await supabase.storage
+            .from("custom-order-references")
+            .createSignedUrl(referenceImage.image_url, 60 * 60)
 
-projects.push({
+        if (signedImageError) {
+          console.error(
+            "Failed to create custom order reference image URL:",
+            signedImageError
+          )
+        } else {
+          imageUrl = signedImage.signedUrl
+        }
+      }
+    }
+    const profile = Array.isArray(order.profiles)
+      ? order.profiles[0]
+      : order.profiles
+
+    const firstName = profile?.first_name?.trim() ?? ""
+    const lastName = profile?.last_name?.trim() ?? ""
+    const fullName = profile?.full_name?.trim() ?? ""
+
+    const clientName =
+      [firstName, lastName].filter(Boolean).join(" ") ||
+      fullName ||
+      "Unknown Client"
+
+    projects.push({
       id: order.id,
       orderNumber: order.order_number,
       projectName: item?.product_name_snapshot ?? "Unknown Product",
-clientName,
+      clientName,
       contactNumber: order.customer_contact_number ?? null,
       paymentMethod: order.payment_method ?? null,
       orderItemId: item?.id ?? "",
@@ -380,13 +380,13 @@ export async function getReturnProductionProjects(): Promise<
       ? request.customer[0]
       : request.customer
     const customerFirstName = customer?.first_name?.trim() ?? ""
-const customerLastName = customer?.last_name?.trim() ?? ""
-const customerFullName = customer?.full_name?.trim() ?? ""
+    const customerLastName = customer?.last_name?.trim() ?? ""
+    const customerFullName = customer?.full_name?.trim() ?? ""
 
-const customerName =
-  [customerFirstName, customerLastName].filter(Boolean).join(" ") ||
-  customerFullName ||
-  "Unknown Client"
+    const customerName =
+      [customerFirstName, customerLastName].filter(Boolean).join(" ") ||
+      customerFullName ||
+      "Unknown Client"
 
     const resolution = Array.isArray(job.return_resolutions)
       ? job.return_resolutions[0]
@@ -411,62 +411,62 @@ const customerName =
 
     let imageUrl: string | undefined
 
-/*
- * Prefer the catalog/product image when one exists.
- */
-if (item?.product_id) {
-  const { data: image, error: imageError } = await supabase
-    .from("product_images")
-    .select("image_url")
-    .eq("product_id", item.product_id)
-    .order("display_order", { ascending: true })
-    .limit(1)
-    .maybeSingle()
+    /*
+     * Prefer the catalog/product image when one exists.
+     */
+    if (item?.product_id) {
+      const { data: image, error: imageError } = await supabase
+        .from("product_images")
+        .select("image_url")
+        .eq("product_id", item.product_id)
+        .order("display_order", { ascending: true })
+        .limit(1)
+        .maybeSingle()
 
-  if (imageError) {
-    console.error("Failed to load return product image:", imageError)
-  } else {
-    imageUrl = image?.image_url
-  }
-}
-
-/*
- * A returned custom order may not have a catalog product image.
- *
- * Fall back to the first reference image uploaded with the
- * original custom order request.
- */
-if (!imageUrl && order.source_request_id) {
-  const { data: referenceImage, error: referenceImageError } =
-    await supabase
-      .from("custom_order_images")
-      .select("image_url")
-      .eq("request_id", order.source_request_id)
-      .order("display_order", { ascending: true })
-      .limit(1)
-      .maybeSingle()
-
-  if (referenceImageError) {
-    console.error(
-      "Failed to load return custom order reference image:",
-      referenceImageError
-    )
-  } else if (referenceImage?.image_url) {
-    const { data: signedImage, error: signedImageError } =
-      await supabase.storage
-        .from("custom-order-references")
-        .createSignedUrl(referenceImage.image_url, 60 * 60)
-
-    if (signedImageError) {
-      console.error(
-        "Failed to create return custom order reference image URL:",
-        signedImageError
-      )
-    } else {
-      imageUrl = signedImage.signedUrl
+      if (imageError) {
+        console.error("Failed to load return product image:", imageError)
+      } else {
+        imageUrl = image?.image_url
+      }
     }
-  }
-}
+
+    /*
+     * A returned custom order may not have a catalog product image.
+     *
+     * Fall back to the first reference image uploaded with the
+     * original custom order request.
+     */
+    if (!imageUrl && order.source_request_id) {
+      const { data: referenceImage, error: referenceImageError } =
+        await supabase
+          .from("custom_order_images")
+          .select("image_url")
+          .eq("request_id", order.source_request_id)
+          .order("display_order", { ascending: true })
+          .limit(1)
+          .maybeSingle()
+
+      if (referenceImageError) {
+        console.error(
+          "Failed to load return custom order reference image:",
+          referenceImageError
+        )
+      } else if (referenceImage?.image_url) {
+        const { data: signedImage, error: signedImageError } =
+          await supabase.storage
+            .from("custom-order-references")
+            .createSignedUrl(referenceImage.image_url, 60 * 60)
+
+        if (signedImageError) {
+          console.error(
+            "Failed to create return custom order reference image URL:",
+            signedImageError
+          )
+        } else {
+          imageUrl = signedImage.signedUrl
+        }
+      }
+    }
 
     const resolutionType =
       resolution?.resolution_type === "repair" ||
@@ -478,7 +478,7 @@ if (!imageUrl && order.source_request_id) {
       id: job.id,
       orderNumber: order.order_number ?? request.return_number,
       projectName: item?.product_name_snapshot ?? "Return Resolution",
-clientName: customerName,
+      clientName: customerName,
       contactNumber: order.customer_contact_number ?? null,
       paymentMethod: order.payment_method ?? null,
       orderItemId: item?.id ?? "",
@@ -893,8 +893,40 @@ export async function updateProductionStage(
       notes: notes ?? null,
     })
 
-  if (historyError) throw historyError
+if (historyError) throw historyError
+
+/*
+ * Notify the client only for meaningful production milestones.
+ *
+ * The RPC independently verifies:
+ * - the caller is an admin
+ * - the order exists
+ * - the order is actually at the supplied stage
+ * - the stage is an allowed client-facing milestone
+ *
+ * Duplicate milestone notifications are also prevented by the RPC.
+ */
+if (
+  stage === "quality_check" ||
+  stage === "ready_for_delivery"
+) {
+  const { error: notificationError } = await supabase.rpc(
+    "notify_order_production_stage",
+    {
+      p_order_id: orderId,
+      p_stage: stage,
+    }
+  )
+
+  if (notificationError) {
+    console.error(
+      "Failed to create production notification:",
+      notificationError
+    )
+  }
 }
+}
+
 export async function getProductionHistory(orderId: string) {
   const { data, error } = await supabase
     .from("order_production_history")
