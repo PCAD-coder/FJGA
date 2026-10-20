@@ -714,6 +714,33 @@ export async function updateReturnProductionStage(
   if (updateError) {
     throw updateError
   }
+  /*
+ * Notify the client only for meaningful return-production milestones.
+ *
+ * The RPC independently verifies:
+ * - the caller is an active admin
+ * - the production job exists
+ * - the job is actually at the supplied stage
+ * - the stage is an allowed client-facing milestone
+ *
+ * Duplicate milestone notifications are prevented by the RPC.
+ */
+if (stage === "quality_check" || stage === "ready_for_delivery") {
+  const { error: notificationError } = await supabase.rpc(
+    "notify_return_production_stage",
+    {
+      p_production_job_id: productionJobId,
+      p_stage: stage,
+    }
+  )
+
+  if (notificationError) {
+    console.error(
+      "Failed to create return production notification:",
+      notificationError
+    )
+  }
+}
 }
 
 export async function updateProductionStage(
@@ -893,38 +920,35 @@ export async function updateProductionStage(
       notes: notes ?? null,
     })
 
-if (historyError) throw historyError
+  if (historyError) throw historyError
 
-/*
- * Notify the client only for meaningful production milestones.
- *
- * The RPC independently verifies:
- * - the caller is an admin
- * - the order exists
- * - the order is actually at the supplied stage
- * - the stage is an allowed client-facing milestone
- *
- * Duplicate milestone notifications are also prevented by the RPC.
- */
-if (
-  stage === "quality_check" ||
-  stage === "ready_for_delivery"
-) {
-  const { error: notificationError } = await supabase.rpc(
-    "notify_order_production_stage",
-    {
-      p_order_id: orderId,
-      p_stage: stage,
-    }
-  )
-
-  if (notificationError) {
-    console.error(
-      "Failed to create production notification:",
-      notificationError
+  /*
+   * Notify the client only for meaningful production milestones.
+   *
+   * The RPC independently verifies:
+   * - the caller is an admin
+   * - the order exists
+   * - the order is actually at the supplied stage
+   * - the stage is an allowed client-facing milestone
+   *
+   * Duplicate milestone notifications are also prevented by the RPC.
+   */
+  if (stage === "quality_check" || stage === "ready_for_delivery") {
+    const { error: notificationError } = await supabase.rpc(
+      "notify_order_production_stage",
+      {
+        p_order_id: orderId,
+        p_stage: stage,
+      }
     )
+
+    if (notificationError) {
+      console.error(
+        "Failed to create production notification:",
+        notificationError
+      )
+    }
   }
-}
 }
 
 export async function getProductionHistory(orderId: string) {

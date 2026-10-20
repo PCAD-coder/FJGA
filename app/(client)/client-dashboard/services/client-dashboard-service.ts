@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/client"
 
 import type {
+  ClientNotification,
   ProjectStatus,
   RecentOrder,
 } from "../types/client-dashboard"
@@ -319,4 +320,51 @@ export async function getClientRecentOrders(): Promise<
       status,
     }
   })
+}
+export async function getClientRecentNotifications(): Promise<
+  ClientNotification[]
+> {
+  const customerId = await getClientProfileId()
+
+  const { data, error } = await supabase
+    .from("notifications")
+    .select(
+      `
+        id,
+        type,
+        title,
+        message,
+        link,
+        is_read,
+        created_at
+      `
+    )
+    .eq("recipient_profile_id", customerId)
+    .order("created_at", {
+      ascending: false,
+    })
+    .limit(5)
+
+  if (error) {
+    console.error("CLIENT RECENT NOTIFICATIONS QUERY ERROR:", {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+    })
+
+    throw new Error(
+      error.message || "Failed to load recent notifications"
+    )
+  }
+
+  return (data ?? []).map((notification) => ({
+    id: notification.id,
+    type: notification.type,
+    title: notification.title,
+    message: notification.message,
+    link: notification.link,
+    isRead: notification.is_read,
+    createdAt: notification.created_at,
+  }))
 }

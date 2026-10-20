@@ -313,41 +313,15 @@ return_resolutions (
 export async function approveReturnRequest(
   returnRequestId: string
 ): Promise<{ error: string | null }> {
-  const profileId = await getCurrentProfileId()
-
-  if (!profileId) {
-    return {
-      error: "You must be logged in to approve a return request.",
-    }
-  }
-
-  const { error } = await supabase
-    .from("return_requests")
-    .update({
-      status: "Approved",
-      reviewed_at: new Date().toISOString(),
-      reviewed_by: profileId,
-      review_notes: null,
-    })
-    .eq("id", returnRequestId)
+  const { error } = await supabase.rpc("decide_return_request", {
+    p_return_request_id: returnRequestId,
+    p_decision: "approve",
+    p_reason: null,
+  })
 
   if (error) {
     return {
       error: error.message,
-    }
-  }
-
-  const { error: timelineError } = await supabase
-    .from("return_request_timeline")
-    .insert({
-      return_request_id: returnRequestId,
-      status: "Approved",
-      created_by: profileId,
-    })
-
-  if (timelineError) {
-    return {
-      error: timelineError.message,
     }
   }
 
@@ -360,41 +334,23 @@ export async function declineReturnRequest(
   returnRequestId: string,
   reason: string
 ): Promise<{ error: string | null }> {
-  const profileId = await getCurrentProfileId()
+  const declineReason = reason.trim()
 
-  if (!profileId) {
+  if (!declineReason) {
     return {
-      error: "You must be logged in to decline a return request.",
+      error: "A decline reason is required.",
     }
   }
 
-  const { error } = await supabase
-    .from("return_requests")
-    .update({
-      status: "Rejected",
-      reviewed_at: new Date().toISOString(),
-      reviewed_by: profileId,
-      review_notes: reason.trim(),
-    })
-    .eq("id", returnRequestId)
+  const { error } = await supabase.rpc("decide_return_request", {
+    p_return_request_id: returnRequestId,
+    p_decision: "decline",
+    p_reason: declineReason,
+  })
 
   if (error) {
     return {
       error: error.message,
-    }
-  }
-
-  const { error: timelineError } = await supabase
-    .from("return_request_timeline")
-    .insert({
-      return_request_id: returnRequestId,
-      status: "Rejected",
-      created_by: profileId,
-    })
-
-  if (timelineError) {
-    return {
-      error: timelineError.message,
     }
   }
 
@@ -410,46 +366,13 @@ export async function scheduleReturnInspection(
   assignedStaff: string,
   notes: string
 ): Promise<{ error: string | null }> {
-  // Verify that the return request exists
-  // and has already been approved.
-  const { data: returnRequest, error: requestError } = await supabase
-    .from("return_requests")
-    .select("id, status")
-    .eq("id", returnRequestId)
-    .maybeSingle()
-
-  if (requestError) {
-    return {
-      error: requestError.message,
-    }
-  }
-
-  if (!returnRequest) {
-    return {
-      error: "Return request was not found.",
-    }
-  }
-
-  if (returnRequest.status !== "Approved") {
-    return {
-      error:
-        "The return request must be approved before an inspection can be scheduled.",
-    }
-  }
-
-  const { error } = await supabase.from("return_inspections").upsert(
-    {
-      return_request_id: returnRequestId,
-      inspection_date: date,
-      inspection_time: time,
-      assigned_staff: assignedStaff.trim() || null,
-      inspection_notes: notes.trim() || null,
-      status: "scheduled",
-    },
-    {
-      onConflict: "return_request_id",
-    }
-  )
+  const { error } = await supabase.rpc("schedule_return_inspection", {
+    p_return_request_id: returnRequestId,
+    p_inspection_date: date,
+    p_inspection_time: time,
+    p_assigned_staff: assignedStaff.trim() || null,
+    p_notes: notes.trim() || null,
+  })
 
   if (error) {
     return {
@@ -466,17 +389,14 @@ export async function completeReturnInspection(
   inspection: CompleteInspectionData
 ): Promise<{ data: boolean | null; error: string | null }> {
   try {
-    const { error } = await supabase.rpc(
-      "complete_return_inspection",
-      {
-        p_return_request_id: returnRequestId,
-        p_inspection_result: inspection.inspectionResult,
-        p_damage_confirmed: inspection.damageConfirmed,
-        p_damage_description: inspection.damageDescription.trim(),
-        p_resolution_type: inspection.resolutionType,
-        p_resolution_notes: inspection.resolutionNotes.trim(),
-      }
-    )
+    const { error } = await supabase.rpc("complete_return_inspection", {
+      p_return_request_id: returnRequestId,
+      p_inspection_result: inspection.inspectionResult,
+      p_damage_confirmed: inspection.damageConfirmed,
+      p_damage_description: inspection.damageDescription.trim(),
+      p_resolution_type: inspection.resolutionType,
+      p_resolution_notes: inspection.resolutionNotes.trim(),
+    })
 
     if (error) {
       return {
@@ -649,159 +569,13 @@ export async function createReturnResolution(
 export async function startReturnResolution(
   returnRequestId: string
 ): Promise<{ error: string | null }> {
-  const { data: returnRequest, error: requestError } = await supabase
-    .from("return_requests")
-    .select("id, status")
-    .eq("id", returnRequestId)
-    .single()
+  const { error } = await supabase.rpc("start_return_resolution", {
+    p_return_request_id: returnRequestId,
+  })
 
-  if (requestError) {
-    return { error: requestError.message }
-  }
-
-  if (!returnRequest) {
+  if (error) {
     return {
-      error: "Return request could not be found.",
-    }
-  }
-
-  if (!isResolutionProcessingStatus(returnRequest.status)) {
-    return {
-      error:
-        "The return request must be processing before the resolution can start.",
-    }
-  }
-
-  const { data: resolution, error: resolutionError } = await supabase
-    .from("return_resolutions")
-    .select(
-      `
-      id,
-      resolution_status,
-      resolution_type
-      `
-    )
-    .eq("return_request_id", returnRequestId)
-    .maybeSingle()
-
-  if (resolutionError) {
-    return {
-      error: resolutionError.message,
-    }
-  }
-
-  if (!resolution) {
-    return {
-      error: "A resolution could not be found for this return request.",
-    }
-  }
-
-  if (
-    resolution.resolution_type !== "repair" &&
-    resolution.resolution_type !== "replacement"
-  ) {
-    return {
-      error: "This resolution does not require processing.",
-    }
-  }
-
-  if (resolution.resolution_status !== "pending") {
-    return {
-      error: "Only a pending resolution can be started.",
-    }
-  }
-
-  /*
-   * ========================================================
-   * REPAIR
-   * ========================================================
-   *
-   * Repairs do not automatically require production.
-   *
-   * The repair can be completed directly using labor,
-   * inventory materials, or both.
-   */
-  if (resolution.resolution_type === "repair") {
-    const { error: resolutionUpdateError } = await supabase
-      .from("return_resolutions")
-      .update({
-        resolution_status: "in_progress",
-      })
-      .eq("id", resolution.id)
-
-    if (resolutionUpdateError) {
-      return {
-        error: resolutionUpdateError.message,
-      }
-    }
-
-    return {
-      error: null,
-    }
-  }
-
-  /*
-   * ========================================================
-   * REPLACEMENT
-   * ========================================================
-   *
-   * Replacements require a production job.
-   */
-
-  const { data: existingJob, error: existingJobError } = await supabase
-    .from("return_production_jobs")
-    .select("id")
-    .eq("resolution_id", resolution.id)
-    .maybeSingle()
-
-  if (existingJobError) {
-    return {
-      error: existingJobError.message,
-    }
-  }
-
-  if (existingJob) {
-    return {
-      error: "A production job already exists for this resolution.",
-    }
-  }
-
-  const now = new Date().toISOString()
-
-  const { error: productionJobError } = await supabase
-    .from("return_production_jobs")
-    .insert({
-      return_request_id: returnRequestId,
-      resolution_id: resolution.id,
-      production_stage: "pending",
-      started_at: now,
-    })
-
-  if (productionJobError) {
-    return {
-      error: productionJobError.message,
-    }
-  }
-
-  const { error: resolutionUpdateError } = await supabase
-    .from("return_resolutions")
-    .update({
-      resolution_status: "in_progress",
-    })
-    .eq("id", resolution.id)
-
-  if (resolutionUpdateError) {
-    /*
-     * Roll back the production job if the
-     * resolution could not be updated.
-     */
-    await supabase
-      .from("return_production_jobs")
-      .delete()
-      .eq("resolution_id", resolution.id)
-
-    return {
-      error: resolutionUpdateError.message,
+      error: error.message,
     }
   }
 
@@ -813,100 +587,34 @@ export async function startReturnResolution(
 export async function completeReturnResolution(
   returnRequestId: string
 ): Promise<{ error: string | null }> {
-  const profileId = await getCurrentProfileId()
-
-  if (!profileId) {
-    return {
-      error: "You must be signed in to complete a resolution.",
-    }
-  }
-
-  /*
-   * ========================================================
-   * GET RETURN REQUEST
-   * ========================================================
-   */
-
-  const { data: returnRequest, error: requestError } = await supabase
-    .from("return_requests")
-    .select("id, status")
-    .eq("id", returnRequestId)
-    .single()
-
-  if (requestError) {
-    return {
-      error: requestError.message,
-    }
-  }
-
-  if (!returnRequest) {
-    return {
-      error: "Return request could not be found.",
-    }
-  }
-
-  if (!isResolutionProcessingStatus(returnRequest.status)) {
-    return {
-      error:
-        "The return request must be processing before the resolution can be completed.",
-    }
-  }
-
-  /*
-   * ========================================================
-   * GET RESOLUTION
-   * ========================================================
-   */
-
   const { data: resolution, error: resolutionError } = await supabase
     .from("return_resolutions")
-    .select("id, resolution_status, resolution_type")
+    .select("resolution_type")
     .eq("return_request_id", returnRequestId)
-    .maybeSingle()
+    .single()
 
   if (resolutionError) {
     return {
-      error: resolutionError.message,
+      error:
+        resolutionError.message ||
+        "Failed to load the return resolution.",
     }
   }
 
   if (!resolution) {
     return {
-      error: "A resolution could not be found for this return request.",
+      error: "Return resolution not found.",
     }
   }
-
-  if (resolution.resolution_status !== "in_progress") {
-    return {
-      error: "Only an in-progress resolution can be completed.",
-    }
-  }
-
-  /*
-   * ========================================================
-   * DIRECT REPAIR
-   * ========================================================
-   *
-   * The database RPC handles:
-   * - material consumption
-   * - inventory locking
-   * - resolution completion
-   * - direct return delivery creation
-   *
-   * No production job is created.
-   */
 
   if (resolution.resolution_type === "repair") {
-    const { error: repairError } = await supabase.rpc(
-      "complete_return_repair",
-      {
-        p_return_request_id: returnRequestId,
-      }
-    )
+    const { error } = await supabase.rpc("complete_return_repair", {
+      p_return_request_id: returnRequestId,
+    })
 
-    if (repairError) {
+    if (error) {
       return {
-        error: repairError.message,
+        error: error.message,
       }
     }
 
@@ -915,87 +623,14 @@ export async function completeReturnResolution(
     }
   }
 
-  /*
-   * ========================================================
-   * REPLACEMENT
-   * ========================================================
-   *
-   * Existing replacement flow remains unchanged.
-   */
-
   if (resolution.resolution_type === "replacement") {
-    const { data: productionJob, error: productionJobError } = await supabase
-      .from("return_production_jobs")
-      .select("id, production_stage")
-      .eq("resolution_id", resolution.id)
-      .maybeSingle()
+    const { error } = await supabase.rpc("complete_return_replacement", {
+      p_return_request_id: returnRequestId,
+    })
 
-    if (productionJobError) {
+    if (error) {
       return {
-        error: productionJobError.message,
-      }
-    }
-
-    if (!productionJob) {
-      return {
-        error: "Production has not been started for this replacement.",
-      }
-    }
-
-    if (productionJob.production_stage !== "ready_for_delivery") {
-      return {
-        error:
-          "The return production job must be ready for delivery before the replacement can be completed.",
-      }
-    }
-
-    const now = new Date().toISOString()
-
-    const { error: resolutionUpdateError } = await supabase
-      .from("return_resolutions")
-      .update({
-        resolution_status: "completed",
-        completed_at: now,
-      })
-      .eq("id", resolution.id)
-
-    if (resolutionUpdateError) {
-      return {
-        error: resolutionUpdateError.message,
-      }
-    }
-
-    const finalStatus =
-      resolution.resolution_type === "repair"
-        ? "Repair Ready for Delivery"
-        : "Replacement Ready for Delivery"
-
-    const { error: requestUpdateError } = await supabase
-      .from("return_requests")
-      .update({
-        status: finalStatus,
-        reviewed_at: now,
-        reviewed_by: profileId,
-      })
-      .eq("id", returnRequestId)
-
-    if (requestUpdateError) {
-      return {
-        error: requestUpdateError.message,
-      }
-    }
-
-    const { error: timelineError } = await supabase
-      .from("return_request_timeline")
-      .insert({
-        return_request_id: returnRequestId,
-        status: finalStatus,
-        created_by: profileId,
-      })
-
-    if (timelineError) {
-      return {
-        error: timelineError.message,
+        error: error.message,
       }
     }
 
@@ -1005,7 +640,7 @@ export async function completeReturnResolution(
   }
 
   return {
-    error: "This resolution type cannot be completed.",
+    error: "Unsupported return resolution type.",
   }
 }
 export async function getReturnResolutionMaterials(

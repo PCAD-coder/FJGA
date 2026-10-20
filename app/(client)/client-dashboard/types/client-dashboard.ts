@@ -13,20 +13,26 @@ export interface ProjectStatus {
 }
 
 export interface ClientNotification {
-  id: number
+  id: string
+
+  type:
+    | "custom_request"
+    | "quotation"
+    | "payment"
+    | "production"
+    | "delivery"
+    | "return"
+    | "system"
 
   title: string
 
   message: string
 
-  time: string
+  link: string | null
 
-  type:
-    | "quotation"
-    | "production"
-    | "approval"
-    | "payment"
-    | "delivery"
+  isRead: boolean
+
+  createdAt: string
 }
 
 export interface RecentOrder {

@@ -9,7 +9,7 @@ import ProjectStatusChart from "./components/project-status-chart"
 import NotificationsList from "./components/notifications-list"
 import RecentOrdersTable from "./components/recent-orders-table"
 
-import {
+import type {
   ProjectStatus,
   ClientNotification,
   RecentOrder,
@@ -19,74 +19,8 @@ import {
   getClientDashboardSummary,
   getClientProjectStatus,
   getClientRecentOrders,
+  getClientRecentNotifications,
 } from "./services/client-dashboard-service"
-
-const notificationsData: ClientNotification[] = [
-  {
-    id: 1,
-
-    title: "Admin has sent a quote for Glass Partition Project",
-
-    message:
-      "You have received a new quotation for your Glass Partition project. Click to view details and respond.",
-
-    time: "2 hours ago",
-
-    type: "quotation",
-  },
-
-  {
-    id: 2,
-
-    title: "Production started for Aluminum Window Frame",
-
-    message:
-      "You have received a new quotation for your Glass Partition project. Click to view details and respond.",
-
-    time: "5 hours ago",
-
-    type: "production",
-  },
-
-  {
-    id: 3,
-
-    title: "Your custom dining table design has been approved",
-
-    message:
-      "You have received a new quotation for your Glass Partition project. Click to view details and respond.",
-
-    time: "1 day ago",
-
-    type: "approval",
-  },
-
-  {
-    id: 4,
-
-    title: "Payment reminder: Invoice #12345 is due in 3 days",
-
-    message:
-      "You have received a new quotation for your Glass Partition project. Click to view details and respond.",
-
-    time: "1 day ago",
-
-    type: "payment",
-  },
-
-  {
-    id: 5,
-
-    title: "Your order is ready for delivery - Schedule pickup",
-
-    message:
-      "You have received a new quotation for your Glass Partition project. Click to view details and respond.",
-
-    time: "2 days ago",
-
-    type: "delivery",
-  },
-]
 
 interface Props {
   profile: any
@@ -105,6 +39,8 @@ export default function ClientDashboard({ profile }: Props) {
 
   const [recentOrdersData, setRecentOrdersData] = useState<RecentOrder[]>([])
 
+  const [notifications, setNotifications] = useState<ClientNotification[]>([])
+
   const [loading, setLoading] = useState(true)
 
   const [error, setError] = useState<string | null>(null)
@@ -115,10 +51,16 @@ export default function ClientDashboard({ profile }: Props) {
         setLoading(true)
         setError(null)
 
-        const [summary, projectStatus, recentOrders] = await Promise.all([
+        const [
+          summary,
+          projectStatus,
+          recentOrders,
+          recentNotifications,
+        ] = await Promise.all([
           getClientDashboardSummary(),
           getClientProjectStatus(),
           getClientRecentOrders(),
+          getClientRecentNotifications(),
         ])
 
         setReadyForDelivery(summary.readyForDelivery)
@@ -130,6 +72,8 @@ export default function ClientDashboard({ profile }: Props) {
         setProjectStatusData(projectStatus)
 
         setRecentOrdersData(recentOrders)
+
+        setNotifications(recentNotifications)
       } catch (error) {
         console.error("CLIENT DASHBOARD ERROR:", error)
 
@@ -200,7 +144,7 @@ export default function ClientDashboard({ profile }: Props) {
       <div className="grid gap-6 xl:grid-cols-[1.3fr_.9fr]">
         <ProjectStatusChart data={projectStatusData} />
 
-        <NotificationsList notifications={notificationsData} />
+        <NotificationsList notifications={notifications} />
       </div>
 
       {/* RECENT ORDERS */}

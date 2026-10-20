@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 import {
   Bell,
   CheckCheck,
@@ -28,16 +29,10 @@ import {
   markAllNotificationsAsRead,
   markNotificationAsRead,
 } from "@/lib/notifications/notification-service"
-import type {
-  Notification,
-  NotificationType,
-} from "@/lib/notifications/types"
+import type { Notification, NotificationType } from "@/lib/notifications/types"
+const supabase = createClient()
 
-function NotificationIcon({
-  type,
-}: {
-  type: NotificationType
-}) {
+function NotificationIcon({ type }: { type: NotificationType }) {
   const className = "size-4"
 
   switch (type) {
@@ -94,19 +89,14 @@ function formatNotificationTime(createdAt: string) {
   return created.toLocaleDateString("en-PH", {
     month: "short",
     day: "numeric",
-    year:
-      created.getFullYear() !== now.getFullYear()
-        ? "numeric"
-        : undefined,
+    year: created.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
   })
 }
 
 export function NotificationBell() {
   const router = useRouter()
 
-  const [notifications, setNotifications] = useState<
-    Notification[]
-  >([])
+  const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [markingAll, setMarkingAll] = useState(false)
@@ -115,19 +105,15 @@ export function NotificationBell() {
     try {
       setLoading(true)
 
-      const [notificationData, unread] =
-        await Promise.all([
-          getNotifications(10),
-          getUnreadNotificationCount(),
-        ])
+      const [notificationData, unread] = await Promise.all([
+        getNotifications(10),
+        getUnreadNotificationCount(),
+      ])
 
       setNotifications(notificationData)
       setUnreadCount(unread)
     } catch (error) {
-      console.error(
-        "Failed to load notifications:",
-        error
-      )
+      console.error("Failed to load notifications:", error)
     } finally {
       setLoading(false)
     }
@@ -136,10 +122,78 @@ export function NotificationBell() {
   useEffect(() => {
     void loadNotifications()
   }, [loadNotifications])
+  useEffect(() => {
+  let channel: ReturnType<typeof supabase.channel> | null = null
+  let cancelled = false
 
-  const handleNotificationClick = async (
-    notification: Notification
-  ) => {
+  async function subscribeToNotifications() {
+    try {
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser()
+
+      if (authError) {
+        throw authError
+      }
+
+      if (!user || cancelled) {
+        return
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("auth_user_id", user.id)
+        .single()
+
+      if (profileError) {
+        throw profileError
+      }
+
+      if (cancelled) {
+        return
+      }
+
+      channel = supabase
+        .channel(`notifications:${profile.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "notifications",
+            filter: `recipient_profile_id=eq.${profile.id}`,
+          },
+          () => {
+            void loadNotifications()
+          }
+        )
+        .subscribe((status) => {
+          if (status === "CHANNEL_ERROR") {
+            console.error("Notification realtime channel error")
+          }
+        })
+    } catch (error) {
+      console.error(
+        "Failed to subscribe to realtime notifications:",
+        error
+      )
+    }
+  }
+
+  void subscribeToNotifications()
+
+  return () => {
+    cancelled = true
+
+    if (channel) {
+      void supabase.removeChannel(channel)
+    }
+  }
+}, [loadNotifications])
+
+  const handleNotificationClick = async (notification: Notification) => {
     try {
       if (!notification.isRead) {
         await markNotificationAsRead(notification.id)
@@ -156,19 +210,14 @@ export function NotificationBell() {
           )
         )
 
-        setUnreadCount((current) =>
-          Math.max(0, current - 1)
-        )
+        setUnreadCount((current) => Math.max(0, current - 1))
       }
 
       if (notification.link) {
         router.push(notification.link)
       }
     } catch (error) {
-      console.error(
-        "Failed to mark notification as read:",
-        error
-      )
+      console.error("Failed to mark notification as read:", error)
     }
   }
 
@@ -194,10 +243,7 @@ export function NotificationBell() {
 
       setUnreadCount(0)
     } catch (error) {
-      console.error(
-        "Failed to mark all notifications as read:",
-        error
-      )
+      console.error("Failed to mark all notifications as read:", error)
     } finally {
       setMarkingAll(false)
     }
@@ -225,7 +271,7 @@ export function NotificationBell() {
           <Bell className="size-5" />
 
           {unreadCount > 0 && (
-            <span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-medium leading-none text-destructive-foreground">
+            <span className="absolute -top-1 -right-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] leading-none font-medium text-destructive-foreground">
               {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           )}
@@ -237,9 +283,7 @@ export function NotificationBell() {
         className="w-[calc(100vw-2rem)] max-w-sm p-0"
       >
         <div className="flex items-center justify-between px-4 py-3">
-          <DropdownMenuLabel className="p-0">
-            Notifications
-          </DropdownMenuLabel>
+          <DropdownMenuLabel className="p-0">Notifications</DropdownMenuLabel>
 
           {unreadCount > 0 && (
             <Button
@@ -255,9 +299,7 @@ export function NotificationBell() {
             >
               <CheckCheck className="size-3.5" />
 
-              {markingAll
-                ? "Marking..."
-                : "Mark all read"}
+              {markingAll ? "Marking..." : "Mark all read"}
             </Button>
           )}
         </div>
@@ -273,9 +315,7 @@ export function NotificationBell() {
             <div className="px-4 py-10 text-center">
               <Bell className="mx-auto mb-3 size-8 text-muted-foreground/50" />
 
-              <p className="text-sm font-medium">
-                No notifications yet
-              </p>
+              <p className="text-sm font-medium">No notifications yet</p>
 
               <p className="mt-1 text-xs text-muted-foreground">
                 New updates will appear here.
@@ -287,17 +327,11 @@ export function NotificationBell() {
                 <button
                   key={notification.id}
                   type="button"
-                  onClick={() =>
-                    void handleNotificationClick(
-                      notification
-                    )
-                  }
+                  onClick={() => void handleNotificationClick(notification)}
                   className="flex w-full gap-3 border-b px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-muted/50"
                 >
                   <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
-                    <NotificationIcon
-                      type={notification.type}
-                    />
+                    <NotificationIcon type={notification.type} />
                   </div>
 
                   <div className="min-w-0 flex-1">
@@ -325,9 +359,7 @@ export function NotificationBell() {
                     </p>
 
                     <p className="mt-1.5 text-[11px] text-muted-foreground">
-                      {formatNotificationTime(
-                        notification.createdAt
-                      )}
+                      {formatNotificationTime(notification.createdAt)}
                     </p>
                   </div>
                 </button>
