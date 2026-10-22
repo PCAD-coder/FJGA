@@ -1,78 +1,87 @@
-'use client'
-import React from 'react'
-import { Logo } from '@/components/logo'
-import { Menu, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-import { ThemeToggleBtn } from './themeToggleBtn'
-import Link from 'next/link'
+"use client"
 
+import React from "react"
+import Link from "next/link"
+import { Menu, X } from "lucide-react"
+
+import { Logo } from "@/components/logo"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { ThemeToggleBtn } from "./themeToggleBtn"
 
 const menuItems = [
-  { name: 'Home', href: 'home' },
-  { name: 'Projects', href: 'projects' },
-  { name: 'Services', href: 'services' },
-  { name: "Testimonials", href: "feedback" },
-  { name: 'Contacts', href: 'contacts' },
+  { name: "Home", href: "home" },
+  { name: "Products", href: "products" },
+  { name: "Projects", href: "projects" },
+  { name: "About", href: "about" },
+  { name: "Contact", href: "contacts" },
 ]
 
 export const HeroHeader = () => {
-  const [showSignUp, setShowSignUp] = React.useState(false)
   const [menuState, setMenuState] = React.useState(false)
   const [isScrolled, setIsScrolled] = React.useState(false)
 
   React.useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 50)
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 30)
+    }
+
+    handleScroll()
+
+    window.addEventListener("scroll", handleScroll)
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll)
+    }
   }, [])
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id)
+
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      setMenuState(false) // close mobile menu if open
+      element.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      })
     }
+
+    setMenuState(false)
   }
 
   return (
-    <header>
+    <header className="fixed inset-x-0 top-0 z-50">
       <nav
-        data-state={menuState && 'active'}
-        className="fixed z-20 w-full px-2"
+        data-state={menuState ? "active" : "inactive"}
+        className={cn(
+          "border-b border-transparent transition-all duration-300",
+          isScrolled && "border-border bg-background/95 backdrop-blur-md"
+        )}
       >
-        
-        
-        <div
-          className={cn(
-            'mx-auto mt-2 max-w-6xl px-6 transition-all duration-300 lg:px-12',
-            isScrolled && 'bg-background/50 max-w-4xl rounded-2xl border backdrop-blur-lg lg:px-5'
-          )}
-        >
-          <div className="relative flex flex-wrap items-center justify-between gap-6 py-3 lg:gap-0 lg:py-4">
-            {/* Logo & Hamburger */}
-            <div className="flex w-full justify-between lg:w-auto">
-              <a href="/" aria-label="home" className="flex items-center space-x-2">
-                <Logo />
-              </a>
-              <button
-                onClick={() => setMenuState(!menuState)}
-                aria-label={menuState ? 'Close Menu' : 'Open Menu'}
-                className="relative z-20 -m-2.5 -mr-4 block cursor-pointer p-2.5 lg:hidden"
-              >
-                <Menu className="in-data-[state=active]:rotate-180 in-data-[state=active]:scale-0 in-data-[state=active]:opacity-0 m-auto size-6 duration-200" />
-                <X className="in-data-[state=active]:rotate-0 in-data-[state=active]:scale-100 in-data-[state=active]:opacity-100 absolute inset-0 m-auto size-6 -rotate-180 scale-0 opacity-0 duration-200" />
-              </button>
-            </div>
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div
+            className={cn(
+              "flex h-20 items-center justify-between transition-all duration-300",
+              isScrolled && "h-16"
+            )}
+          >
+            {/* Logo */}
+            <Link
+              href="/"
+              aria-label="FJ Glass and Aluminum home"
+              className="relative z-50 flex shrink-0 items-center"
+            >
+              <Logo />
+            </Link>
 
-            {/* Desktop Menu */}
-            <div className="absolute inset-0 m-auto hidden size-fit lg:block">
-              <ul className="flex gap-6 text-sm">
+            {/* Desktop navigation */}
+            <div className="hidden items-center lg:flex">
+              <ul className="flex items-center gap-8">
                 {menuItems.map((item) => (
                   <li key={item.name}>
                     <button
+                      type="button"
                       onClick={() => scrollToSection(item.href)}
-                      className="text-muted-foreground hover:text-accent-foreground block duration-150"
+                      className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
                     >
                       {item.name}
                     </button>
@@ -81,37 +90,87 @@ export const HeroHeader = () => {
               </ul>
             </div>
 
-            {/* Mobile Menu + Buttons */}
-            <div
-              className="bg-background in-data-[state=active]:block lg:in-data-[state=active]:flex mb-6 hidden w-full flex-wrap items-center justify-end space-y-8 rounded-3xl border p-6 shadow-2xl shadow-zinc-300/20 md:flex-nowrap lg:m-0 lg:flex lg:w-fit lg:gap-6 lg:space-y-0 lg:border-transparent lg:bg-transparent lg:p-0 lg:shadow-none dark:shadow-none dark:lg:bg-transparent"
+            {/* Desktop actions */}
+            <div className="hidden items-center gap-2 lg:flex">
+              <ThemeToggleBtn />
+
+              <Button asChild variant="outline" size="sm">
+                <Link href="/login">Sign In</Link>
+              </Button>
+
+              <Button asChild size="sm">
+                <Link href="/sign-up">Sign Up</Link>
+              </Button>
+            </div>
+
+            {/* Mobile menu trigger */}
+            <button
+              type="button"
+              onClick={() => setMenuState((current) => !current)}
+              aria-label={menuState ? "Close menu" : "Open menu"}
+              aria-expanded={menuState}
+              className="relative z-50 flex size-10 items-center justify-center rounded-md transition-colors hover:bg-muted lg:hidden"
             >
-              <div className="lg:hidden">
-                <ul className="space-y-6 text-base">
-                  {menuItems.map((item) => (
-                    <li key={item.name}>
-                      <button
-                        onClick={() => scrollToSection(item.href)}
-                        className="text-muted-foreground hover:text-accent-foreground block duration-150"
-                      >
-                        {item.name}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+              {menuState ? (
+                <X className="size-5" />
+              ) : (
+                <Menu className="size-5" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile navigation */}
+        <div
+          className={cn(
+            "overflow-hidden border-t bg-background transition-all duration-300 lg:hidden",
+            menuState
+              ? "max-h-[600px] opacity-100"
+              : "max-h-0 border-transparent opacity-0"
+          )}
+        >
+          <div className="mx-auto max-w-7xl px-6 py-6">
+            <ul className="space-y-1">
+              {menuItems.map((item) => (
+                <li key={item.name}>
+                  <button
+                    type="button"
+                    onClick={() => scrollToSection(item.href)}
+                    className="flex w-full rounded-lg px-3 py-3 text-left text-base font-medium transition-colors hover:bg-muted"
+                  >
+                    {item.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-6 border-t pt-6">
+              <div className="grid gap-3">
+                <Button asChild variant="outline">
+                  <Link
+                    href="/login"
+                    onClick={() => setMenuState(false)}
+                  >
+                    Sign In
+                  </Link>
+                </Button>
+
+                <Button asChild>
+                  <Link
+                    href="/sign-up"
+                    onClick={() => setMenuState(false)}
+                  >
+                    Get Started
+                  </Link>
+                </Button>
               </div>
 
-              {/* Buttons */}
-              <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
-                <Button asChild variant="outline" size="sm" className={cn(isScrolled && 'lg:hidden')}>
-                  <Link href="/login">Login</Link>
-                </Button>
-                <Button asChild size="sm" className={cn(isScrolled && 'lg:hidden')}>
-                  <Link href="/sign-up">Sign Up</Link>
-                </Button>
-                <Button asChild size="sm" className={cn(isScrolled ? 'lg:inline-flex' : 'hidden')}>
-                  <a href="#get-started">Get Started</a>
-                </Button>
-                <ThemeToggleBtn/>
+              <div className="mt-5 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">
+                  Appearance
+                </span>
+
+                <ThemeToggleBtn />
               </div>
             </div>
           </div>

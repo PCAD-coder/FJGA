@@ -62,7 +62,7 @@ export default function ProductOrderPage({
     contactNumber ?? ""
   )
   const [paymentMethod, setPaymentMethod] =
-  useState<PaymentMethod>("cash_on_delivery")
+    useState<PaymentMethod>("cash_on_delivery")
   const [address, setAddress] = useState<OrderAddressFormInput>({
     houseBuildingNumber: "",
     street: "",
@@ -247,7 +247,15 @@ export default function ProductOrderPage({
 
   const productTotal = estimatedPrice * quantity
 
-  const totalPrice = productTotal + deliveryFee
+  const vatRate = 12
+
+  const vatAmount =
+    Math.round((productTotal * (vatRate / 100) + Number.EPSILON) * 100) / 100
+
+  const totalPrice =
+    Math.round(
+      (productTotal + vatAmount + deliveryFee + Number.EPSILON) * 100
+    ) / 100
 
   return (
     <div className="mx-auto max-w-5xl p-8">
@@ -392,6 +400,20 @@ export default function ProductOrderPage({
 
             <div className="mt-2 flex items-center justify-between">
               <span className="text-sm text-muted-foreground">
+                VAT ({vatRate}%)
+              </span>
+
+              <span className="font-medium">
+                ₱
+                {vatAmount.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </span>
+            </div>
+
+            <div className="mt-2 flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">
                 Delivery Fee
               </span>
 
@@ -461,78 +483,71 @@ export default function ProductOrderPage({
             </div>
             {/* CONTACT NUMBER */}
 
-<div className="rounded-lg border p-4">
-  <div className="space-y-2">
-    <label
-      htmlFor="customer-contact-number"
-      className="text-sm font-medium"
-    >
-      Contact Number
-    </label>
+            <div className="rounded-lg border p-4">
+              <div className="space-y-2">
+                <label
+                  htmlFor="customer-contact-number"
+                  className="text-sm font-medium"
+                >
+                  Contact Number
+                </label>
 
-    <Input
-      id="customer-contact-number"
-      type="tel"
-      value={customerContactNumber}
-      onChange={(e) =>
-        setCustomerContactNumber(e.target.value)
-      }
-      placeholder="e.g. 09123456789"
-      inputMode="tel"
-    />
+                <Input
+                  id="customer-contact-number"
+                  type="tel"
+                  value={customerContactNumber}
+                  onChange={(e) => setCustomerContactNumber(e.target.value)}
+                  placeholder="e.g. 09123456789"
+                  inputMode="tel"
+                />
 
-    <p className="text-xs text-muted-foreground">
-      This number will be used to contact you regarding this order.
-      Changing it here will not change your saved profile contact number.
-    </p>
-  </div>
-  {/* PAYMENT METHOD */}
+                <p className="text-xs text-muted-foreground">
+                  This number will be used to contact you regarding this order.
+                  Changing it here will not change your saved profile contact
+                  number.
+                </p>
+              </div>
+              {/* PAYMENT METHOD */}
 
-<div className="rounded-lg border p-4">
-  <div className="space-y-2">
-    <label className="text-sm font-medium">
-      Payment Method
-    </label>
+              <div className="rounded-lg border p-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Payment Method</label>
 
-    <Select
-      value={paymentMethod}
-      onValueChange={(value) =>
-        setPaymentMethod(value as PaymentMethod)
-      }
-    >
-      <SelectTrigger>
-        <SelectValue placeholder="Select payment method" />
-      </SelectTrigger>
+                  <Select
+                    value={paymentMethod}
+                    onValueChange={(value) =>
+                      setPaymentMethod(value as PaymentMethod)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select payment method" />
+                    </SelectTrigger>
 
-      <SelectContent>
-        <SelectItem value="cash_on_delivery">
-          Cash on Delivery
-        </SelectItem>
-        {/*<SelectItem value="card">
+                    <SelectContent>
+                      <SelectItem value="cash_on_delivery">
+                        Cash on Delivery
+                      </SelectItem>
+                      {/*<SelectItem value="card">
           Card
         </SelectItem>
         <SelectItem value="gcash">
           Gcash
         </SelectItem>*/}
-      </SelectContent>
-    </Select>
+                    </SelectContent>
+                  </Select>
 
-    <p className="text-xs text-muted-foreground">
-      Select how you would like to pay for this order.
-    </p>
-  </div>
-</div>
-</div>
+                  <p className="text-xs text-muted-foreground">
+                    Select how you would like to pay for this order.
+                  </p>
+                </div>
+              </div>
+            </div>
 
+            {/* Address */}
 
-{/* Address */}
-
-<div className="rounded-lg border p-4">
-  <OrderAddressForm
-    value={address}
-    onChange={setAddress}
-  />
-</div>
+            <div className="rounded-lg border p-4">
+              <OrderAddressForm value={address} onChange={setAddress} />
+            </div>
             <Button
               className="w-full"
               onClick={handlePlaceOrder}

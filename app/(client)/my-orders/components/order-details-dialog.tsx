@@ -673,6 +673,16 @@ export default function OrderDetailsDialog({ order }: Props) {
                 </div>
 
                 <div className="flex items-center justify-between gap-4 text-sm">
+                  <span className="text-muted-foreground">
+                    VAT ({order.vatRate}%)
+                  </span>
+
+                  <span className="font-medium">
+                    {formatCurrency(order.vatAmount)}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-4 text-sm">
                   <span className="text-muted-foreground">Delivery Fee</span>
 
                   <span className="font-medium">
@@ -687,7 +697,7 @@ export default function OrderDetailsDialog({ order }: Props) {
                     <p className="font-semibold">Order Total</p>
 
                     <p className="text-xs text-muted-foreground">
-                      Including delivery fee
+                      Including VAT and delivery fee
                     </p>
                   </div>
 

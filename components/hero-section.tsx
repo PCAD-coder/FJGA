@@ -1,60 +1,49 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
+import Image from "next/image"
+import {
+  ArrowRight,
+  Gem,
+  Hammer,
+  Headphones,
+  Settings2,
+  Truck,
+} from "lucide-react"
 
 import {
   getPublicHomepageContent,
   type PublicHomepageContent,
 } from "@/app/services/public-content"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import Image from "next/image"
-import { TextEffect } from "@/components/ui/text-effect"
-import { AnimatedGroup } from "@/components/ui/animated-group"
 import { HeroHeader } from "./header"
-import { Variants } from "framer-motion"
 
-const containerVariants: Variants = {
-  hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.05,
-      delayChildren: 0.75,
-    },
+const benefits = [
+  {
+    title: "Quality Materials",
+    description: "Durable and long-lasting",
+    icon: Gem,
   },
-}
-
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 12, filter: "blur(12px)" },
-  visible: {
-    opacity: 1,
-    y: 0,
-    filter: "blur(0px)",
-    transition: { type: "spring", bounce: 0.3, duration: 1.5 },
+  {
+    title: "Custom Solutions",
+    description: "Designed to fit your needs",
+    icon: Settings2,
   },
-}
-const transitionVariants = {
-  item: {
-    hidden: {
-      opacity: 0,
-      filter: "blur(12px)",
-      y: 12,
-    },
-    visible: {
-      opacity: 1,
-      filter: "blur(0px)",
-      y: 0,
-      transition: {
-        type: "spring",
-        bounce: 0.3,
-        duration: 1.5,
-      },
-    },
+  {
+    title: "Reliable Delivery",
+    description: "Safe and on-time service",
+    icon: Truck,
   },
-}
+  {
+    title: "Expert Craftsmanship",
+    description: "Quality in every detail",
+    icon: Hammer,
+  },
+]
 
 export default function HeroSection() {
-  const [content, setContent] = useState<PublicHomepageContent | null>(null)
+  const [content, setContent] =
+    useState<PublicHomepageContent | null>(null)
 
   useEffect(() => {
     async function loadHomepageContent() {
@@ -62,127 +51,143 @@ export default function HeroSection() {
         const data = await getPublicHomepageContent()
         setContent(data)
       } catch (error) {
-        console.error("Failed to load public homepage content:", error)
+        console.error(
+          "Failed to load public homepage content:",
+          error
+        )
       }
     }
 
     void loadHomepageContent()
   }, [])
 
-  const heroTitle = content?.heroTitle || "FJ Glass and Aluminum"
+  const heroTitle =
+    content?.heroTitle || "FJ Glass and Aluminum"
 
   const heroDescription =
     content?.heroDescription ||
-    `We design and manufacture high-quality aluminum and glass furniture for homes, offices, and commercial spaces. FJ Glass & Aluminum specializes in designing, fabricating, and installing modern furniture and architectural fixtures using aluminum frames and tempered glass panels that will suit your needs.`
+    "We design and manufacture high-quality aluminum and glass furniture for homes, offices, and commercial spaces."
 
   const heroImageUrl = content?.heroImageUrl
+
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id)
+
+    if (element) {
+      element.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      })
+    }
+  }
+
   return (
     <>
       <HeroHeader />
-      <main className="overflow-hidden">
-        <div
-          id="home"
-          aria-hidden
-          className="absolute inset-0 isolate hidden opacity-65 contain-strict lg:block"
-        >
-          <div className="absolute top-0 left-0 h-320 w-140 -translate-y-87.5 -rotate-45 rounded-full bg-[radial-gradient(68.54%_68.72%_at_55.02%_31.46%,hsla(0,0%,85%,.08)_0,hsla(0,0%,55%,.02)_50%,hsla(0,0%,45%,0)_80%)]" />
-          <div className="absolute top-0 left-0 h-320 w-60 [translate:5%_-50%] -rotate-45 rounded-full bg-[radial-gradient(50%_50%_at_50%_50%,hsla(0,0%,85%,.06)_0,hsla(0,0%,45%,.02)_80%,transparent_100%)]" />
-          <div className="absolute top-0 left-0 h-320 w-60 -translate-y-87.5 -rotate-45 bg-[radial-gradient(50%_50%_at_50%_50%,hsla(0,0%,85%,.04)_0,hsla(0,0%,45%,.02)_80%,transparent_100%)]" />
-        </div>
-        <section>
-          <div className="relative pt-24 md:pt-36">
-            <AnimatedGroup
-              variants={{
-                container: {
-                  visible: {
-                    transition: {
-                      delayChildren: 1,
-                    },
-                  },
-                },
-                item: {
-                  hidden: {
-                    opacity: 0,
-                    y: 20,
-                  },
-                  visible: {
-                    opacity: 1,
-                    y: 0,
-                    transition: {
-                      type: "spring",
-                      bounce: 0.3,
-                      duration: 2,
-                    },
-                  },
-                },
-              }}
-              className="absolute inset-0 top-56 -z-20 mask-b-from-35% mask-b-to-90% lg:top-32"
-            >
-              {heroImageUrl && (
-                <Image
-                  src={heroImageUrl}
-                  alt=""
-                  fill
-                  loading="eager"
-                  sizes="100vw"
-                  className="object-cover"
-                  unoptimized
-                />
-              )}
-            </AnimatedGroup>
 
-            <div
-              aria-hidden
-              className="absolute inset-0 -z-10 size-full [background:radial-gradient(125%_125%_at_50%_100%,transparent_0%,var(--color-background)_75%)]"
-            />
+      <main id="home" className="pt-20">
+        {/* Hero image */}
+        <section className="px-4 sm:px-6 lg:px-8">
+          <div className="relative mx-auto min-h-[620px] max-w-7xl overflow-hidden rounded-sm bg-muted md:min-h-[680px] lg:min-h-[720px]">
+            {/* Dynamic Content-module image */}
+            {heroImageUrl ? (
+              <Image
+                src={heroImageUrl}
+                alt="FJ Glass and Aluminum"
+                fill
+                priority
+                sizes="100vw"
+                className="object-cover"
+                unoptimized
+              />
+            ) : (
+              <div className="absolute inset-0 bg-muted" />
+            )}
 
-            <div className="mx-auto max-w-7xl px-6">
-              <div className="text-center sm:mx-auto lg:mt-0 lg:mr-auto">
-                <TextEffect
-                  preset="fade-in-blur"
-                  speedSegment={0.3}
-                  as="h1"
-                  className="mx-auto mt-8 max-w-4xl text-5xl text-balance max-md:font-semibold md:text-7xl lg:mt-16 xl:text-[5.25rem]"
-                >
+            {/* Dark overlay */}
+            <div className="absolute inset-0 bg-black/45" />
+
+            {/* Subtle gradient for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/25 to-transparent" />
+
+            {/* Hero content */}
+            <div className="relative z-10 mx-auto flex min-h-[620px] max-w-7xl items-center px-6 py-16 md:min-h-[680px] md:px-12 lg:min-h-[720px] lg:px-16">
+              <div className="max-w-3xl text-white">
+                <p className="mb-5 text-xs font-semibold tracking-[0.3em] text-white/80 uppercase sm:text-sm">
+                  Quality Glass and Aluminum Solutions
+                </p>
+
+                <h1 className="max-w-3xl font-serif text-5xl leading-[0.98] font-medium tracking-tight text-balance sm:text-6xl md:text-7xl lg:text-[5.5rem]">
                   {heroTitle}
-                </TextEffect>
-                <TextEffect
-                  per="line"
-                  preset="fade-in-blur"
-                  speedSegment={0.3}
-                  delay={0.5}
-                  as="p"
-                  className="mx-auto mt-8 max-w-2xl text-lg text-balance"
-                >
+                </h1>
+
+                <p className="mt-7 max-w-2xl text-base leading-7 text-white/85 md:text-lg md:leading-8">
                   {heroDescription}
-                </TextEffect>
-                <AnimatedGroup
-                  variants={{
-                    container: containerVariants,
-                    item: itemVariants,
-                  }}
-                  className="mt-12 flex flex-col items-center justify-center gap-2 md:flex-row"
-                >
-                  <div
-                    key={1}
-                    className="rounded-[calc(var(--radius-xl)+0.125rem)] border bg-foreground/10 p-0.5"
-                  >
-                    <Button asChild size="lg">
-                      <Link href="/dashboard">Start Building</Link>
-                    </Button>
-                    <Button asChild size="lg">
-                      <Link href="/client-dashboard">Test Client</Link>
-                    </Button>
-                  </div>
+                </p>
+
+                <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                   <Button
-                    key={2}
-                    asChild
+                    type="button"
                     size="lg"
-                    variant="ghost"
-                    className="h-10.5 rounded-xl px-5"
-                  ></Button>
-                </AnimatedGroup>
+                    variant="secondary"
+                    onClick={() => scrollToSection("products")}
+                    className="group h-12 rounded-md px-6"
+                  >
+                    Explore Our Products
+
+                    <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+                  </Button>
+
+                  <Button
+                    type="button"
+                    size="lg"
+                    variant="outline"
+                    onClick={() => scrollToSection("custom-order")}
+                    className="h-12 rounded-md border-white/60 bg-black/10 px-6 text-white hover:bg-white hover:text-black"
+                  >
+                    Request a Custom Order
+                  </Button>
+                </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Benefits */}
+        <section className="px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl border-x border-b bg-background">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4">
+              {benefits.map((benefit, index) => {
+                const Icon = benefit.icon
+
+                return (
+                  <div
+                    key={benefit.title}
+                    className={`flex items-center gap-4 px-6 py-6 lg:px-7 ${
+                      index !== benefits.length - 1
+                        ? "border-b sm:border-b-0 lg:border-r"
+                        : ""
+                    }`}
+                  >
+                    <div className="flex size-11 shrink-0 items-center justify-center">
+                      <Icon
+                        className="size-7 stroke-[1.4]"
+                        aria-hidden="true"
+                      />
+                    </div>
+
+                    <div>
+                      <h2 className="text-sm font-semibold">
+                        {benefit.title}
+                      </h2>
+
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                        {benefit.description}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
         </section>

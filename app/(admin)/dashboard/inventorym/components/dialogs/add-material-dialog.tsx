@@ -53,13 +53,14 @@ type AddMaterialForm = {
   minimum_stock: string
   remarks: string
   is_active: boolean
+  tracks_expiration: boolean
 }
 const initialForm: AddMaterialForm = {
   material_name: "",
   category: "",
-  series:"",
+  series: "",
   specification: "",
-  thickness:"",
+  thickness: "",
   color: " ",
   size: "",
   unit: "",
@@ -67,6 +68,7 @@ const initialForm: AddMaterialForm = {
   minimum_stock: "",
   remarks: "",
   is_active: true,
+  tracks_expiration: false,
 }
 
 export function AddMaterialDialog({ onSubmit }: AddMaterialDialogProps) {
@@ -92,10 +94,10 @@ export function AddMaterialDialog({ onSubmit }: AddMaterialDialogProps) {
   async function handleSave() {
     await onSubmit({
       ...form,
-      stock_quantity: Number(form.stock_quantity),
+      stock_quantity: form.tracks_expiration ? 0 : Number(form.stock_quantity),
       minimum_stock: Number(form.minimum_stock),
-      series:form.category === "Aluminum"? form.series: null,
-      thickness:form.category === "Glass"? form.thickness: null,
+      series: form.category === "Aluminum" ? form.series : null,
+      thickness: form.category === "Glass" ? form.thickness : null,
     })
 
     setOpen(false)
@@ -143,16 +145,26 @@ export function AddMaterialDialog({ onSubmit }: AddMaterialDialogProps) {
 
               <Select
                 value={form.category}
-                onValueChange={(value) =>
+                onValueChange={(value) => {
+                  const selectedCategory = categories.find(
+                    (category) => category.category_name === value
+                  )
+
                   setForm({
                     ...form,
                     category: value,
                     series: "",
                     specification: "",
-                    thickness:"",
+                    thickness: "",
                     color: "",
+                    tracks_expiration:
+                      selectedCategory?.tracks_expiration_by_default ?? false,
+                    stock_quantity:
+                      selectedCategory?.tracks_expiration_by_default
+                        ? "0"
+                        : form.stock_quantity,
                   })
-                }
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
@@ -173,35 +185,32 @@ export function AddMaterialDialog({ onSubmit }: AddMaterialDialogProps) {
           </div>
 
           {form.category === "Aluminum" && (
-  <div className="space-y-2">
-    <Label>Series</Label>
+            <div className="space-y-2">
+              <Label>Series</Label>
 
-    <Select
-      value={form.series}
-      onValueChange={(value) =>
-        setForm({
-          ...form,
-          series: value,
-        })
-      }
-    >
-      <SelectTrigger>
-        <SelectValue placeholder="Select aluminum series" />
-      </SelectTrigger>
+              <Select
+                value={form.series}
+                onValueChange={(value) =>
+                  setForm({
+                    ...form,
+                    series: value,
+                  })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select aluminum series" />
+                </SelectTrigger>
 
-      <SelectContent>
-        {series.map((item) => (
-          <SelectItem
-            key={item.id}
-            value={item.series_name}
-          >
-            {item.series_name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  </div>
-)}
+                <SelectContent>
+                  {series.map((item) => (
+                    <SelectItem key={item.id} value={item.series_name}>
+                      {item.series_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -231,35 +240,32 @@ export function AddMaterialDialog({ onSubmit }: AddMaterialDialogProps) {
             </div>
 
             {form.category === "Glass" && (
-  <div className="space-y-2">
-    <Label>Thickness</Label>
+              <div className="space-y-2">
+                <Label>Thickness</Label>
 
-    <Select
-      value={form.thickness}
-      onValueChange={(value) =>
-        setForm({
-          ...form,
-          thickness: value,
-        })
-      }
-    >
-      <SelectTrigger>
-        <SelectValue placeholder="Select glass thickness" />
-      </SelectTrigger>
+                <Select
+                  value={form.thickness}
+                  onValueChange={(value) =>
+                    setForm({
+                      ...form,
+                      thickness: value,
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select glass thickness" />
+                  </SelectTrigger>
 
-      <SelectContent>
-        {thicknesses.map((item) => (
-          <SelectItem
-            key={item.id}
-            value={item.thickness_name}
-          >
-            {item.thickness_name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  </div>
-)}
+                  <SelectContent>
+                    {thicknesses.map((item) => (
+                      <SelectItem key={item.id} value={item.thickness_name}>
+                        {item.thickness_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>Color</Label>
@@ -322,13 +328,10 @@ export function AddMaterialDialog({ onSubmit }: AddMaterialDialogProps) {
 
                 <SelectContent>
                   {units.map((unit) => (
-  <SelectItem
-    key={unit.id}
-    value={unit.unit_name}
-  >
-    {unit.unit_name}
-  </SelectItem>
-))}
+                    <SelectItem key={unit.id} value={unit.unit_name}>
+                      {unit.unit_name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -340,7 +343,8 @@ export function AddMaterialDialog({ onSubmit }: AddMaterialDialogProps) {
                 type="number"
                 min="0"
                 step="0.0001"
-                value={form.stock_quantity}
+                value={form.tracks_expiration ? "0" : form.stock_quantity}
+                disabled={form.tracks_expiration}
                 onChange={(e) =>
                   setForm({
                     ...form,
@@ -348,6 +352,14 @@ export function AddMaterialDialog({ onSubmit }: AddMaterialDialogProps) {
                   })
                 }
               />
+
+              {form.tracks_expiration && (
+                <p className="text-xs text-muted-foreground">
+                  Expiration-tracked materials start with zero stock. Use
+                  Restock after creating the material to enter the quantity,
+                  batch, and expiration date.
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -380,6 +392,32 @@ export function AddMaterialDialog({ onSubmit }: AddMaterialDialogProps) {
                 })
               }
             />
+          </div>
+          <div className="flex items-start space-x-3 rounded-lg border p-4">
+            <input
+              id="tracks_expiration"
+              type="checkbox"
+              checked={form.tracks_expiration ?? false}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  tracks_expiration: e.target.checked,
+                  stock_quantity: e.target.checked ? "0" : prev.stock_quantity,
+                }))
+              }
+              className="mt-1 h-4 w-4 rounded border-gray-300"
+            />
+
+            <div className="space-y-1">
+              <Label htmlFor="tracks_expiration">
+                Track Expiration / Shelf Life
+              </Label>
+
+              <p className="text-sm text-muted-foreground">
+                Enable this for materials that require expiration-date tracking
+                when restocked.
+              </p>
+            </div>
           </div>
         </div>
 

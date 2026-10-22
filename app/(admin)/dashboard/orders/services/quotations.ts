@@ -1,10 +1,7 @@
 import { createClient } from "@/lib/supabase/client"
 
 import type { QuotationListItem } from "../types/custom-order"
-import type {
-  QuotationDetail,
-  QuotationDetailItem,
-} from "../types/quotation"
+import type { QuotationDetail, QuotationDetailItem } from "../types/quotation"
 
 const supabase = createClient()
 
@@ -20,6 +17,8 @@ interface QuotationRow {
   status: "draft" | "sent" | "accepted" | "declined"
 
   subtotal: number | string
+  vat_rate: number | string
+  vat_amount: number | string
   delivery_fee: number | string
   total_amount: number | string
 
@@ -29,17 +28,17 @@ interface QuotationRow {
   declined_at: string | null
 
   profiles:
-  | {
-      first_name: string | null
-      last_name: string | null
-      full_name: string | null
-    }
-  | {
-      first_name: string | null
-      last_name: string | null
-      full_name: string | null
-    }[]
-  | null
+    | {
+        first_name: string | null
+        last_name: string | null
+        full_name: string | null
+      }
+    | {
+        first_name: string | null
+        last_name: string | null
+        full_name: string | null
+      }[]
+    | null
 
   custom_order_requests:
     | {
@@ -83,9 +82,7 @@ interface QuotationDetailRow extends QuotationRow {
     | null
 }
 
-function toNullableNumber(
-  value: number | string | null
-): number | null {
+function toNullableNumber(value: number | string | null): number | null {
   if (value === null) {
     return null
   }
@@ -93,17 +90,11 @@ function toNullableNumber(
   return Number(value)
 }
 
-function toSnapshotArray<T>(
-  value: unknown
-): T[] {
-  return Array.isArray(value)
-    ? (value as T[])
-    : []
+function toSnapshotArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? (value as T[]) : []
 }
 
-function getSingleRelation<T>(
-  relation: T | T[] | null
-): T | null {
+function getSingleRelation<T>(relation: T | T[] | null): T | null {
   if (!relation) {
     return null
   }
@@ -125,25 +116,17 @@ function getClientName(
     return "Unknown Client"
   }
 
-  const firstName =
-    profile.first_name?.trim() ?? ""
+  const firstName = profile.first_name?.trim() ?? ""
 
-  const lastName =
-    profile.last_name?.trim() ?? ""
+  const lastName = profile.last_name?.trim() ?? ""
 
-  const structuredName = [
-    firstName,
-    lastName,
-  ]
-    .filter(Boolean)
-    .join(" ")
+  const structuredName = [firstName, lastName].filter(Boolean).join(" ")
 
   if (structuredName) {
     return structuredName
   }
 
-  const fullName =
-    profile.full_name?.trim() ?? ""
+  const fullName = profile.full_name?.trim() ?? ""
 
   if (fullName) {
     return fullName
@@ -152,12 +135,11 @@ function getClientName(
   return "Unknown Client"
 }
 
-export async function getQuotations(): Promise<
-  QuotationListItem[]
-> {
+export async function getQuotations(): Promise<QuotationListItem[]> {
   const { data, error } = await supabase
     .from("quotations")
-    .select(`
+    .select(
+      `
       id,
       quotation_number,
       customer_id,
@@ -166,6 +148,8 @@ export async function getQuotations(): Promise<
       project_name,
       status,
       subtotal,
+      vat_rate,
+      vat_amount,
       delivery_fee,
       total_amount,
       created_at,
@@ -180,7 +164,8 @@ export async function getQuotations(): Promise<
       custom_order_requests!quotations_custom_request_id_fkey (
         request_number
       )
-    `)
+    `
+    )
     .order("created_at", {
       ascending: false,
     })
@@ -188,94 +173,73 @@ export async function getQuotations(): Promise<
   if (error) {
     throw new Error(error.message)
   }
-  
 
   const rows = (data ?? []) as QuotationRow[]
 
-  const revisionNumbers =
-  new Map<string, number>()
+  const revisionNumbers = new Map<string, number>()
 
-const groupedByRequest =
-  new Map<string, QuotationRow[]>()
+  const groupedByRequest = new Map<string, QuotationRow[]>()
 
-for (const row of rows) {
-  if (
-    row.source_type !== "custom_request" ||
-    !row.custom_request_id
-  ) {
-    continue
-  }
-
-  const existing =
-    groupedByRequest.get(
-      row.custom_request_id
-    ) ?? []
-
-  existing.push(row)
-
-  groupedByRequest.set(
-    row.custom_request_id,
-    existing
-  )
-}
-
-for (const quotations of groupedByRequest.values()) {
-  const chronological = [...quotations].sort(
-    (a, b) =>
-      new Date(a.created_at).getTime() -
-      new Date(b.created_at).getTime()
-  )
-
-  chronological.forEach(
-    (quotation, index) => {
-      revisionNumbers.set(
-        quotation.id,
-        index + 1
-      )
+  for (const row of rows) {
+    if (row.source_type !== "custom_request" || !row.custom_request_id) {
+      continue
     }
-  )
-}
 
+    const existing = groupedByRequest.get(row.custom_request_id) ?? []
 
-return rows.map((row) => {
-  const profile = getSingleRelation(row.profiles)
+    existing.push(row)
 
-  const request = getSingleRelation(
-    row.custom_order_requests
-  )
-
-  const clientName = getClientName(profile)
-
-  return {
-    id: row.id,
-    quotationNumber: row.quotation_number,
-
-    customerId: row.customer_id,
-    clientName,
-
-    sourceType: row.source_type,
-    customRequestId: row.custom_request_id,
-
-    revisionNumber:
-      row.source_type === "custom_request"
-        ? revisionNumbers.get(row.id) ?? 1
-        : null,
-
-    requestNumber: request?.request_number ?? null,
-
-    projectName: row.project_name,
-    status: row.status,
-
-    subtotal: Number(row.subtotal ?? 0),
-    deliveryFee: Number(row.delivery_fee ?? 0),
-    totalAmount: Number(row.total_amount ?? 0),
-
-    createdAt: row.created_at,
-    sentAt: row.sent_at,
-    acceptedAt: row.accepted_at,
-    declinedAt: row.declined_at,
+    groupedByRequest.set(row.custom_request_id, existing)
   }
-})
+
+  for (const quotations of groupedByRequest.values()) {
+    const chronological = [...quotations].sort(
+      (a, b) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    )
+
+    chronological.forEach((quotation, index) => {
+      revisionNumbers.set(quotation.id, index + 1)
+    })
+  }
+
+  return rows.map((row) => {
+    const profile = getSingleRelation(row.profiles)
+
+    const request = getSingleRelation(row.custom_order_requests)
+
+    const clientName = getClientName(profile)
+
+    return {
+      id: row.id,
+      quotationNumber: row.quotation_number,
+
+      customerId: row.customer_id,
+      clientName,
+
+      sourceType: row.source_type,
+      customRequestId: row.custom_request_id,
+
+      revisionNumber:
+        row.source_type === "custom_request"
+          ? (revisionNumbers.get(row.id) ?? 1)
+          : null,
+
+      requestNumber: request?.request_number ?? null,
+
+      projectName: row.project_name,
+      status: row.status,
+
+      subtotal: Number(row.subtotal ?? 0),
+      deliveryFee: Number(row.delivery_fee ?? 0),
+      totalAmount: Number(row.total_amount ?? 0),
+
+      createdAt: row.created_at,
+      sentAt: row.sent_at,
+      acceptedAt: row.accepted_at,
+      declinedAt: row.declined_at,
+    }
+  })
 }
 
 export async function getQuotationById(
@@ -283,7 +247,8 @@ export async function getQuotationById(
 ): Promise<QuotationDetail> {
   const { data, error } = await supabase
     .from("quotations")
-    .select(`
+    .select(
+      `
       id,
       quotation_number,
       customer_id,
@@ -330,7 +295,8 @@ export async function getQuotationById(
         materials_snapshot,
         labor_snapshot
       )
-    `)
+    `
+    )
     .eq("id", quotationId)
     .order("item_number", {
       referencedTable: "quotation_items",
@@ -344,20 +310,19 @@ export async function getQuotationById(
 
   const row = data as QuotationDetailRow
 
-  const profile =
-  getSingleRelation(row.profiles)
+  const profile = getSingleRelation(row.profiles)
 
-const request =
-  getSingleRelation(
-    row.custom_order_requests
-  )
+  const request = getSingleRelation(row.custom_order_requests)
 
-const clientName =
-  getClientName(profile)
+  const clientName = getClientName(profile)
 
-  const items: QuotationDetailItem[] =
-    (row.quotation_items ?? []).map(
-      (item) => ({
+  const items: QuotationDetailItem[] = (row.quotation_items ?? []).map(
+    (item) => {
+      const materialsSnapshot = toSnapshotArray<
+        QuotationDetailItem["materialsSnapshot"][number]
+      >(item.materials_snapshot)
+
+      return {
         id: item.id,
         itemNumber: item.item_number,
 
@@ -372,37 +337,30 @@ const clientName =
 
         quantity: Number(item.quantity),
 
-        materialSubtotal: Number(
-          item.material_subtotal ?? 0
-        ),
+        materialSubtotal: Number(item.material_subtotal ?? 0),
 
-        laborSubtotal: Number(
-          item.labor_subtotal ?? 0
-        ),
+        laborSubtotal: Number(item.labor_subtotal ?? 0),
 
-        markupAmount: Number(
-          item.markup_amount ?? 0
-        ),
+        markupAmount: Number(item.markup_amount ?? 0),
 
-        unitPrice: Number(
-          item.unit_price ?? 0
-        ),
+        unitPrice: Number(item.unit_price ?? 0),
 
-        lineTotal: Number(
-          item.line_total ?? 0
-        ),
+        lineTotal: Number(item.line_total ?? 0),
 
-        materialsSnapshot:
-          toSnapshotArray<
-            QuotationDetailItem["materialsSnapshot"][number]
-          >(item.materials_snapshot),
+        materials: materialsSnapshot.map((material) => ({
+          materialName: material.material_name,
+          quantity: Number(material.quantity ?? 0),
+          unit: material.unit,
+        })),
 
-        laborSnapshot:
-          toSnapshotArray<
-            QuotationDetailItem["laborSnapshot"][number]
-          >(item.labor_snapshot),
-      })
-    )
+        materialsSnapshot,
+
+        laborSnapshot: toSnapshotArray<
+          QuotationDetailItem["laborSnapshot"][number]
+        >(item.labor_snapshot),
+      }
+    }
+  )
 
   return {
     id: row.id,
@@ -413,22 +371,18 @@ const clientName =
 
     sourceType: row.source_type,
     customRequestId: row.custom_request_id,
-    requestNumber:
-      request?.request_number ?? null,
+    requestNumber: request?.request_number ?? null,
 
     projectName: row.project_name,
-    customerAddressSnapshot:
-      row.customer_address_snapshot,
+    customerAddressSnapshot: row.customer_address_snapshot,
 
     status: row.status,
 
     subtotal: Number(row.subtotal ?? 0),
-    deliveryFee: Number(
-      row.delivery_fee ?? 0
-    ),
-    totalAmount: Number(
-      row.total_amount ?? 0
-    ),
+    vatRate: Number(row.vat_rate ?? 0),
+    vatAmount: Number(row.vat_amount ?? 0),
+    deliveryFee: Number(row.delivery_fee ?? 0),
+    totalAmount: Number(row.total_amount ?? 0),
 
     notes: row.notes,
 

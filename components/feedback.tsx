@@ -9,9 +9,7 @@ import {
 } from "@/app/services/public-content"
 
 export default function FeedbackSection() {
-  const [feedback, setFeedback] = useState<
-    PublicFeaturedFeedback[]
-  >([])
+  const [feedback, setFeedback] = useState<PublicFeaturedFeedback[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
@@ -46,77 +44,94 @@ export default function FeedbackSection() {
   return (
     <section
       id="feedback"
-      className="py-16 md:py-32"
+      className="scroll-mt-20 border-t bg-background py-20 md:py-28"
     >
-      <div className="mx-auto max-w-5xl border-t px-6">
-        <span className="text-caption -ml-6 -mt-5.5 block w-max bg-background px-6">
-          Customer Feedback
-        </span>
-
-        <div className="mt-12 gap-4 sm:grid sm:grid-cols-2 md:mt-16">
+      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+        {/* Section heading */}
+        <div className="grid gap-8 md:grid-cols-[1fr_0.8fr] md:items-end">
           <div>
-            <h2 className="text-3xl font-bold sm:text-4xl">
-              What Our Customers Say
+            <p className="text-xs font-semibold tracking-[0.28em] text-muted-foreground uppercase">
+              Customer Stories
+            </p>
+
+            <h2 className="mt-4 max-w-2xl font-serif text-4xl leading-tight font-medium tracking-tight sm:text-5xl">
+              Trusted by Our Customers
             </h2>
           </div>
 
-          <div className="mt-6 sm:mt-0">
-            <p className="text-muted-foreground">
-              See what our customers have to say about their
-              experience with FJ Glass and Aluminum.
+          <div className="md:pb-1">
+            <p className="max-w-xl text-sm leading-7 text-muted-foreground md:text-base">
+              Hear from customers who have worked with FJ Glass and Aluminum
+              for their glass, aluminum, furniture, and custom fabrication
+              needs.
             </p>
           </div>
         </div>
 
-        <div className="mt-10 md:mt-14">
+        {/* Divider */}
+        <div className="mt-10 border-t" />
+
+        {/* Feedback */}
+        <div className="mt-10">
           {loading ? (
-            <div className="py-12 text-center">
+            <div className="py-20 text-center">
               <p className="text-sm text-muted-foreground">
                 Loading customer feedback...
               </p>
             </div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2">
-              {feedback.map((item) => (
+            <div className="divide-y">
+              {feedback.map((item, index) => (
                 <article
                   key={item.id}
-                  className="relative rounded-2xl border bg-card p-6 md:p-8"
+                  className="grid gap-8 py-10 first:pt-0 md:grid-cols-[0.7fr_1.3fr] md:gap-16 md:py-14"
                 >
-                  <Quote
-                    className="absolute right-6 top-6 size-8 text-muted-foreground/20"
-                    aria-hidden="true"
-                  />
+                  {/* Customer information */}
+                  <div className="flex flex-col justify-between gap-8">
+                    <div>
+                      <div
+                        className="flex gap-1"
+                        aria-label={`${item.rating} out of 5 stars`}
+                      >
+                        {Array.from({ length: 5 }).map(
+                          (_, starIndex) => (
+                            <Star
+                              key={starIndex}
+                              className={
+                                starIndex < item.rating
+                                  ? "size-4 fill-current"
+                                  : "size-4 text-muted-foreground/25"
+                              }
+                              aria-hidden="true"
+                            />
+                          )
+                        )}
+                      </div>
 
-                  <div
-                    className="flex gap-1"
-                    aria-label={`${item.rating} out of 5 stars`}
-                  >
-                    {Array.from({ length: 5 }).map(
-                      (_, index) => (
-                        <Star
-                          key={index}
-                          className={
-                            index < item.rating
-                              ? "size-4 fill-current"
-                              : "size-4 text-muted-foreground/30"
-                          }
-                        />
-                      )
-                    )}
+                      <p className="mt-6 font-medium">
+                        {item.customerName}
+                      </p>
+
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        FJ Glass and Aluminum Customer
+                      </p>
+                    </div>
+
+                    <span className="hidden text-xs text-muted-foreground md:block">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
                   </div>
 
-                  <blockquote className="mt-6 text-base leading-relaxed">
-                    “{item.comment}”
-                  </blockquote>
+                  {/* Testimonial */}
+                  <div className="relative pr-2 md:pr-12">
+                    <Quote
+                      className="absolute -top-1 right-0 size-9 text-muted-foreground/15 md:size-12"
+                      aria-hidden="true"
+                    />
 
-                  <div className="mt-6 border-t pt-4">
-                    <p className="font-medium">
-                      {item.customerName}
-                    </p>
-
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      FJ Glass and Aluminum Customer
-                    </p>
+                    <blockquote className="max-w-3xl pr-10 font-serif text-2xl leading-relaxed font-medium tracking-tight sm:text-3xl md:pr-14">
+                      “{item.comment}”
+                    </blockquote>
                   </div>
                 </article>
               ))}

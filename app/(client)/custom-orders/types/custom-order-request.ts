@@ -123,6 +123,8 @@ export interface ClientQuotationSummary {
   status: ClientQuotationStatus
   projectName: string
   subtotal: number
+  vatRate: number
+  vatAmount: number
   deliveryFee: number
   totalAmount: number
   sentAt: string | null
@@ -143,6 +145,13 @@ export interface ClientQuotationItem {
   quantity: number
   unitPrice: number
   lineTotal: number
+  
+  materials: {
+  materialName: string
+  quantity: number
+  unit: string
+}[]
+
 }
 
 export interface ClientQuotationDetail

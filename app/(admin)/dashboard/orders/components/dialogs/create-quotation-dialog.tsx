@@ -255,10 +255,16 @@ export default function CreateQuotationDialog({
 
   const subtotal = pricing?.lineTotal ?? 0
 
+  const vatRate = 12
+
+  const vatAmount =
+    Math.round((subtotal * (vatRate / 100) + Number.EPSILON) * 100) / 100
+
   const deliveryFee = deliveryZone?.deliveryFee ?? 0
 
   const totalAmount =
-    Math.round((subtotal + deliveryFee + Number.EPSILON) * 100) / 100
+    Math.round((subtotal + vatAmount + deliveryFee + Number.EPSILON) * 100) /
+    100
 
   function updateMaterial(
     index: number,
@@ -706,6 +712,11 @@ export default function CreateQuotationDialog({
                 <SummaryRow label="Subtotal" value={formatMoney(subtotal)} />
 
                 <SummaryRow
+                  label={`VAT (${vatRate}%)`}
+                  value={formatMoney(vatAmount)}
+                />
+
+                <SummaryRow
                   label="Delivery Fee"
                   value={
                     loadingDelivery
@@ -715,6 +726,8 @@ export default function CreateQuotationDialog({
                         : "—"
                   }
                 />
+
+                <Separator />
 
                 <Separator />
 

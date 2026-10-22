@@ -127,6 +127,12 @@ export interface QuotationDetailItem {
   unitPrice: number
   lineTotal: number
 
+  materials: {
+  materialName: string
+  quantity: number
+  unit: string
+}[]
+
   materialsSnapshot: QuotationDetailMaterialSnapshot[]
   laborSnapshot: QuotationDetailLaborSnapshot[]
 }
@@ -147,9 +153,11 @@ export interface QuotationDetail {
 
   status: "draft" | "sent" | "accepted" | "declined"
 
-  subtotal: number
-  deliveryFee: number
-  totalAmount: number
+subtotal: number
+vatRate: number
+vatAmount: number
+deliveryFee: number
+totalAmount: number
 
   notes: string | null
 

@@ -1,8 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { type ReactNode, useState } from "react"
 import { Pencil } from "lucide-react"
-
 import { Button } from "@/components/ui/button"
 
 import {
@@ -41,6 +40,7 @@ import { useThicknesses } from "../../hooks/use-thicknesses"
 
 interface EditMaterialDialogProps {
   material: InventoryMaterial
+  trigger?: ReactNode
   onSubmit: (id: string, form: InventoryUpdate) => Promise<void>
 }
 
@@ -56,10 +56,12 @@ type EditMaterialForm = {
   stock_quantity: string
   minimum_stock: string
   remarks: string
+  tracks_expiration: boolean
 }
 
 export function EditMaterialDialog({
   material,
+  trigger,
   onSubmit,
 }: EditMaterialDialogProps) {
   const [open, setOpen] = useState(false)
@@ -76,6 +78,7 @@ export function EditMaterialDialog({
     stock_quantity: String(material.stock_quantity),
     minimum_stock: String(material.minimum_stock),
     remarks: material.remarks ?? "",
+    tracks_expiration: material.tracks_expiration,
   })
 
   const { categories, colorCategories } = useCategories()
@@ -105,9 +108,9 @@ export function EditMaterialDialog({
         color: categorySupportsColors ? form.color : null,
         size: form.size,
         unit: form.unit,
-        stock_quantity: Number(form.stock_quantity),
         minimum_stock: Number(form.minimum_stock),
         remarks: form.remarks,
+        tracks_expiration: form.tracks_expiration,
       })
 
       setOpen(false)
@@ -119,12 +122,14 @@ export function EditMaterialDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="icon" variant="outline">
-          <Pencil className="h-4 w-4" />
-        </Button>
+        {trigger ?? (
+          <Button size="icon" variant="outline">
+            <Pencil className="h-4 w-4" />
+          </Button>
+        )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Edit Material</DialogTitle>
 
@@ -133,7 +138,7 @@ export function EditMaterialDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
+        <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto py-4 pr-1">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Material Name</Label>
@@ -339,19 +344,10 @@ export function EditMaterialDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Stock Quantity</Label>
-
-              <Input
-                type="number"
-                min="0"
-                step="0.0001"
-                value={form.stock_quantity}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    stock_quantity: e.target.value,
-                  })
-                }
-              />
+              <Input type="number" value={form.stock_quantity} disabled />
+              <p className="text-xs text-muted-foreground">
+                Stock quantity is managed through inventory transactions.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -384,6 +380,48 @@ export function EditMaterialDialog({
                 })
               }
             />
+          </div>
+          <div className="flex items-start gap-3 rounded-lg border p-3">
+            <input
+              id={`tracks-expiration-${material.id}`}
+              type="checkbox"
+              checked={form.tracks_expiration}
+              disabled={material.stock_quantity > 0}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  tracks_expiration: e.target.checked,
+                }))
+              }
+              className="mt-1 h-4 w-4 rounded border-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+            />
+
+            <div className="space-y-1">
+              <Label htmlFor={`tracks-expiration-${material.id}`}>
+                Track Expiration / Shelf Life
+              </Label>
+
+              {!material.tracks_expiration && material.stock_quantity > 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  This material already has {material.stock_quantity}{" "}
+                  {material.unit} in stock. Use the Enable Expiration Tracking
+                  action from the inventory table so the existing stock can be
+                  assigned to an initial expiration batch.
+                </p>
+              ) : material.tracks_expiration && material.stock_quantity > 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Expiration tracking cannot be disabled while this material
+                  still has inventory remaining. Existing expiration batches
+                  must remain active until their stock is fully consumed or
+                  properly removed.
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Enable this for materials that require expiration-date
+                  tracking when restocked.
+                </p>
+              )}
+            </div>
           </div>
         </div>
 

@@ -1,8 +1,15 @@
+export interface QuotationDocumentMaterial {
+  materialName: string
+  quantity: number
+  unit: string
+}
+
 export interface QuotationDocumentItem {
   id: string
   itemNumber: number
   itemName: string
-  details: string | null
+
+  materials: QuotationDocumentMaterial[]
 
   width: number | null
   height: number | null
@@ -21,6 +28,8 @@ export interface QuotationDocumentData {
   customerAddressSnapshot: string | null
 
   subtotal: number
+  vatRate: number
+  vatAmount: number
   deliveryFee: number
   totalAmount: number
 

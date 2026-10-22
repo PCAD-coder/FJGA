@@ -96,6 +96,8 @@ export interface Order {
 
   subtotal: number
   labor_total: number
+  vat_rate: number
+  vat_amount: number
   delivery_fee: number
   total_amount: number
 
@@ -135,11 +137,7 @@ export interface CreateOrderItemInput {
   glass_variant_id?: string | null
 }
 
-export type PaymentMethod =
-  | "cash_on_delivery"
-  |"Card" 
-  |"Gcash" 
-  
+export type PaymentMethod = "cash_on_delivery" | "Card" | "Gcash"
 
 export interface CreateOrderInput {
   customer_id: string

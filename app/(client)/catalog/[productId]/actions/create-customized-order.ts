@@ -78,7 +78,7 @@ export async function createCustomizedOrder(input: {
     customer_id: profile.id,
     customer_contact_number: input.customerContactNumber.trim(),
     payment_method: input.paymentMethod,
-    order_type: "custom",
+    order_type: "standard",
     notes: input.notes ?? "",
     address: mapAddressToCreateOrderAddress(input.address),
     items: [

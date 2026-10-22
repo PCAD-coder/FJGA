@@ -453,6 +453,14 @@ export default function ClientQuotationDialog({
                   </div>
 
                   <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      VAT ({quotation.vatRate}%)
+                    </span>
+
+                    <span>{formatCurrency(quotation.vatAmount)}</span>
+                  </div>
+
+                  <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Delivery Fee</span>
 
                     <span>{formatCurrency(quotation.deliveryFee)}</span>
@@ -751,13 +759,13 @@ export default function ClientQuotationDialog({
         </DialogContent>
       </Dialog>
       <Dialog
-  open={historicalQuotation !== null}
-  onOpenChange={(nextOpen) => {
-    if (!nextOpen) {
-      setHistoricalQuotation(null)
-    }
-  }}
->
+        open={historicalQuotation !== null}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setHistoricalQuotation(null)
+          }
+        }}
+      >
         <DialogContent className="max-h-[95vh] !max-w-4xl overflow-y-auto bg-muted p-4 sm:p-6">
           <DialogHeader className="shrink-0 border-b bg-transparent px-6 py-4 pr-14">
             <div className="flex items-center justify-between gap-4">

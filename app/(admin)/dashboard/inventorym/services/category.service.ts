@@ -8,6 +8,7 @@ export interface MaterialCategory {
   has_colors: boolean
   is_active: boolean
   created_at: string
+  tracks_expiration_by_default: boolean
 }
 
 export async function getCategories() {

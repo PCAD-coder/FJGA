@@ -120,6 +120,48 @@ export function SaleDetailsDialog({
                   </div>
                 </div>
 
+                {/* ORDER BREAKDOWN */}
+
+<div className="rounded-lg border p-4">
+  <h3 className="mb-4 font-semibold">Order Breakdown</h3>
+
+  <div className="space-y-3 text-sm">
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-muted-foreground">Subtotal</span>
+
+      <span className="font-medium">
+        {formatCurrency(sale.subtotal)}
+      </span>
+    </div>
+
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-muted-foreground">
+        VAT ({sale.vatRate}%)
+      </span>
+
+      <span className="font-medium">
+        {formatCurrency(sale.vatAmount)}
+      </span>
+    </div>
+
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-muted-foreground">Delivery Fee</span>
+
+      <span className="font-medium">
+        {formatCurrency(sale.deliveryFee)}
+      </span>
+    </div>
+
+    <div className="flex items-center justify-between gap-4 border-t pt-3">
+      <span className="font-semibold">Total Amount</span>
+
+      <span className="text-lg font-bold">
+        {formatCurrency(sale.totalAmount)}
+      </span>
+    </div>
+  </div>
+</div>
+
                 {/* PAYMENT SUMMARY */}
 
                 <div className="rounded-lg border p-4">

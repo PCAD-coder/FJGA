@@ -293,6 +293,8 @@ export async function getMyOrders(): Promise<Order[]> {
         status,
         subtotal,
         labor_total,
+        vat_rate,
+        vat_amount,
         delivery_fee,
         total_amount,
         notes,
@@ -604,8 +606,8 @@ export async function getMyOrders(): Promise<Order[]> {
     })
 
     const address = Array.isArray(order.order_addresses)
-  ? order.order_addresses[0] ?? null
-  : order.order_addresses ?? null
+      ? (order.order_addresses[0] ?? null)
+      : (order.order_addresses ?? null)
 
     const deliveryAddress = address
       ? {
@@ -668,6 +670,10 @@ export async function getMyOrders(): Promise<Order[]> {
       estimatedDelivery: order.estimated_completion_date ?? null,
 
       subtotal: Number(order.subtotal ?? 0),
+
+      vatRate: Number(order.vat_rate ?? 0),
+
+      vatAmount: Number(order.vat_amount ?? 0),
 
       deliveryFee: Number(order.delivery_fee ?? 0),
 

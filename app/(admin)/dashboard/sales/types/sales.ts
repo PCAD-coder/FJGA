@@ -38,7 +38,11 @@ export interface SalesRecord {
 
   paymentMethod: PaymentMethod | null
 
-  totalAmount: number
+  subtotal: number
+vatRate: number
+vatAmount: number
+deliveryFee: number
+totalAmount: number
 
   /**
    * Amount that must be paid before production can start.

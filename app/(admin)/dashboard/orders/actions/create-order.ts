@@ -127,7 +127,6 @@ export async function createOrderServer(input: CreateOrderInput) {
 
   let subtotal = 0
   let laborTotal = 0
-  let totalAmount = deliveryFee
 
   const orderItems = pricingSnapshots.map((snapshot, index) => {
     const quantity = input.items[index].quantity
@@ -136,8 +135,6 @@ export async function createOrderServer(input: CreateOrderInput) {
     laborTotal += snapshot.laborSubtotal * quantity
 
     const lineTotal = snapshot.unitPrice * quantity
-
-    totalAmount += lineTotal
 
     return {
       product_id: snapshot.productId,
@@ -163,9 +160,21 @@ export async function createOrderServer(input: CreateOrderInput) {
       labor_snapshot: snapshot.labor,
     }
   })
-const { data: orderId, error } = await adminSupabase.rpc(
-  "create_order_transaction",
-  {
+  const vatRate = 12
+const vatAmount = Math.round(subtotal * (vatRate / 100) * 100) / 100
+const totalAmount = subtotal + vatAmount + deliveryFee
+console.log("ORDER VAT DEBUG", {
+  subtotal,
+  vatRate,
+  vatAmount,
+  deliveryFee,
+  totalAmount,
+  expectedTotal:
+    Math.round((subtotal + vatAmount + deliveryFee) * 100) / 100,
+})
+  const { data: orderId, error } = await adminSupabase.rpc(
+    "create_order_transaction",
+    {
       p_customer_id: input.customer_id,
       p_customer_contact_number: input.customer_contact_number,
       p_payment_method: input.payment_method,

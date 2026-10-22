@@ -13,9 +13,11 @@ interface ClientQuotationRow {
   custom_request_id: string | null
   status: ClientQuotationStatus
   project_name: string
-  subtotal: number | string
-  delivery_fee: number | string
-  total_amount: number | string
+subtotal: number | string
+vat_rate: number | string
+vat_amount: number | string
+delivery_fee: number | string
+total_amount: number | string
   sent_at: string | null
   accepted_at: string | null
   declined_at: string | null
@@ -43,6 +45,8 @@ interface ClientQuotationDetailRow
 
         unit_price: number | string
         line_total: number | string
+
+        materials_snapshot: unknown
       }[]
     | null
 }
@@ -90,6 +94,28 @@ function toNullableNumber(
   return Number(value)
 }
 
+function toMaterialSnapshotArray(
+  value: unknown
+): {
+  material_name?: unknown
+  quantity?: unknown
+  unit?: unknown
+}[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value.filter(
+    (item): item is {
+      material_name?: unknown
+      quantity?: unknown
+      unit?: unknown
+    } =>
+      typeof item === "object" &&
+      item !== null
+  )
+}
+
 export async function getClientQuotationById(
   quotationId: string
 ): Promise<ClientQuotationDetail> {
@@ -103,6 +129,8 @@ export async function getClientQuotationById(
       project_name,
       customer_address_snapshot,
       subtotal,
+      vat_rate,
+      vat_amount,
       delivery_fee,
       total_amount,
       notes,
@@ -122,7 +150,8 @@ export async function getClientQuotationById(
         dimension_unit,
         quantity,
         unit_price,
-        line_total
+        line_total,
+        materials_snapshot
       )
     `)
     .eq("id", quotationId)
@@ -159,14 +188,15 @@ export async function getClientQuotationById(
     projectName: row.project_name,
     customerAddressSnapshot:
       row.customer_address_snapshot,
-
-    subtotal: Number(row.subtotal ?? 0),
-    deliveryFee: Number(
-      row.delivery_fee ?? 0
-    ),
-    totalAmount: Number(
-      row.total_amount ?? 0
-    ),
+subtotal: Number(row.subtotal ?? 0),
+vatRate: Number(row.vat_rate ?? 0),
+vatAmount: Number(row.vat_amount ?? 0),
+deliveryFee: Number(
+  row.delivery_fee ?? 0
+),
+totalAmount: Number(
+  row.total_amount ?? 0
+),
 
     notes: row.notes,
     createdAt: row.created_at,
@@ -201,6 +231,19 @@ export async function getClientQuotationById(
         lineTotal: Number(
           item.line_total ?? 0
         ),
+        materials: toMaterialSnapshotArray(
+  item.materials_snapshot
+).map((material) => ({
+  materialName:
+    typeof material.material_name === "string"
+      ? material.material_name
+      : "Material",
+  quantity: Number(material.quantity ?? 0),
+  unit:
+    typeof material.unit === "string"
+      ? material.unit
+      : "",
+})),
       })
     ),
   }
@@ -217,6 +260,8 @@ export async function getQuotationForCustomRequest(
       status,
       project_name,
       subtotal,
+      vat_rate,
+      vat_amount,
       delivery_fee,
       total_amount,
       sent_at,
@@ -258,13 +303,15 @@ export async function getQuotationForCustomRequest(
       row.custom_request_id,
     status: row.status,
     projectName: row.project_name,
-    subtotal: Number(row.subtotal ?? 0),
-    deliveryFee: Number(
-      row.delivery_fee ?? 0
-    ),
-    totalAmount: Number(
-      row.total_amount ?? 0
-    ),
+subtotal: Number(row.subtotal ?? 0),
+vatRate: Number(row.vat_rate ?? 0),
+vatAmount: Number(row.vat_amount ?? 0),
+deliveryFee: Number(
+  row.delivery_fee ?? 0
+),
+totalAmount: Number(
+  row.total_amount ?? 0
+),
     sentAt: row.sent_at,
     acceptedAt: row.accepted_at,
     declinedAt: row.declined_at,
@@ -298,6 +345,8 @@ export async function getQuotationHistoryForCustomRequest(
       status,
       project_name,
       subtotal,
+      vat_rate,
+      vat_amount,
       delivery_fee,
       total_amount,
       sent_at,
@@ -328,12 +377,11 @@ export async function getQuotationHistoryForCustomRequest(
       quotation.status as ClientQuotationStatus,
     projectName:
       quotation.project_name,
-    subtotal:
-      Number(quotation.subtotal),
-    deliveryFee:
-      Number(quotation.delivery_fee),
-    totalAmount:
-      Number(quotation.total_amount),
+    subtotal: Number(quotation.subtotal),
+vatRate: Number(quotation.vat_rate),
+vatAmount: Number(quotation.vat_amount),
+deliveryFee: Number(quotation.delivery_fee),
+totalAmount: Number(quotation.total_amount),
     sentAt:
       quotation.sent_at,
     acceptedAt:

@@ -83,10 +83,13 @@ export interface Order {
 
   estimatedDelivery: string | null
 
-  total: number
-  subtotal: number
+total: number
+subtotal: number
 
-  deliveryFee: number
+vatRate: number
+vatAmount: number
+
+deliveryFee: number
 
   unitPrice: number
 

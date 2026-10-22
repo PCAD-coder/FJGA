@@ -628,6 +628,11 @@ export default function ViewOrderDialog({
             </div>
 
             <div className="flex justify-between">
+  <span>VAT ({order.vat_rate}%)</span>
+  <span>₱{order.vat_amount.toFixed(2)}</span>
+</div>
+
+            <div className="flex justify-between">
               <span>Delivery Fee</span>
               <span>₱{order.delivery_fee.toFixed(2)}</span>
             </div>

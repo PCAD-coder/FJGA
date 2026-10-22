@@ -23,27 +23,25 @@ export default function InventoryModule() {
     addMaterial,
     editMaterial,
     archiveMaterial,
+    restockInventoryMaterial,
+    initializeMaterialExpirationStock,
+    enableMaterialExpirationTracking,
+    disposeExpiredInventoryBatch,
+    expiringSoonItems,
   } = useInventory()
 
-  async function handleAddMaterial(
-    form: InventoryInsert
-  ) {
+  async function handleAddMaterial(form: InventoryInsert) {
     await addMaterial({
       ...form,
       is_active: true,
     })
   }
-  async function handleEditMaterial(
-  id: string,
-  form: InventoryUpdate
-) {
-  await editMaterial(id, form)
-}
-async function handleArchiveMaterial(
-  id: string
-) {
-  await archiveMaterial(id)
-}
+  async function handleEditMaterial(id: string, form: InventoryUpdate) {
+    await editMaterial(id, form)
+  }
+  async function handleArchiveMaterial(id: string) {
+    await archiveMaterial(id)
+  }
 
   if (loading) {
     return (
@@ -56,9 +54,7 @@ async function handleArchiveMaterial(
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">
-          Inventory Management
-        </h1>
+        <h1 className="text-3xl font-bold">Inventory Management</h1>
 
         <p className="text-muted-foreground">
           Monitor materials, stock levels, and pricing.
@@ -66,25 +62,20 @@ async function handleArchiveMaterial(
       </div>
 
       <InventoryKPIs
-        totalMaterials={totalMaterials}
-        lowStockItems={lowStockItems}
-        outOfStockItems={outOfStockItems}
-      />
+  totalMaterials={totalMaterials}
+  lowStockItems={lowStockItems}
+  outOfStockItems={outOfStockItems}
+  expiringSoonItems={expiringSoonItems}
+/>
 
       <InventoryToolbar
         search={search}
         setSearch={setSearch}
         categoryFilter={categoryFilter}
         setCategoryFilter={setCategoryFilter}
-        glassCount={
-          materials.filter(
-            (m) => m.category === "Glass"
-          ).length
-        }
+        glassCount={materials.filter((m) => m.category === "Glass").length}
         aluminumCount={
-          materials.filter(
-            (m) => m.category === "Aluminum"
-          ).length
+          materials.filter((m) => m.category === "Aluminum").length
         }
         lowStockCount={lowStockItems}
         onAddMaterial={handleAddMaterial}
@@ -92,8 +83,12 @@ async function handleArchiveMaterial(
 
       <InventoryTable
         materials={filteredMaterials}
-        onEditMaterial={handleEditMaterial}
-        onArchiveMaterial={handleArchiveMaterial}
+        onEditMaterial={editMaterial}
+        onArchiveMaterial={archiveMaterial}
+        onRestock={restockInventoryMaterial}
+        onInitializeExpirationStock={initializeMaterialExpirationStock}
+        onEnableExpirationTracking={enableMaterialExpirationTracking}
+        onDisposeExpiredBatch={disposeExpiredInventoryBatch}
       />
     </div>
   )

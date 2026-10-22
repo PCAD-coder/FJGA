@@ -48,10 +48,14 @@ export async function getSalesRecords(): Promise<SalesRecord[]> {
       id,
       order_number,
       customer_id,
-      order_type,
-      status,
-      total_amount,
-      customer_contact_number,
+order_type,
+status,
+subtotal,
+vat_rate,
+vat_amount,
+delivery_fee,
+total_amount,
+customer_contact_number,
       payment_method,
       created_at,
 
@@ -90,6 +94,11 @@ export async function getSalesRecords(): Promise<SalesRecord[]> {
     const payments: SalesPayment[] = Array.isArray(order.order_payments)
       ? order.order_payments.map(mapPayment)
       : []
+
+    const subtotal = Number(order.subtotal ?? 0)
+    const vatRate = Number(order.vat_rate ?? 0)
+    const vatAmount = Number(order.vat_amount ?? 0)
+    const deliveryFee = Number(order.delivery_fee ?? 0)
 
     const totalAmount = Number(order.total_amount ?? 0)
 
@@ -130,6 +139,10 @@ export async function getSalesRecords(): Promise<SalesRecord[]> {
 
       paymentMethod: order.payment_method as PaymentMethod | null,
 
+      subtotal,
+      vatRate,
+      vatAmount,
+      deliveryFee,
       totalAmount,
 
       requiredDownPayment,

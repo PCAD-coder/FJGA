@@ -26,7 +26,9 @@ export default function ProjectsSection() {
         console.error("Failed to load public projects:", error)
 
         setError(
-          error instanceof Error ? error.message : "Failed to load projects."
+          error instanceof Error
+            ? error.message
+            : "Failed to load projects."
         )
       } finally {
         setLoading(false)
@@ -39,87 +41,101 @@ export default function ProjectsSection() {
   return (
     <section
       id="projects"
-      className="bg-gray-50 py-16 md:py-32 dark:bg-transparent"
+      className="scroll-mt-20 border-t bg-background py-20 md:py-28"
     >
-      <div className="mx-auto max-w-5xl border-t px-6">
-        <span className="text-caption -mt-5.5 -ml-6 block w-max bg-gray-50 px-6 dark:bg-transparent">
-          Projects
-        </span>
+      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+        {/* Section heading */}
+        <div className="grid gap-8 md:grid-cols-[1fr_0.8fr] md:items-end">
+          <div>
+            <p className="text-xs font-semibold tracking-[0.28em] text-muted-foreground uppercase">
+              Our Work
+            </p>
 
-        <div className="mt-12 gap-4 sm:grid sm:grid-cols-2 md:mt-5">
-          <div className="sm:w-2/5">
-            <h2 className="text-3xl font-bold sm:text-4xl">
-              Our Latest Projects
+            <h2 className="mt-4 max-w-2xl font-serif text-4xl leading-tight font-medium tracking-tight sm:text-5xl">
+              Built With Precision.
+              <br />
+              Designed for Real Spaces.
             </h2>
           </div>
 
-          <div className="mt-6 sm:mt-0">
-            <p>
-              Perfect fit, flawless finish — we work side by side with you to
-              craft glass and aluminum solutions that bring your vision to life.
+          <div className="md:pb-1">
+            <p className="max-w-xl text-sm leading-7 text-muted-foreground md:text-base">
+              Explore a selection of completed FJ Glass and Aluminum
+              projects crafted for residential, office, and commercial
+              spaces.
             </p>
           </div>
         </div>
 
-        <div className="mt-10 md:mt-7">
+        {/* Divider */}
+        <div className="mt-10 border-t" />
+
+        {/* Content */}
+        <div className="mt-10">
           {loading ? (
-            <div className="py-16 text-center">
+            <div className="py-20 text-center">
               <p className="text-sm text-muted-foreground">
                 Loading projects...
               </p>
             </div>
           ) : error ? (
-            <div className="py-16 text-center">
+            <div className="py-20 text-center">
               <p className="text-sm text-destructive">
                 Unable to load projects at this time.
               </p>
             </div>
           ) : projects.length === 0 ? (
-            <div className="py-16 text-center">
+            <div className="py-20 text-center">
               <p className="text-sm text-muted-foreground">
                 No projects are currently available.
               </p>
             </div>
           ) : (
-            <div className="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-x-6 gap-y-12 md:grid-cols-2">
               {projects.map((project, index) => (
-                <div key={project.id} className="group overflow-hidden">
-                  <Image
-                    className="h-96 w-full rounded-md object-cover object-top grayscale transition-all duration-500 group-hover:h-[22.5rem] group-hover:rounded-xl hover:grayscale-0"
-                    src={project.imageUrl}
-                    alt={project.title}
-                    width={826}
-                    height={1239}
-                    sizes="(max-width: 768px) 100vw, 280px"
-                    unoptimized
-                  />
+                <article
+                  key={project.id}
+                  className="group"
+                >
+                  {/* Project image */}
+                  <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-muted">
+                    <Image
+                      src={project.imageUrl}
+                      alt={project.title}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.025]"
+                      unoptimized
+                    />
+                  </div>
 
-                  <div className="px-2 pt-2 sm:pt-4 sm:pb-0">
-                    <div className="flex justify-between gap-4">
-                      <h3 className="text-base font-medium transition-all duration-500 group-hover:tracking-wider">
-                        {project.title}
-                      </h3>
+                  {/* Project information */}
+                  <div className="pt-5">
+                    <div className="flex items-start justify-between gap-6">
+                      <div className="min-w-0">
+                        <h3 className="font-serif text-2xl font-medium leading-tight">
+                          {project.title}
+                        </h3>
 
-                      <span className="shrink-0 text-xs">
-                        _{String(index + 1).padStart(2, "0")}
+                        {project.category && (
+                          <p className="mt-2 text-xs font-medium tracking-[0.16em] text-muted-foreground uppercase">
+                            {project.category}
+                          </p>
+                        )}
+                      </div>
+
+                      <span className="shrink-0 pt-1 text-xs text-muted-foreground">
+                        {String(index + 1).padStart(2, "0")}
                       </span>
                     </div>
 
-                    <div className="mt-1">
-                      {project.category && (
-                        <span className="text-sm text-muted-foreground">
-                          {project.category}
-                        </span>
-                      )}
-
-                      {project.description && (
-                        <p className="mt-3 text-sm text-muted-foreground">
-                          {project.description}
-                        </p>
-                      )}
-                    </div>
+                    {project.description && (
+                      <p className="mt-4 max-w-xl text-sm leading-6 text-muted-foreground">
+                        {project.description}
+                      </p>
+                    )}
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           )}

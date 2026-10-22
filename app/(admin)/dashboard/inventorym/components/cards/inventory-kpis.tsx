@@ -1,4 +1,9 @@
-import { AlertTriangle, Package, Truck } from "lucide-react"
+import {
+  AlertTriangle,
+  Clock3,
+  Package,
+  Truck,
+} from "lucide-react"
 
 import { Card, CardContent } from "@/components/ui/card"
 
@@ -6,15 +11,17 @@ interface InventoryKPIsProps {
   totalMaterials: number
   lowStockItems: number
   outOfStockItems: number
+  expiringSoonItems: number
 }
 
 export function InventoryKPIs({
   totalMaterials,
   lowStockItems,
   outOfStockItems,
+  expiringSoonItems,
 }: InventoryKPIsProps) {
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center gap-4">
@@ -63,6 +70,24 @@ export function InventoryKPIs({
 
               <h2 className="text-2xl font-bold">
                 {outOfStockItems}
+              </h2>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-4">
+            <Clock3 className="h-8 w-8 text-orange-500" />
+
+            <div>
+              <p className="text-sm text-muted-foreground">
+                Expiring Soon
+              </p>
+
+              <h2 className="text-2xl font-bold">
+                {expiringSoonItems}
               </h2>
             </div>
           </div>
