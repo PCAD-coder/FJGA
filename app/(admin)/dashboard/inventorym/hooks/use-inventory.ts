@@ -32,6 +32,20 @@ export function useInventory() {
 
   const [categoryFilter, setCategoryFilter] = useState("all")
 
+  type StockStatusFilter = "all" | "in-stock" | "low-stock" | "out-of-stock"
+
+type ExpirationStatusFilter =
+  | "all"
+  | "not-expiring"
+  | "expiring-soon"
+  | "expired"
+
+const [stockStatusFilter, setStockStatusFilter] =
+  useState<StockStatusFilter>("all")
+
+const [expirationStatusFilter, setExpirationStatusFilter] =
+  useState<ExpirationStatusFilter>("all")
+
   async function loadMaterials() {
     try {
       setLoading(true)
@@ -85,22 +99,58 @@ export function useInventory() {
   }
 }
 
-  const filteredMaterials = useMemo(() => {
-    return materials.filter((material) => {
-      const matchesSearch = material.material_name
-        .toLowerCase()
-        .includes(search.toLowerCase())
+const filteredMaterials = useMemo(() => {
+  const searchValue = search.trim().toLowerCase()
 
-      const matchesCategory =
-        categoryFilter === "all"
-          ? true
-          : categoryFilter === "low-stock"
-            ? material.stock_quantity <= material.minimum_stock
-            : material.category === categoryFilter
+  return materials.filter((material) => {
+    const matchesSearch =
+      !searchValue ||
+      material.material_name.toLowerCase().includes(searchValue)
 
-      return matchesSearch && matchesCategory
-    })
-  }, [materials, search, categoryFilter])
+    const matchesCategory =
+      categoryFilter === "all"
+        ? true
+        : categoryFilter === "low-stock"
+          ? material.stock_quantity <= material.minimum_stock
+          : material.category === categoryFilter
+
+    const matchesStockStatus =
+      stockStatusFilter === "all"
+        ? true
+        : stockStatusFilter === "out-of-stock"
+          ? material.stock_quantity === 0
+          : stockStatusFilter === "low-stock"
+            ? material.stock_quantity > 0 &&
+              material.stock_quantity <= material.minimum_stock
+            : material.stock_quantity > material.minimum_stock
+
+    const matchesExpirationStatus =
+      expirationStatusFilter === "all"
+        ? true
+        : expirationStatusFilter === "not-expiring"
+          ? !material.tracks_expiration ||
+            (material.expired_quantity <= 0 &&
+              material.expiring_soon_quantity <= 0)
+          : expirationStatusFilter === "expiring-soon"
+            ? material.tracks_expiration &&
+              material.expiring_soon_quantity > 0
+            : material.tracks_expiration &&
+              material.expired_quantity > 0
+
+    return (
+      matchesSearch &&
+      matchesCategory &&
+      matchesStockStatus &&
+      matchesExpirationStatus
+    )
+  })
+}, [
+  materials,
+  search,
+  categoryFilter,
+  stockStatusFilter,
+  expirationStatusFilter,
+])
 
   const totalMaterials = materials.length
 
@@ -223,6 +273,14 @@ const disposeExpiredInventoryBatch = async (
     categoryFilter,
 
     setCategoryFilter,
+
+    stockStatusFilter,
+
+setStockStatusFilter,
+
+expirationStatusFilter,
+
+setExpirationStatusFilter,
 
     totalMaterials,
 

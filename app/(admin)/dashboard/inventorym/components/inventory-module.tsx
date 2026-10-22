@@ -28,6 +28,10 @@ export default function InventoryModule() {
     enableMaterialExpirationTracking,
     disposeExpiredInventoryBatch,
     expiringSoonItems,
+    stockStatusFilter,
+setStockStatusFilter,
+expirationStatusFilter,
+setExpirationStatusFilter,
   } = useInventory()
 
   async function handleAddMaterial(form: InventoryInsert) {
@@ -69,17 +73,22 @@ export default function InventoryModule() {
 />
 
       <InventoryToolbar
-        search={search}
-        setSearch={setSearch}
-        categoryFilter={categoryFilter}
-        setCategoryFilter={setCategoryFilter}
-        glassCount={materials.filter((m) => m.category === "Glass").length}
-        aluminumCount={
-          materials.filter((m) => m.category === "Aluminum").length
-        }
-        lowStockCount={lowStockItems}
-        onAddMaterial={handleAddMaterial}
-      />
+  search={search}
+  setSearch={setSearch}
+  categoryFilter={categoryFilter}
+  setCategoryFilter={setCategoryFilter}
+  stockStatusFilter={stockStatusFilter}
+  setStockStatusFilter={setStockStatusFilter}
+  expirationStatusFilter={expirationStatusFilter}
+  setExpirationStatusFilter={setExpirationStatusFilter}
+  materials={filteredMaterials}
+  glassCount={materials.filter((m) => m.category === "Glass").length}
+  aluminumCount={
+    materials.filter((m) => m.category === "Aluminum").length
+  }
+  lowStockCount={lowStockItems}
+  onAddMaterial={handleAddMaterial}
+/>
 
       <InventoryTable
         materials={filteredMaterials}

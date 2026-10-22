@@ -18,6 +18,14 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
 import { SaleDetailsDialog } from "./sale-details-dialog"
 
 import { RecordPaymentDialog } from "./record-payment-dialog"
@@ -29,6 +37,7 @@ import type { PaymentSubmission, SalesRecord } from "../types/sales"
 import { getPendingPaymentSubmissions } from "../services/payment-verification-service"
 import PendingPaymentSubmissions from "./pending-payment-submissions"
 import { approvePaymentSubmission } from "../services/payment-service"
+import { SalesExportMenu } from "./sales-export-menu"
 
 function formatCurrency(value: number) {
   return `₱${value.toLocaleString(undefined, {
@@ -74,14 +83,18 @@ function getPaymentMethodLabel(paymentMethod: SalesRecord["paymentMethod"]) {
   }
 }
 
+type PaymentStatusFilter = "all" | SalesRecord["paymentStatus"]
+
 export default function Sales() {
   const [sales, setSales] = useState<SalesRecord[]>([])
   const [pendingPayments, setPendingPayments] = useState<PaymentSubmission[]>(
     []
   )
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState("")
-  const [error, setError] = useState<string | null>(null)
+const [search, setSearch] = useState("")
+const [paymentStatusFilter, setPaymentStatusFilter] =
+  useState<PaymentStatusFilter>("all")
+const [error, setError] = useState<string | null>(null)
   const [selectedSale, setSelectedSale] = useState<SalesRecord | null>(null)
   const [paymentSale, setPaymentSale] = useState<SalesRecord | null>(null)
 
@@ -123,20 +136,22 @@ export default function Sales() {
   }, [])
 
   const filteredSales = useMemo(() => {
-    const searchValue = search.trim().toLowerCase()
+  const searchValue = search.trim().toLowerCase()
 
-    if (!searchValue) {
-      return sales
-    }
+  return sales.filter((sale) => {
+    const matchesSearch =
+      !searchValue ||
+      sale.orderNumber.toLowerCase().includes(searchValue) ||
+      sale.customerName.toLowerCase().includes(searchValue) ||
+      sale.contactNumber?.toLowerCase().includes(searchValue)
 
-    return sales.filter((sale) => {
-      return (
-        sale.orderNumber.toLowerCase().includes(searchValue) ||
-        sale.customerName.toLowerCase().includes(searchValue) ||
-        sale.contactNumber?.toLowerCase().includes(searchValue)
-      )
-    })
-  }, [sales, search])
+    const matchesPaymentStatus =
+      paymentStatusFilter === "all" ||
+      sale.paymentStatus === paymentStatusFilter
+
+    return matchesSearch && matchesPaymentStatus
+  })
+}, [sales, search, paymentStatusFilter])
 
   const totalSales = useMemo(() => {
     return sales.reduce((total, sale) => total + sale.totalAmount, 0)
@@ -259,29 +274,61 @@ export default function Sales() {
         }}
       />
 
-      {/* SEARCH */}
+      {/* FILTERS & SEARCH */}
 
-      <Card>
-        <CardContent className="pt-6">
-          <div className="relative max-w-md">
-            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+<Card>
+  <CardContent className="pt-6">
+    <div className="flex flex-col gap-4 md:flex-row md:items-center">
+      <div className="relative w-full md:max-w-md">
+        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 
-            <Input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search order or customer..."
-              className="pl-9"
-            />
-          </div>
-        </CardContent>
-      </Card>
+        <Input
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search order or customer..."
+          className="pl-9"
+        />
+      </div>
+
+      <Select
+        value={paymentStatusFilter}
+        onValueChange={(value) =>
+          setPaymentStatusFilter(value as PaymentStatusFilter)
+        }
+      >
+        <SelectTrigger className="w-full md:w-[200px]">
+          <SelectValue placeholder="Payment status" />
+        </SelectTrigger>
+
+        <SelectContent>
+          <SelectItem value="all">All Statuses</SelectItem>
+          <SelectItem value="unpaid">Unpaid</SelectItem>
+          <SelectItem value="partial">Partially Paid</SelectItem>
+          <SelectItem value="paid">Paid</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  </CardContent>
+</Card>
 
       {/* SALES TABLE */}
 
       <Card>
-        <CardHeader>
-          <CardTitle>Sales Records</CardTitle>
-        </CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-4">
+  <div>
+    <CardTitle>Sales Records</CardTitle>
+
+    <p className="mt-1 text-sm text-muted-foreground">
+      Showing {filteredSales.length} of {sales.length} records
+    </p>
+  </div>
+
+  <SalesExportMenu
+    sales={filteredSales}
+    paymentStatusFilter={paymentStatusFilter}
+    search={search}
+  />
+</CardHeader>
 
         <CardContent>
           {loading ? (
