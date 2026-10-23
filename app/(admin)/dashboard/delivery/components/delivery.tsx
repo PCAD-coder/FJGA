@@ -1,12 +1,14 @@
 "use client"
 
 import { useMemo, useState, useEffect } from "react"
-
+import { Search, Settings2 } from "lucide-react"
 import type {
   Delivery,
   DeliveryDetails,
   DeliveryStatus,
 } from "../types/delivery"
+import { Button } from "@/components/ui/button"
+import ManageDeliveryZonesDialog from "./manage-delivery-zones-dialog"
 
 import DeliveryCard from "./delivery-card"
 import DeliveryDetailsDialog from "./delivery-details-dialog"
@@ -19,7 +21,6 @@ import { Card, CardContent } from "@/components/ui/card"
 
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
-import { Search } from "lucide-react"
 import { getDeliveriesAction } from "../actions/get-deliveries"
 
 import {
@@ -162,102 +163,93 @@ export default function DeliveryModule() {
     }
   }
 
-const handleUpdateStatus = async (
-  status: DeliveryStatus,
-  notes: string
-) => {
-  if (!selectedDelivery) {
-    return
-  }
+  const handleUpdateStatus = async (status: DeliveryStatus, notes: string) => {
+    if (!selectedDelivery) {
+      return
+    }
 
-  /*
-   * Return deliveries do not require customer payment.
-   * They use the dedicated return delivery completion RPC.
-   */
-  if (
-    status === "delivered" &&
-    selectedDelivery.deliveryType === "return"
-  ) {
+    /*
+     * Return deliveries do not require customer payment.
+     * They use the dedicated return delivery completion RPC.
+     */
+    if (status === "delivered" && selectedDelivery.deliveryType === "return") {
+      try {
+        setError(null)
+
+        await completeReturnDelivery({
+          deliveryId: selectedDelivery.id,
+          deliveryDate: new Date().toISOString().split("T")[0],
+          notes: notes.trim() || null,
+        })
+
+        setUpdateOpen(false)
+        setSelectedDelivery(null)
+
+        await loadDeliveries()
+      } catch (error) {
+        console.error("Failed to complete return delivery:", error)
+
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Failed to complete return delivery"
+        )
+      }
+
+      return
+    }
+
+    /*
+     * Normal order deliveries require final payment.
+     * The dedicated payment dialog handles the transaction.
+     */
+    if (status === "delivered") {
+      setUpdateOpen(false)
+      setFinalPaymentOpen(true)
+      return
+    }
+
     try {
       setError(null)
 
-      await completeReturnDelivery({
-        deliveryId: selectedDelivery.id,
-        deliveryDate: new Date().toISOString().split("T")[0],
-        notes: notes.trim() || null,
-      })
+      await updateDeliveryStatus(
+        selectedDelivery.id,
+        status,
+        notes,
+        selectedDelivery.deliveryType
+      )
+
+      setDeliveries((prev) =>
+        prev.map((delivery) =>
+          delivery.id === selectedDelivery.id
+            ? {
+                ...delivery,
+                status,
+              }
+            : delivery
+        )
+      )
+
+      setSelectedDelivery((prev) =>
+        prev
+          ? {
+              ...prev,
+              status,
+            }
+          : null
+      )
 
       setUpdateOpen(false)
-      setSelectedDelivery(null)
-
-      await loadDeliveries()
     } catch (error) {
-      console.error(
-        "Failed to complete return delivery:",
-        error
-      )
+      console.error("Failed to update delivery status:", error)
 
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to complete return delivery"
+          : "Failed to update delivery status"
       )
     }
-
-    return
   }
-
-  /*
-   * Normal order deliveries require final payment.
-   * The dedicated payment dialog handles the transaction.
-   */
-  if (status === "delivered") {
-    setUpdateOpen(false)
-    setFinalPaymentOpen(true)
-    return
-  }
-
-  try {
-    setError(null)
-
-    await updateDeliveryStatus(
-      selectedDelivery.id,
-      status,
-      notes,
-      selectedDelivery.deliveryType
-    )
-
-    setDeliveries((prev) =>
-      prev.map((delivery) =>
-        delivery.id === selectedDelivery.id
-          ? {
-              ...delivery,
-              status,
-            }
-          : delivery
-      )
-    )
-
-    setSelectedDelivery((prev) =>
-      prev
-        ? {
-            ...prev,
-            status,
-          }
-        : null
-    )
-
-    setUpdateOpen(false)
-  } catch (error) {
-    console.error("Failed to update delivery status:", error)
-
-    setError(
-      error instanceof Error
-        ? error.message
-        : "Failed to update delivery status"
-    )
-  }
-}
 
   const totalDeliveries = deliveries.length
 
@@ -273,16 +265,29 @@ const handleUpdateStatus = async (
     (d) => d.status === "delivered"
   ).length
 
+  const [manageZonesOpen, setManageZonesOpen] = useState(false)
+
   return (
     <div className="space-y-6">
       {/* HEADER */}
 
-      <div>
-        <h1 className="text-3xl font-bold">Delivery Management</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Delivery Management</h1>
 
-        <p className="text-muted-foreground">
-          Manage and monitor delivery schedules.
-        </p>
+          <p className="text-muted-foreground">
+            Manage and monitor delivery schedules.
+          </p>
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setManageZonesOpen(true)}
+        >
+          <Settings2 className="mr-2 h-4 w-4" />
+          Manage Delivery Zones
+        </Button>
       </div>
 
       {/* KPI */}
@@ -461,6 +466,11 @@ const handleUpdateStatus = async (
           await loadDeliveries()
         }}
       />
+
+      <ManageDeliveryZonesDialog
+  open={manageZonesOpen}
+  onOpenChange={setManageZonesOpen}
+/>
     </div>
   )
 }

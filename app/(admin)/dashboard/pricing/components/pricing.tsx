@@ -91,13 +91,15 @@ export default function PricingModule() {
         averageLaborMarkup={stats.averageLaborMarkup}
       />
 
-      <PricingToolbar
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        search={search}
-        onSearchChange={setSearch}
-        onAddService={() => setAddServiceOpen(true)}
-      />
+<PricingToolbar
+  activeTab={activeTab}
+  onTabChange={setActiveTab}
+  search={search}
+  onSearchChange={setSearch}
+  onAddService={() => setAddServiceOpen(true)}
+  materials={filteredMaterials}
+  laborServices={filteredServices}
+/>
 
       {activeTab === "materials" ? (
         <MaterialPricingTable

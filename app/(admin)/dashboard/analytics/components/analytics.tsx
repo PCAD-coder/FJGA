@@ -30,6 +30,8 @@ import {
   type AnalyticsPeriod,
 } from "../services/analytics-service"
 
+import AnalyticsExportMenu from "./analytics-export-menu"
+
 export default function Analytics() {
   const [materialsUsage, setMaterialsUsage] = useState<MaterialUsage[]>([])
 
@@ -89,18 +91,29 @@ export default function Analytics() {
           </p>
         </div>
 
-        <AnalyticsFilter
-          value={period}
-          onChange={(value) => {
-            if (
-              value === "monthly" ||
-              value === "quarterly" ||
-              value === "yearly"
-            ) {
-              setPeriod(value)
-            }
-          }}
-        />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+  <AnalyticsFilter
+    value={period}
+    onChange={(value) => {
+      if (
+        value === "monthly" ||
+        value === "quarterly" ||
+        value === "yearly"
+      ) {
+        setPeriod(value)
+      }
+    }}
+  />
+
+  <AnalyticsExportMenu
+    period={period}
+    summary={summary}
+    revenueData={revenueData}
+    ordersData={ordersData}
+    topProducts={topProducts}
+    materialsUsage={materialsUsage}
+  />
+</div>
       </div>
 
       {/* SUMMARY CARDS */}

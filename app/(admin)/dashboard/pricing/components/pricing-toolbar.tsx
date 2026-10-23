@@ -5,6 +5,13 @@ import { Search, Wrench } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
+import type {
+  LaborPricing,
+  MaterialPricing,
+} from "../types/pricing"
+
+import PricingExportMenu from "./pricing-export-menu"
+
 import {
   Tabs,
   TabsList,
@@ -21,6 +28,9 @@ interface PricingToolbarProps {
   onSearchChange: (value: string) => void;
 
   onAddService: () => void;
+  materials: MaterialPricing[];
+
+laborServices: LaborPricing[];
 }
 
 export default function PricingToolbar({
@@ -29,6 +39,8 @@ export default function PricingToolbar({
   search,
   onSearchChange,
   onAddService,
+    materials,
+  laborServices
 }: PricingToolbarProps) {
   return (
     <div className="space-y-4">
@@ -65,12 +77,21 @@ export default function PricingToolbar({
           />
         </div>
 
-        {activeTab === "labor" && (
-          <Button onClick={onAddService}>
-            <Wrench className="mr-2 h-4 w-4" />
-            Add Service
-          </Button>
-        )}
+        <div className="flex gap-2">
+  <PricingExportMenu
+    activeTab={activeTab}
+    materials={materials}
+    laborServices={laborServices}
+    search={search}
+  />
+
+  {activeTab === "labor" && (
+    <Button onClick={onAddService}>
+      <Wrench className="mr-2 h-4 w-4" />
+      Add Service
+    </Button>
+  )}
+</div>
       </div>
     </div>
   );
