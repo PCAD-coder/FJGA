@@ -1,5 +1,10 @@
 "use client"
 
+import { DashboardCard } from "@/components/dashboard_cards"
+import OrdersSkeleton, { OrdersListSkeleton } from "./orders-skeleton"
+import OrdersPagination from "./toolbar/orders-pagination"
+import { toast } from "sonner"
+
 import { useMemo, useState } from "react"
 import { useOrders } from "../hooks/use-orders"
 
@@ -31,11 +36,31 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import { Search } from "lucide-react"
+import {
+  Search,
+  ClipboardList,
+  Clock3,
+  CircleCheck,
+  Factory,
+  FileText,
+} from "lucide-react"
 import { formatCustomerName } from "../utils/format-customer-name"
 
+const PAGE_SIZE = 10
+
 export default function OrdersModule() {
-  const { orders, loading, error, approve, deny, changeStatus, startProduction } = useOrders()
+  const [ordersPage, setOrdersPage] = useState(1)
+  const [requestsPage, setRequestsPage] = useState(1)
+  const [quotationsPage, setQuotationsPage] = useState(1)
+  const {
+    orders,
+    loading,
+    error,
+    approve,
+    deny,
+    changeStatus,
+    startProduction,
+  } = useOrders()
 
   const {
     requests: customRequests,
@@ -69,25 +94,16 @@ export default function OrdersModule() {
   )
 
   const [quotationOpen, setQuotationOpen] = useState(false)
-  const [
-  selectedQuotation,
-  setSelectedQuotation,
-] = useState<QuotationDetail | null>(null)
+  const [selectedQuotation, setSelectedQuotation] =
+    useState<QuotationDetail | null>(null)
 
-const [
-  quotationDetailsOpen,
-  setQuotationDetailsOpen,
-] = useState(false)
+  const [quotationDetailsOpen, setQuotationDetailsOpen] = useState(false)
 
-const [
-  quotationDetailsLoading,
-  setQuotationDetailsLoading,
-] = useState(false)
+  const [quotationDetailsLoading, setQuotationDetailsLoading] = useState(false)
 
-const [
-  quotationDetailsError,
-  setQuotationDetailsError,
-] = useState<string | null>(null)
+  const [quotationDetailsError, setQuotationDetailsError] = useState<
+    string | null
+  >(null)
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
@@ -123,12 +139,33 @@ const [
     (request) => request.status === "approved"
   ).length
 
+  const orderPage = Math.min(
+    ordersPage,
+    Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE))
+  )
+  const requestPage = Math.min(
+    requestsPage,
+    Math.max(1, Math.ceil(customRequests.length / PAGE_SIZE))
+  )
+  const quotationPage = Math.min(
+    quotationsPage,
+    Math.max(1, Math.ceil(quotations.length / PAGE_SIZE))
+  )
+  const visibleOrders = filteredOrders.slice(
+    (orderPage - 1) * PAGE_SIZE,
+    orderPage * PAGE_SIZE
+  )
+  const visibleRequests = customRequests.slice(
+    (requestPage - 1) * PAGE_SIZE,
+    requestPage * PAGE_SIZE
+  )
+  const visibleQuotations = quotations.slice(
+    (quotationPage - 1) * PAGE_SIZE,
+    quotationPage * PAGE_SIZE
+  )
+
   if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">Loading orders...</p>
-      </div>
-    )
+    return <OrdersSkeleton />
   }
 
   if (error) {
@@ -139,49 +176,46 @@ const [
     )
   }
 
-  async function handleViewQuotation(
-  quotationId: string
-) {
-  setSelectedQuotation(null)
-  setQuotationDetailsError(null)
-  setQuotationDetailsLoading(true)
-  setQuotationDetailsOpen(true)
+  async function handleViewQuotation(quotationId: string) {
+    setSelectedQuotation(null)
+    setQuotationDetailsError(null)
+    setQuotationDetailsLoading(true)
+    setQuotationDetailsOpen(true)
 
-  try {
-    const detail =
-      await getQuotationById(quotationId)
+    try {
+      const detail = await getQuotationById(quotationId)
 
-    setSelectedQuotation(detail)
-  } catch (error) {
-    console.error(
-      "Failed to load quotation:",
-      error
-    )
+      setSelectedQuotation(detail)
+    } catch (error) {
+      console.error("Failed to load quotation:", error)
 
-    setQuotationDetailsError(
-      error instanceof Error
-        ? error.message
-        : "Failed to load quotation."
-    )
-  } finally {
-    setQuotationDetailsLoading(false)
+      toast.error(
+        error instanceof Error ? error.message : "Unable to load quotation."
+      )
+      setQuotationDetailsError(
+        error instanceof Error ? error.message : "Failed to load quotation."
+      )
+    } finally {
+      setQuotationDetailsLoading(false)
+    }
   }
-}
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Orders</h1>
-        <p className="text-muted-foreground">
+    <div className="mx-auto w-full max-w-[1600px] min-w-0 space-y-4 px-1 pt-2 pb-12 sm:px-4 sm:pt-3 lg:px-6">
+      <div className="border-b border-border/70 pb-4">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Orders
+        </h1>
+        <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
           Manage customer orders, quotations, production, and delivery.
         </p>
       </div>
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
-        className="space-y-6"
+        className="space-y-4"
       >
-        <TabsList>
+        <TabsList className="h-auto max-w-full flex-wrap justify-start gap-1 rounded-lg border bg-card p-1">
           <TabsTrigger value="orders">Orders</TabsTrigger>
 
           <TabsTrigger value="custom-requests">Custom Requests</TabsTrigger>
@@ -189,55 +223,63 @@ const [
           <TabsTrigger value="quotations">Quotations</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="orders" className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground">Total Orders</p>
-                <h2 className="text-3xl font-bold">{totalOrders}</h2>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground">Pending</p>
-                <h2 className="text-3xl font-bold text-yellow-600">
-                  {pendingOrders}
-                </h2>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground">Approved</p>
-                <h2 className="text-3xl font-bold text-green-600">
-                  {approvedOrders}
-                </h2>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground">In Production</p>
-                <h2 className="text-3xl font-bold text-blue-600">
-                  {productionOrders}
-                </h2>
-              </CardContent>
-            </Card>
+        <TabsContent value="orders" className="space-y-4">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-3">
+            <DashboardCard
+              title="Total Orders"
+              value={String(totalOrders)}
+              description="All customer orders"
+              icon={ClipboardList}
+              color="text-blue-600 dark:text-blue-400"
+            />
+            <DashboardCard
+              title="Pending"
+              value={String(pendingOrders)}
+              description="Orders awaiting review"
+              icon={Clock3}
+              color="text-amber-600 dark:text-amber-400"
+            />
+            <DashboardCard
+              title="Approved"
+              value={String(approvedOrders)}
+              description="Orders approved by the team"
+              icon={CircleCheck}
+              color="text-emerald-600 dark:text-emerald-400"
+            />
+            <DashboardCard
+              title="In Production"
+              value={String(productionOrders)}
+              description="Orders being manufactured"
+              icon={Factory}
+              color="text-primary"
+            />
           </div>
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/80 bg-card p-4">
             <div className="relative w-full md:max-w-md">
-              <Search className="absolute top-3 left-3 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                className="pl-9"
+                aria-label="Search orders"
+                className="h-9 rounded-lg bg-background/50 pl-9"
                 placeholder="Search order number or customer..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value)
+                  setOrdersPage(1)
+                }}
               />
             </div>
 
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-56">
+            <Select
+              value={statusFilter}
+              onValueChange={(value) => {
+                setStatusFilter(value)
+                setOrdersPage(1)
+              }}
+            >
+              <SelectTrigger
+                aria-label="Filter order status"
+                className="h-9 w-full rounded-lg bg-background/50 md:w-56"
+              >
                 <SelectValue placeholder="Filter status" />
               </SelectTrigger>
 
@@ -257,9 +299,12 @@ const [
             </Select>
           </div>
           <div className="space-y-4">
-            {filteredOrders.map((order) => (
-              <Card key={order.id}>
-                <CardContent className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
+            {visibleOrders.map((order) => (
+              <Card
+                key={order.id}
+                className="gap-0 overflow-hidden rounded-xl border border-border/80 py-0 shadow-none ring-0"
+              >
+                <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4 sm:p-5">
                   <div className="space-y-1">
                     <h3 className="text-lg font-semibold">
                       {order.order_number}
@@ -275,19 +320,19 @@ const [
                     </p>
                   </div>
 
-                  <div className="text-right">
+                  <div className="sm:ml-auto sm:text-right">
                     <p className="text-sm text-muted-foreground">
                       Total Amount
                     </p>
-                    <p className="text-2xl font-bold">
-                      ₱
+                    <p className="text-xl font-semibold tracking-tight tabular-nums">
+                      &#8369;
                       {order.total_amount.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}
                     </p>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 [&>button]:h-9 [&>button]:rounded-lg [&>button]:text-xs">
                     <Button
                       variant="outline"
                       onClick={() => {
@@ -335,35 +380,35 @@ const [
               </Card>
             ))}
           </div>
+          <OrdersPagination
+            label="Orders"
+            total={filteredOrders.length}
+            page={orderPage}
+            onPageChange={setOrdersPage}
+          />
           <ViewOrderDialog
-  order={selectedOrder}
-  open={viewOpen}
-  onOpenChange={setViewOpen}
-  onApprove={async (id) => {
-    await approve(id)
-    setViewOpen(false)
-  }}
-  onDeny={async (id) => {
-    await deny(id, "Denied by admin")
-    setViewOpen(false)
-  }}
-  onChangeStatus={async (id, status, options) => {
-    await changeStatus(id, status, options)
-    setViewOpen(false)
-  }}
-  onStartProduction={startProduction}
-/>
+            order={selectedOrder}
+            open={viewOpen}
+            onOpenChange={setViewOpen}
+            onApprove={async (id) => {
+              await approve(id)
+              setViewOpen(false)
+            }}
+            onDeny={async (id) => {
+              await deny(id, "Denied by admin")
+              setViewOpen(false)
+            }}
+            onChangeStatus={async (id, status, options) => {
+              await changeStatus(id, status, options)
+              setViewOpen(false)
+            }}
+            onStartProduction={startProduction}
+          />
         </TabsContent>
 
-        <TabsContent value="custom-requests" className="space-y-6">
+        <TabsContent value="custom-requests" className="space-y-4">
           {customRequestsLoading ? (
-            <Card>
-              <CardContent className="py-10 text-center">
-                <p className="text-sm text-muted-foreground">
-                  Loading custom requests...
-                </p>
-              </CardContent>
-            </Card>
+            <OrdersListSkeleton />
           ) : customRequestsError ? (
             <Card>
               <CardContent className="py-10 text-center">
@@ -372,50 +417,35 @@ const [
             </Card>
           ) : (
             <>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm text-muted-foreground">
-                      Total Requests
-                    </p>
-
-                    <h2 className="text-3xl font-bold">
-                      {totalCustomRequests}
-                    </h2>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm text-muted-foreground">
-                      Pending Review
-                    </p>
-
-                    <h2 className="text-3xl font-bold text-yellow-600">
-                      {pendingCustomRequests}
-                    </h2>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm text-muted-foreground">Quoted</p>
-
-                    <h2 className="text-3xl font-bold text-blue-600">
-                      {quotedCustomRequests}
-                    </h2>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm text-muted-foreground">Accepted</p>
-
-                    <h2 className="text-3xl font-bold text-green-600">
-                      {approvedCustomRequests}
-                    </h2>
-                  </CardContent>
-                </Card>
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-3">
+                <DashboardCard
+                  title="Total Requests"
+                  value={String(totalCustomRequests)}
+                  description="All custom design requests"
+                  icon={ClipboardList}
+                  color="text-blue-600 dark:text-blue-400"
+                />
+                <DashboardCard
+                  title="Pending Review"
+                  value={String(pendingCustomRequests)}
+                  description="Requests awaiting assessment"
+                  icon={Clock3}
+                  color="text-amber-600 dark:text-amber-400"
+                />
+                <DashboardCard
+                  title="Quoted"
+                  value={String(quotedCustomRequests)}
+                  description="Requests with a quotation"
+                  icon={FileText}
+                  color="text-primary"
+                />
+                <DashboardCard
+                  title="Accepted"
+                  value={String(approvedCustomRequests)}
+                  description="Requests accepted by customers"
+                  icon={CircleCheck}
+                  color="text-emerald-600 dark:text-emerald-400"
+                />
               </div>
 
               <div className="space-y-4">
@@ -428,7 +458,7 @@ const [
                     </CardContent>
                   </Card>
                 ) : (
-                  customRequests.map((request) => (
+                  visibleRequests.map((request) => (
                     <CustomOrderCard
                       key={request.id}
                       order={request}
@@ -441,6 +471,14 @@ const [
                 )}
               </div>
             </>
+          )}
+          {!customRequestsLoading && !customRequestsError && (
+            <OrdersPagination
+              label="Custom requests"
+              total={customRequests.length}
+              page={requestPage}
+              onPageChange={setRequestsPage}
+            />
           )}
           <ViewRequestDialog
             order={selectedCustomRequest}
@@ -474,14 +512,11 @@ const [
               await refreshCustomRequests()
             }}
           />
-          
         </TabsContent>
 
         <TabsContent value="quotations" className="space-y-4">
           {quotationsLoading ? (
-            <div className="rounded-lg border p-6 text-sm text-muted-foreground">
-              Loading quotations...
-            </div>
+            <OrdersListSkeleton />
           ) : quotationsError ? (
             <div className="rounded-lg border border-destructive/50 p-6 text-sm text-destructive">
               {quotationsError}
@@ -492,33 +527,37 @@ const [
             </div>
           ) : (
             <div className="space-y-4">
-              {quotations.map((quotation) => (
+              {visibleQuotations.map((quotation) => (
                 <QuotationCard
-  key={quotation.id}
-  quotation={quotation}
-  onView={() =>
-    void handleViewQuotation(
-      quotation.id
-    )
-  }
-/>
+                  key={quotation.id}
+                  quotation={quotation}
+                  onView={() => void handleViewQuotation(quotation.id)}
+                />
               ))}
             </div>
           )}
+          {!quotationsLoading && !quotationsError && (
+            <OrdersPagination
+              label="Quotations"
+              total={quotations.length}
+              page={quotationPage}
+              onPageChange={setQuotationsPage}
+            />
+          )}
           <QuotationDetailsDialog
-  open={quotationDetailsOpen}
-  onOpenChange={(open) => {
-    setQuotationDetailsOpen(open)
+            open={quotationDetailsOpen}
+            onOpenChange={(open) => {
+              setQuotationDetailsOpen(open)
 
-    if (!open) {
-      setSelectedQuotation(null)
-      setQuotationDetailsError(null)
-    }
-  }}
-  quotation={selectedQuotation}
-  loading={quotationDetailsLoading}
-  error={quotationDetailsError}
-/>
+              if (!open) {
+                setSelectedQuotation(null)
+                setQuotationDetailsError(null)
+              }
+            }}
+            quotation={selectedQuotation}
+            loading={quotationDetailsLoading}
+            error={quotationDetailsError}
+          />
         </TabsContent>
       </Tabs>
     </div>

@@ -1,5 +1,8 @@
 "use client"
 
+import { useState } from "react"
+import AnalyticsPagination from "./analytics-pagination"
+
 import {
   Table,
   TableBody,
@@ -18,15 +21,24 @@ interface Props {
 }
 
 export default function MaterialsUsageTable({ materials }: Props) {
+  const [currentPage, setCurrentPage] = useState(1)
+  const page = Math.min(
+    currentPage,
+    Math.max(1, Math.ceil(materials.length / 10))
+  )
+  const visibleRows = materials.slice((page - 1) * 10, page * 10)
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Most Used Materials</CardTitle>
+    <Card className="min-w-0 gap-0 overflow-hidden rounded-xl border border-border/80 py-0 shadow-none ring-0">
+      <CardHeader className="border-b border-border/60 px-5 py-4">
+        <CardTitle className="text-base font-semibold">
+          Most Used Materials
+        </CardTitle>
       </CardHeader>
 
-      <CardContent>
-        <Table>
-          <TableHeader>
+      <CardContent className="px-0 py-0 [&_td]:px-5 [&_td]:py-3 [&_th]:px-5 [&_th]:text-xs">
+        <Table className="min-w-[420px]">
+          <TableHeader className="bg-muted/50">
             <TableRow>
               <TableHead>Material</TableHead>
 
@@ -37,7 +49,7 @@ export default function MaterialsUsageTable({ materials }: Props) {
           </TableHeader>
 
           <TableBody>
-            {materials.map((material) => (
+            {visibleRows.map((material) => (
               <TableRow key={material.id}>
                 <TableCell className="font-medium">
                   {material.materialName}
@@ -56,6 +68,12 @@ export default function MaterialsUsageTable({ materials }: Props) {
           </TableBody>
         </Table>
       </CardContent>
+      <AnalyticsPagination
+        total={materials.length}
+        page={page}
+        onPageChange={setCurrentPage}
+        label="materials"
+      />
     </Card>
   )
 }

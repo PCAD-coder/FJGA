@@ -1,13 +1,11 @@
-"use client"
+﻿"use client"
 
 import Image from "next/image"
+import Link from "next/link"
+import { ArrowUpRight, Ruler } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-
 import type { CatalogProduct } from "../types/catalog"
-
-import Link from "next/link"
 
 interface Props {
   product: CatalogProduct
@@ -15,38 +13,39 @@ interface Props {
 
 export default function ProductCard({ product }: Props) {
   return (
-    <Card className="overflow-hidden">
-      <div className="relative aspect-[4/3] w-full bg-muted">
+    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-sm transition-shadow hover:shadow-md">
+      <div className="relative aspect-[3/2] w-full overflow-hidden border-b border-border/60 bg-muted">
         <Image
           src={product.image}
           alt={product.name}
           fill
-          className="object-cover"
+          sizes="(max-width: 480px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
+          className="object-cover transition-transform duration-500 ease-out motion-safe:group-hover:scale-[1.04]"
         />
       </div>
 
-      <CardContent className="space-y-4 p-5">
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">{product.name}</h3>
+      <div className="flex flex-1 flex-col p-3">
+        <h3 className="text-sm leading-snug font-medium tracking-tight wrap-break-word">
+          {product.name}
+        </h3>
+        <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-muted-foreground">
+          {product.description ||
+            "Custom glass and aluminum furniture product."}
+        </p>
 
-          <p className="line-clamp-3 text-sm text-muted-foreground">
-            {product.description ||
-              "Custom glass and aluminum furniture product."}
-          </p>
-        </div>
+        <div className="mt-auto pt-3">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Ruler aria-hidden="true" className="size-3.5 shrink-0" />
+            <span>
+              <span className="sr-only">Dimensions: </span>
+              {product.width} × {product.height}
+              {product.depth > 0 ? ` × ${product.depth}` : ""} cm
+            </span>
+          </div>
 
-        <div className="rounded-lg border bg-muted/30 p-3 text-sm">
-          <p className="font-medium">Dimensions</p>
-          <p className="text-muted-foreground">
-            {product.width} × {product.height}
-            {product.depth > 0 ? ` × ${product.depth}` : ""} cm
-          </p>
-        </div>
-
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="text-xs text-muted-foreground">Starting at</p>
-            <p className="text-2xl font-bold text-primary">
+          <div className="mt-3 border-t border-border/70 pt-3">
+            <p className="text-xs text-muted-foreground">Starts at</p>
+            <p className="mt-0.5 text-lg font-semibold tracking-tight tabular-nums">
               ₱
               {product.sellingPrice.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
@@ -54,18 +53,19 @@ export default function ProductCard({ product }: Props) {
               })}
             </p>
           </div>
-        </div>
 
-        <div className="flex gap-2">
-          <Button className="flex-1" variant="outline">
-            Customize
-          </Button>
-
-          <Button asChild className="flex-1">
-            <Link href={`/catalog/${product.id}`}>Order</Link>
-          </Button>
+          <div className="mt-3">
+            <Button
+              asChild
+              className="h-9 w-full min-w-0 rounded-md px-2 text-xs shadow-none"
+            >
+              <Link href={`/catalog/${product.id}`}>
+                Order <ArrowUpRight aria-hidden="true" className="size-4" />
+              </Link>
+            </Button>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </article>
   )
 }

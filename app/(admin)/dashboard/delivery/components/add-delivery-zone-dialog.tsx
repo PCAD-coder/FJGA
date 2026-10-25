@@ -45,7 +45,6 @@ export default function AddDeliveryZoneDialog({
   creating,
   onCreate,
 }: AddDeliveryZoneDialogProps) {
-  const [zoneName, setZoneName] = useState("")
   const [description, setDescription] = useState("")
   const [deliveryFee, setDeliveryFee] = useState("")
 
@@ -123,10 +122,7 @@ export default function AddDeliveryZoneDialog({
         if (data.length === 0) {
           setLoadingCities(true)
 
-          const cityData = await getCities(
-            regionPsgcCode,
-            null
-          )
+          const cityData = await getCities(regionPsgcCode, null)
 
           if (!cancelled) {
             setCities(cityData)
@@ -168,10 +164,7 @@ export default function AddDeliveryZoneDialog({
       try {
         setLoadingCities(true)
 
-        const data = await getCities(
-          regionPsgcCode,
-          provincePsgcCode
-        )
+        const data = await getCities(regionPsgcCode, provincePsgcCode)
 
         if (!cancelled) {
           setCities(data)
@@ -197,7 +190,6 @@ export default function AddDeliveryZoneDialog({
   }, [regionPsgcCode, provincePsgcCode])
 
   const resetForm = () => {
-    setZoneName("")
     setDescription("")
     setDeliveryFee("")
 
@@ -250,10 +242,13 @@ export default function AddDeliveryZoneDialog({
     try {
       setSubmitError(null)
 
-      const trimmedZoneName = zoneName.trim()
+      if (!regionPsgcCode) {
+        setSubmitError("Select a region")
+        return
+      }
 
-      if (!trimmedZoneName) {
-        setSubmitError("Zone name is required")
+      if (hasProvinces && !provincePsgcCode) {
+        setSubmitError("Select a province")
         return
       }
 
@@ -264,13 +259,8 @@ export default function AddDeliveryZoneDialog({
 
       const parsedDeliveryFee = Number(deliveryFee)
 
-      if (
-        !Number.isFinite(parsedDeliveryFee) ||
-        parsedDeliveryFee < 0
-      ) {
-        setSubmitError(
-          "Delivery fee must be zero or greater"
-        )
+      if (!Number.isFinite(parsedDeliveryFee) || parsedDeliveryFee < 0) {
+        setSubmitError("Delivery fee must be zero or greater")
         return
       }
 
@@ -280,10 +270,11 @@ export default function AddDeliveryZoneDialog({
       }
 
       await onCreate({
-        zoneName: trimmedZoneName,
+        regionPsgcCode,
+        provincePsgcCode: provincePsgcCode || null,
         description: description.trim() || null,
         deliveryFee: parsedDeliveryFee,
-        cityPsgcCodes: [cityPsgcCode],
+        cityPsgcCode,
       })
 
       resetForm()
@@ -298,36 +289,61 @@ export default function AddDeliveryZoneDialog({
   }
 
   const hasProvinces = provinces.length > 0
+  const selectedRegion =
+    regions.find((region) => region.psgc_code === regionPsgcCode) ?? null
+
+  const selectedProvince =
+    provinces.find((province) => province.psgc_code === provincePsgcCode) ??
+    null
+
+  const generatedZoneName = (() => {
+    if (!selectedRegion) {
+      return ""
+    }
+
+    if (selectedProvince) {
+      const shortRegionName = selectedRegion.region_name
+        .replace(/\s*\([^)]*\)\s*$/, "")
+        .trim()
+
+      return `${shortRegionName}, ${selectedProvince.province_name}`
+    }
+
+    const abbreviationMatch =
+      selectedRegion.region_name.match(/\(([^()]*)\)\s*$/)
+
+    if (abbreviationMatch) {
+      return abbreviationMatch[1].trim()
+    }
+
+    return selectedRegion.region_name
+  })()
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={handleOpenChange}
-    >
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Add Delivery Zone</DialogTitle>
 
           <DialogDescription>
-            Create a delivery zone and assign its initial city
-            or municipality.
+            Create a delivery zone and assign its initial city or municipality.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5">
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Zone Name
-            </label>
+            <label className="text-sm font-medium">Zone Name</label>
 
             <Input
-              value={zoneName}
-              onChange={(event) =>
-                setZoneName(event.target.value)
-              }
-              placeholder="e.g. Bulacan Zone"
-              disabled={creating}
+              value={generatedZoneName}
+              placeholder="Select a region and province"
+              disabled
+              readOnly
             />
+
+            <p className="text-xs text-muted-foreground">
+              Automatically generated from the selected region and province.
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -340,9 +356,7 @@ export default function AddDeliveryZoneDialog({
 
             <Textarea
               value={description}
-              onChange={(event) =>
-                setDescription(event.target.value)
-              }
+              onChange={(event) => setDescription(event.target.value)}
               placeholder="Describe the delivery coverage for this zone."
               className="min-h-[80px] resize-none"
               disabled={creating}
@@ -350,43 +364,34 @@ export default function AddDeliveryZoneDialog({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Delivery Fee
-            </label>
+            <label className="text-sm font-medium">Delivery Fee</label>
 
             <Input
               type="number"
               min="0"
               step="0.01"
               value={deliveryFee}
-              onChange={(event) =>
-                setDeliveryFee(event.target.value)
-              }
+              onChange={(event) => setDeliveryFee(event.target.value)}
               placeholder="0.00"
               disabled={creating}
             />
 
             <p className="text-xs text-muted-foreground">
-              This fee will be used for future orders
-              delivered to cities assigned to this zone.
+              This fee will be used for future orders delivered to cities
+              assigned to this zone.
             </p>
           </div>
 
           <div className="border-t pt-5">
-            <h3 className="font-medium">
-              Initial City / Municipality
-            </h3>
+            <h3 className="font-medium">Initial City / Municipality</h3>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              Select the first city covered by this delivery
-              zone.
+              Select the first city covered by this delivery zone.
             </p>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Region
-            </label>
+            <label className="text-sm font-medium">Region</label>
 
             <Select
               value={regionPsgcCode}
@@ -396,19 +401,14 @@ export default function AddDeliveryZoneDialog({
               <SelectTrigger>
                 <SelectValue
                   placeholder={
-                    loadingRegions
-                      ? "Loading regions..."
-                      : "Select region"
+                    loadingRegions ? "Loading regions..." : "Select region"
                   }
                 />
               </SelectTrigger>
 
               <SelectContent>
                 {regions.map((region) => (
-                  <SelectItem
-                    key={region.psgc_code}
-                    value={region.psgc_code}
-                  >
+                  <SelectItem key={region.psgc_code} value={region.psgc_code}>
                     {region.region_name}
                   </SelectItem>
                 ))}
@@ -418,9 +418,7 @@ export default function AddDeliveryZoneDialog({
 
           {regionPsgcCode && hasProvinces && (
             <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Province
-              </label>
+              <label className="text-sm font-medium">Province</label>
 
               <Select
                 value={provincePsgcCode}
@@ -452,9 +450,7 @@ export default function AddDeliveryZoneDialog({
           )}
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              City / Municipality
-            </label>
+            <label className="text-sm font-medium">City / Municipality</label>
 
             <Select
               value={cityPsgcCode}
@@ -478,14 +474,9 @@ export default function AddDeliveryZoneDialog({
 
               <SelectContent>
                 {cities.map((city) => (
-                  <SelectItem
-                    key={city.psgc_code}
-                    value={city.psgc_code}
-                  >
+                  <SelectItem key={city.psgc_code} value={city.psgc_code}>
                     {city.city_name}
-                    {city.locality_type
-                      ? ` (${city.locality_type})`
-                      : ""}
+                    {city.locality_type ? ` (${city.locality_type})` : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -494,9 +485,7 @@ export default function AddDeliveryZoneDialog({
 
           {submitError && (
             <div className="rounded-md border border-destructive/50 bg-destructive/5 p-3">
-              <p className="text-sm text-destructive">
-                {submitError}
-              </p>
+              <p className="text-sm text-destructive">{submitError}</p>
             </div>
           )}
         </div>
@@ -511,14 +500,8 @@ export default function AddDeliveryZoneDialog({
             Cancel
           </Button>
 
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={creating}
-          >
-            {creating
-              ? "Creating..."
-              : "Create Delivery Zone"}
+          <Button type="button" onClick={handleSubmit} disabled={creating}>
+            {creating ? "Creating..." : "Create Delivery Zone"}
           </Button>
         </DialogFooter>
       </DialogContent>

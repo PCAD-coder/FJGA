@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react"
 
+import { MapPin } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -19,14 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import {
-  getCities,
-  getProvinces,
-  getRegions,
-  type PSGCCity,
-  type PSGCProvince,
-  type PSGCRegion,
-} from "@/app/services/delivery/psgc-service"
+import { getCities, type PSGCCity } from "@/app/services/delivery/psgc-service"
 
 import type { DeliveryZone } from "../types/delivery-zone"
 
@@ -35,10 +30,7 @@ interface AddCityToZoneDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   addingCity: boolean
-  onAddCity: (
-    zoneId: string,
-    cityPsgcCode: string
-  ) => Promise<void>
+  onAddCity: (zoneId: string, cityPsgcCode: string) => Promise<void>
 }
 
 export default function AddCityToZoneDialog({
@@ -48,130 +40,72 @@ export default function AddCityToZoneDialog({
   addingCity,
   onAddCity,
 }: AddCityToZoneDialogProps) {
-  const [regions, setRegions] = useState<PSGCRegion[]>([])
-  const [provinces, setProvinces] = useState<PSGCProvince[]>([])
   const [cities, setCities] = useState<PSGCCity[]>([])
-
-  const [regionPsgcCode, setRegionPsgcCode] = useState("")
-  const [provincePsgcCode, setProvincePsgcCode] = useState("")
   const [cityPsgcCode, setCityPsgcCode] = useState("")
 
-  const [loadingRegions, setLoadingRegions] = useState(false)
-  const [loadingProvinces, setLoadingProvinces] = useState(false)
   const [loadingCities, setLoadingCities] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!open) {
+    if (!open || !zone) {
       return
     }
 
     let cancelled = false
 
-    const loadRegions = async () => {
+    const loadCities = async () => {
       try {
-        setLoadingRegions(true)
+        setLoadingCities(true)
         setSubmitError(null)
+        setCityPsgcCode("")
 
-        const data = await getRegions()
+        const data = await getCities(zone.regionPsgcCode, zone.provincePsgcCode)
 
         if (!cancelled) {
-          setRegions(data)
+          /*
+           * Do not show cities that are already assigned
+           * to this delivery zone.
+           *
+           * The RPC still protects against cities assigned
+           * to another delivery zone.
+           */
+          const assignedCityCodes = new Set(
+            zone.cities.map((city) => city.cityPsgcCode)
+          )
+
+          setCities(
+            data.filter((city) => !assignedCityCodes.has(city.psgc_code))
+          )
         }
       } catch (error) {
         if (!cancelled) {
+          setCities([])
+
           setSubmitError(
-            error instanceof Error
-              ? error.message
-              : "Failed to load regions"
+            error instanceof Error ? error.message : "Failed to load cities"
           )
         }
       } finally {
         if (!cancelled) {
-          setLoadingRegions(false)
+          setLoadingCities(false)
         }
       }
     }
 
-    void loadRegions()
+    void loadCities()
 
     return () => {
       cancelled = true
     }
-  }, [open])
+  }, [open, zone])
 
   useEffect(() => {
     if (!open) {
-      setRegionPsgcCode("")
-      setProvincePsgcCode("")
-      setCityPsgcCode("")
-      setProvinces([])
       setCities([])
+      setCityPsgcCode("")
       setSubmitError(null)
     }
   }, [open])
-
-  const handleRegionChange = async (regionCode: string) => {
-    setRegionPsgcCode(regionCode)
-    setProvincePsgcCode("")
-    setCityPsgcCode("")
-    setProvinces([])
-    setCities([])
-    setSubmitError(null)
-
-    try {
-      setLoadingProvinces(true)
-
-      const provinceData = await getProvinces(regionCode)
-
-      setProvinces(provinceData)
-
-      if (provinceData.length === 0) {
-        setLoadingCities(true)
-
-        const cityData = await getCities(regionCode, null)
-
-        setCities(cityData)
-      }
-    } catch (error) {
-      setSubmitError(
-        error instanceof Error
-          ? error.message
-          : "Failed to load locations"
-      )
-    } finally {
-      setLoadingProvinces(false)
-      setLoadingCities(false)
-    }
-  }
-
-  const handleProvinceChange = async (
-    provinceCode: string
-  ) => {
-    setProvincePsgcCode(provinceCode)
-    setCityPsgcCode("")
-    setCities([])
-    setSubmitError(null)
-
-    try {
-      setLoadingCities(true)
-
-      const cityData = await getCities(
-        regionPsgcCode,
-        provinceCode
-      )
-
-      setCities(cityData)
-    } catch (error) {
-      setSubmitError(
-        error instanceof Error
-          ? error.message
-          : "Failed to load cities"
-      )
-    } finally {
-      setLoadingCities(false)
-    }
-  }
 
   const handleSubmit = async () => {
     if (!zone) {
@@ -179,7 +113,7 @@ export default function AddCityToZoneDialog({
     }
 
     if (!cityPsgcCode) {
-      setSubmitError("Select a city")
+      setSubmitError("Select a city or municipality")
       return
     }
 
@@ -203,6 +137,10 @@ export default function AddCityToZoneDialog({
       return
     }
 
+    if (!nextOpen) {
+      setSubmitError(null)
+    }
+
     onOpenChange(nextOpen)
   }
 
@@ -211,138 +149,93 @@ export default function AddCityToZoneDialog({
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={handleOpenChange}
-    >
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Add City</DialogTitle>
 
           <DialogDescription>
-            Add another city to {zone.zoneName}. Orders from
-            this city will use the zone&apos;s delivery fee of{" "}
-            ₱
-            {zone.deliveryFee.toLocaleString("en-PH", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-            .
+            Add another city or municipality to {zone.zoneName}.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Region
-            </label>
+          <>
+            <div className="rounded-md border bg-muted/30 p-4">
+              <div className="flex items-start gap-3">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
 
-            <Select
-              value={regionPsgcCode}
-              onValueChange={handleRegionChange}
-              disabled={loadingRegions || addingCity}
-            >
-              <SelectTrigger>
-                <SelectValue
-                  placeholder={
-                    loadingRegions
-                      ? "Loading regions..."
-                      : "Select region"
-                  }
-                />
-              </SelectTrigger>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Zone Location</p>
 
-              <SelectContent>
-                {regions.map((region) => (
-                  <SelectItem
-                    key={region.psgc_code}
-                    value={region.psgc_code}
-                  >
-                    {region.region_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+                  <p className="text-sm text-muted-foreground">
+                    {zone.regionName}
+                  </p>
 
-          {regionPsgcCode && provinces.length > 0 && (
+                  {zone.provinceName && (
+                    <p className="text-sm text-muted-foreground">
+                      {zone.provinceName}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Province
-              </label>
+              <label className="text-sm font-medium">City / Municipality</label>
 
               <Select
-                value={provincePsgcCode}
-                onValueChange={handleProvinceChange}
-                disabled={loadingProvinces || addingCity}
+                value={cityPsgcCode}
+                onValueChange={(value) => {
+                  setCityPsgcCode(value)
+                  setSubmitError(null)
+                }}
+                disabled={loadingCities || addingCity || cities.length === 0}
               >
                 <SelectTrigger>
                   <SelectValue
                     placeholder={
-                      loadingProvinces
-                        ? "Loading provinces..."
-                        : "Select province"
+                      loadingCities
+                        ? "Loading cities..."
+                        : cities.length === 0
+                          ? "No available cities"
+                          : "Select city or municipality"
                     }
                   />
                 </SelectTrigger>
 
                 <SelectContent>
-                  {provinces.map((province) => (
-                    <SelectItem
-                      key={province.psgc_code}
-                      value={province.psgc_code}
-                    >
-                      {province.province_name}
+                  {cities.map((city) => (
+                    <SelectItem key={city.psgc_code} value={city.psgc_code}>
+                      {city.city_name}
+                      {city.locality_type ? ` (${city.locality_type})` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+
+              <p className="text-xs text-muted-foreground">
+                Only cities and municipalities within this zone&apos;s region
+                and province are shown.
+              </p>
             </div>
-          )}
 
-          {regionPsgcCode &&
-            (provincePsgcCode ||
-              (!loadingProvinces &&
-                provinces.length === 0)) && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  City / Municipality
-                </label>
+            <div className="rounded-md border p-3">
+              <p className="text-sm text-muted-foreground">Delivery fee</p>
 
-                <Select
-                  value={cityPsgcCode}
-                  onValueChange={setCityPsgcCode}
-                  disabled={loadingCities || addingCity}
-                >
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder={
-                        loadingCities
-                          ? "Loading cities..."
-                          : "Select city or municipality"
-                      }
-                    />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    {cities.map((city) => (
-                      <SelectItem
-                        key={city.psgc_code}
-                        value={city.psgc_code}
-                      >
-                        {city.city_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+              <p className="mt-1 font-medium">
+                ₱
+                {zone.deliveryFee.toLocaleString("en-PH", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </p>
+            </div>
+          </>
 
           {submitError && (
             <div className="rounded-md border border-destructive/50 bg-destructive/5 p-3">
-              <p className="text-sm text-destructive">
-                {submitError}
-              </p>
+              <p className="text-sm text-destructive">{submitError}</p>
             </div>
           )}
         </div>
@@ -360,7 +253,7 @@ export default function AddCityToZoneDialog({
           <Button
             type="button"
             onClick={handleSubmit}
-            disabled={addingCity || !cityPsgcCode}
+            disabled={addingCity || loadingCities || !cityPsgcCode}
           >
             {addingCity ? "Adding..." : "Add City"}
           </Button>

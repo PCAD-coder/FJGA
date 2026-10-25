@@ -37,7 +37,36 @@ import { Card, CardContent } from "@/components/ui/card"
 
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
-import { Search } from "lucide-react"
+import { DashboardCard } from "@/components/dashboard_cards"
+import ReturnsSkeleton from "./returns-skeleton"
+import { toast } from "sonner"
+
+import {
+  Search,
+  RotateCcw,
+  Clock3,
+  CalendarDays,
+  CircleCheck,
+} from "lucide-react"
+
+async function notifyReturnAction<T extends { error?: string | null }>(
+  action: () => Promise<T>,
+  message: string
+): Promise<T> {
+  try {
+    const result = await action()
+    if (result.error) toast.error(result.error)
+    else toast.success(message)
+    return result
+  } catch (error) {
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : "Unable to complete the return action."
+    )
+    throw error
+  }
+}
 
 export default function Returns() {
   const [requests, setRequests] = useState<ReturnRequest[]>([])
@@ -119,7 +148,10 @@ export default function Returns() {
 
     const request = inspectionRequest
 
-    const result = await completeReturnInspection(request.id, data)
+    const result = await notifyReturnAction(
+      () => completeReturnInspection(request.id, data),
+      "Inspection completed successfully."
+    )
 
     if (result.error) {
       throw new Error(result.error)
@@ -148,10 +180,14 @@ export default function Returns() {
   async function handleResolutionContinue(data: ResolutionDialogData) {
     if (!resolutionRequest || !resolutionInspectionId) return
 
-    const result = await createReturnResolution(
-      resolutionRequest.id,
-      resolutionInspectionId,
-      data
+    const result = await notifyReturnAction(
+      () =>
+        createReturnResolution(
+          resolutionRequest.id,
+          resolutionInspectionId,
+          data
+        ),
+      "Return resolution created successfully."
     )
 
     if (result.error) {
@@ -189,7 +225,10 @@ export default function Returns() {
     await loadReturns()
   }
   async function handleStartResolution(request: ReturnRequest) {
-    const result = await startReturnResolution(request.id)
+    const result = await notifyReturnAction(
+      () => startReturnResolution(request.id),
+      "Return resolution started."
+    )
 
     if (result.error) {
       setError(result.error)
@@ -199,7 +238,10 @@ export default function Returns() {
     await loadReturns()
   }
   async function handleCompleteResolution(request: ReturnRequest) {
-    const result = await completeReturnResolution(request.id)
+    const result = await notifyReturnAction(
+      () => completeReturnResolution(request.id),
+      "Return resolution completed."
+    )
 
     if (result.error) {
       setError(result.error)
@@ -227,19 +269,23 @@ export default function Returns() {
     })
   }, [requests, search, statusFilter])
 
-  const perPage = 4
+  const perPage = 10
 
-  const totalPages = Math.ceil(filteredRequests.length / perPage)
+  const totalPages = Math.max(1, Math.ceil(filteredRequests.length / perPage))
+  const page = Math.min(currentPage, totalPages)
 
   const paginatedRequests = filteredRequests.slice(
-    (currentPage - 1) * perPage,
-    currentPage * perPage
+    (page - 1) * perPage,
+    page * perPage
   )
 
   const handleApprove = async () => {
     if (!selectedRequest) return
 
-    const result = await approveReturnRequest(selectedRequest.id)
+    const result = await notifyReturnAction(
+      () => approveReturnRequest(selectedRequest.id),
+      "Return request approved."
+    )
 
     if (result.error) {
       setError(result.error)
@@ -265,7 +311,10 @@ export default function Returns() {
   const handleDecline = async (reason: string) => {
     if (!selectedRequest) return
 
-    const result = await declineReturnRequest(selectedRequest.id, reason)
+    const result = await notifyReturnAction(
+      () => declineReturnRequest(selectedRequest.id, reason),
+      "Return request declined."
+    )
 
     if (result.error) {
       setError(result.error)
@@ -297,12 +346,16 @@ export default function Returns() {
   ) => {
     if (!selectedRequest) return
 
-    const result = await scheduleReturnInspection(
-      selectedRequest.id,
-      date,
-      time,
-      assignedStaff,
-      notes
+    const result = await notifyReturnAction(
+      () =>
+        scheduleReturnInspection(
+          selectedRequest.id,
+          date,
+          time,
+          assignedStaff,
+          notes
+        ),
+      "Inspection schedule saved."
     )
 
     if (result.error) {
@@ -345,6 +398,9 @@ export default function Returns() {
       )
     )
 
+    toast.success(
+      "Request hidden from this list. This archive is temporary and is not saved to the database."
+    )
     setArchiveOpen(false)
     setSelectedRequest(null)
   }
@@ -363,66 +419,62 @@ export default function Returns() {
     (request) => request.status === "approved" && !request.archived
   ).length
 
+  if (loading) {
+    return <ReturnsSkeleton />
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-[1600px] min-w-0 space-y-4 px-1 pt-2 pb-12 sm:px-4 sm:pt-3 lg:px-6">
       {/* HEADER */}
 
-      <div>
-        <h1 className="text-3xl font-bold">Returns Management</h1>
+      <div className="border-b border-border/70 pb-4">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Returns Management
+        </h1>
 
-        <p className="text-muted-foreground">
+        <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
           Review, inspect, and manage client return requests.
         </p>
       </div>
 
       {/* KPI CARDS */}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground">Total Returns</p>
-
-            <h2 className="text-3xl font-bold">{totalReturns}</h2>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground">Under Review</p>
-
-            <h2 className="text-3xl font-bold text-orange-600">
-              {underReview}
-            </h2>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground">
-              Inspection Scheduled
-            </p>
-
-            <h2 className="text-3xl font-bold text-blue-600">
-              {inspectionScheduled}
-            </h2>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground">Approved Repairs</p>
-
-            <h2 className="text-3xl font-bold text-green-600">
-              {approvedReturns}
-            </h2>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-3">
+        <DashboardCard
+          title="Total Returns"
+          value={String(totalReturns)}
+          description="All visible return requests"
+          icon={RotateCcw}
+          color="text-blue-600 dark:text-blue-400"
+        />
+        <DashboardCard
+          title="Under Review"
+          value={String(underReview)}
+          description="Requests awaiting assessment"
+          icon={Clock3}
+          color="text-amber-600 dark:text-amber-400"
+        />
+        <DashboardCard
+          title="Inspection Scheduled"
+          value={String(inspectionScheduled)}
+          description="Requests scheduled for inspection"
+          icon={CalendarDays}
+          color="text-primary"
+        />
+        <DashboardCard
+          title="Approved Repairs"
+          value={String(approvedReturns)}
+          description="Approved return requests"
+          icon={CircleCheck}
+          color="text-emerald-600 dark:text-emerald-400"
+        />
       </div>
 
       {/* FILTERS */}
 
-      <div className="space-y-4">
+      <div className="space-y-3 rounded-xl border border-border/80 bg-card p-4">
         <ToggleGroup
+          className="h-auto max-w-full flex-wrap justify-start gap-1"
           type="single"
           value={statusFilter}
           onValueChange={(value) => {
@@ -444,10 +496,11 @@ export default function Returns() {
         </ToggleGroup>
 
         <div className="relative max-w-md">
-          <Search className="absolute top-3 left-3 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 
           <Input
-            className="pl-9"
+            aria-label="Search return requests"
+            className="h-9 rounded-lg bg-background/50 pl-9 shadow-none"
             placeholder="Search returns..."
             value={search}
             onChange={(event) => {
@@ -491,7 +544,7 @@ export default function Returns() {
       {/* RETURN CARDS */}
 
       {!loading && !error && paginatedRequests.length > 0 && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {paginatedRequests.map((request) => (
             <ReturnCard
               key={request.id}
@@ -541,11 +594,18 @@ export default function Returns() {
       {/* PAGINATION */}
 
       {!loading && !error && filteredRequests.length > 0 && (
-        <ReturnsPagination
-          currentPage={currentPage}
-          totalPages={totalPages || 1}
-          onPageChange={setCurrentPage}
-        />
+        <div className="flex flex-col gap-3 rounded-xl border bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p aria-live="polite" className="text-sm text-muted-foreground">
+            Showing {(page - 1) * perPage + 1} to{" "}
+            {Math.min(page * perPage, filteredRequests.length)} of{" "}
+            {filteredRequests.length} requests
+          </p>
+          <ReturnsPagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </div>
       )}
 
       {/* DIALOGS */}

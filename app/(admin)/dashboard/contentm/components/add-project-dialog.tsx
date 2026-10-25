@@ -1,10 +1,8 @@
 "use client"
 
-import {
-  ChangeEvent,
-  useEffect,
-  useState,
-} from "react"
+import { toast } from "sonner"
+
+import { ChangeEvent, useEffect, useState } from "react"
 import { ImageIcon, Upload, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -44,14 +42,11 @@ export default function AddProjectDialog({
   const [description, setDescription] = useState("")
   const [displayOrder, setDisplayOrder] = useState("0")
 
-  const [selectedImage, setSelectedImage] =
-    useState<File | null>(null)
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
 
-  const [previewUrl, setPreviewUrl] =
-    useState<string | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
-  const [error, setError] =
-    useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const [isSaving, setIsSaving] = useState(false)
 
@@ -75,9 +70,7 @@ export default function AddProjectDialog({
     }
   }, [previewUrl])
 
-  function handleImageChange(
-    event: ChangeEvent<HTMLInputElement>
-  ) {
+  function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
 
     if (!file) {
@@ -95,13 +88,12 @@ export default function AddProjectDialog({
       setPreviewUrl(URL.createObjectURL(file))
       setError(null)
     } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save content."
+      )
       event.target.value = ""
 
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Invalid image."
-      )
+      setError(error instanceof Error ? error.message : "Invalid image.")
     }
   }
 
@@ -127,13 +119,8 @@ export default function AddProjectDialog({
 
     const parsedDisplayOrder = Number(displayOrder)
 
-    if (
-      !Number.isInteger(parsedDisplayOrder) ||
-      parsedDisplayOrder < 0
-    ) {
-      setError(
-        "Display order must be a whole number of 0 or greater."
-      )
+    if (!Number.isInteger(parsedDisplayOrder) || parsedDisplayOrder < 0) {
+      setError("Display order must be a whole number of 0 or greater.")
       return
     }
 
@@ -143,8 +130,7 @@ export default function AddProjectDialog({
       setIsSaving(true)
       setError(null)
 
-      uploadedImageUrl =
-        await uploadProjectImage(selectedImage)
+      uploadedImageUrl = await uploadProjectImage(selectedImage)
 
       const project = await createContentProject({
         title,
@@ -155,13 +141,14 @@ export default function AddProjectDialog({
         displayOrder: parsedDisplayOrder,
       })
 
+      toast.success("Project added successfully.")
       onCreated(project)
       onOpenChange(false)
     } catch (error) {
-      console.error(
-        "Failed to create content project:",
-        error
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save content."
       )
+      console.error("Failed to create content project:", error)
 
       if (uploadedImageUrl) {
         try {
@@ -175,9 +162,7 @@ export default function AddProjectDialog({
       }
 
       setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to create project."
+        error instanceof Error ? error.message : "Failed to create project."
       )
     } finally {
       setIsSaving(false)
@@ -195,48 +180,36 @@ export default function AddProjectDialog({
     >
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            Add Project
-          </DialogTitle>
+          <DialogTitle>Add Project</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="project-title">
-              Project Title
-            </Label>
+            <Label htmlFor="project-title">Project Title</Label>
 
             <Input
               id="project-title"
               placeholder="e.g. Sliding Glass Door"
               value={title}
               disabled={isSaving}
-              onChange={(event) =>
-                setTitle(event.target.value)
-              }
+              onChange={(event) => setTitle(event.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="project-category">
-              Category
-            </Label>
+            <Label htmlFor="project-category">Category</Label>
 
             <Input
               id="project-category"
               placeholder="e.g. Doors, Tables, Cabinets"
               value={category}
               disabled={isSaving}
-              onChange={(event) =>
-                setCategory(event.target.value)
-              }
+              onChange={(event) => setCategory(event.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="project-description">
-              Description
-            </Label>
+            <Label htmlFor="project-description">Description</Label>
 
             <Textarea
               id="project-description"
@@ -244,16 +217,12 @@ export default function AddProjectDialog({
               placeholder="Describe the completed project..."
               value={description}
               disabled={isSaving}
-              onChange={(event) =>
-                setDescription(event.target.value)
-              }
+              onChange={(event) => setDescription(event.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="project-display-order">
-              Display Order
-            </Label>
+            <Label htmlFor="project-display-order">Display Order</Label>
 
             <Input
               id="project-display-order"
@@ -262,9 +231,7 @@ export default function AddProjectDialog({
               step="1"
               value={displayOrder}
               disabled={isSaving}
-              onChange={(event) =>
-                setDisplayOrder(event.target.value)
-              }
+              onChange={(event) => setDisplayOrder(event.target.value)}
             />
 
             <p className="text-xs text-muted-foreground">
@@ -287,14 +254,12 @@ export default function AddProjectDialog({
                   type="button"
                   variant="secondary"
                   size="icon"
-                  className="absolute right-3 top-3"
+                  className="absolute top-3 right-3"
                   disabled={isSaving}
                   onClick={removeSelectedImage}
                 >
                   <X className="size-4" />
-                  <span className="sr-only">
-                    Remove selected image
-                  </span>
+                  <span className="sr-only">Remove selected image</span>
                 </Button>
               </div>
             ) : (
@@ -316,21 +281,11 @@ export default function AddProjectDialog({
               onChange={handleImageChange}
             />
 
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isSaving}
-              asChild
-            >
-              <label
-                htmlFor="project-image"
-                className="cursor-pointer"
-              >
+            <Button type="button" variant="outline" disabled={isSaving} asChild>
+              <label htmlFor="project-image" className="cursor-pointer">
                 <Upload className="mr-2 size-4" />
 
-                {selectedImage
-                  ? "Choose Different Image"
-                  : "Choose Image"}
+                {selectedImage ? "Choose Different Image" : "Choose Image"}
               </label>
             </Button>
 
@@ -339,11 +294,7 @@ export default function AddProjectDialog({
             </p>
           </div>
 
-          {error && (
-            <p className="text-sm text-destructive">
-              {error}
-            </p>
-          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
 
         <DialogFooter>
@@ -356,14 +307,8 @@ export default function AddProjectDialog({
             Cancel
           </Button>
 
-          <Button
-            type="button"
-            disabled={isSaving}
-            onClick={handleSave}
-          >
-            {isSaving
-              ? "Adding..."
-              : "Add Project"}
+          <Button type="button" disabled={isSaving} onClick={handleSave}>
+            {isSaving ? "Adding..." : "Add Project"}
           </Button>
         </DialogFooter>
       </DialogContent>

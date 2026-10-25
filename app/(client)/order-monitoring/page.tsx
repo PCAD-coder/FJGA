@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { useState } from "react"
 
 import { FileText, Package, Wrench, CheckCircle } from "lucide-react"
@@ -137,6 +139,7 @@ export default function OrderMonitoringPage() {
       )
     )
 
+    toast.success("Delivery confirmation updated on this page.")
     setConfirmDialogOpen(false)
   }
 

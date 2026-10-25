@@ -16,8 +16,13 @@ export default function LogsPagination({
   onPageChange,
 }: Props) {
   return (
-    <div className="flex items-center justify-center gap-2">
+    <nav
+      aria-label="Activity logs pagination"
+      className="flex items-center gap-3"
+    >
       <Button
+        type="button"
+        size="sm"
         variant="outline"
         disabled={currentPage === 1}
         onClick={() => onPageChange(currentPage - 1)}
@@ -30,12 +35,14 @@ export default function LogsPagination({
       </span>
 
       <Button
+        type="button"
+        size="sm"
         variant="outline"
         disabled={currentPage === totalPages}
         onClick={() => onPageChange(currentPage + 1)}
       >
         Next
       </Button>
-    </div>
+    </nav>
   )
 }

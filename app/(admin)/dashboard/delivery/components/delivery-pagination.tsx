@@ -7,9 +7,7 @@ interface DeliveryPaginationProps {
 
   totalPages: number
 
-  onPageChange: (
-    page: number
-  ) => void
+  onPageChange: (page: number) => void
 }
 
 export default function DeliveryPagination({
@@ -18,14 +16,13 @@ export default function DeliveryPagination({
   onPageChange,
 }: DeliveryPaginationProps) {
   return (
-    <div className="flex items-center justify-center gap-2 pt-4">
-
+    <nav aria-label="Delivery pagination" className="flex items-center gap-3">
       <Button
+        type="button"
+        size="sm"
         variant="outline"
         disabled={currentPage === 1}
-        onClick={() =>
-          onPageChange(currentPage - 1)
-        }
+        onClick={() => onPageChange(currentPage - 1)}
       >
         Previous
       </Button>
@@ -35,17 +32,14 @@ export default function DeliveryPagination({
       </span>
 
       <Button
+        type="button"
+        size="sm"
         variant="outline"
-        disabled={
-          currentPage === totalPages
-        }
-        onClick={() =>
-          onPageChange(currentPage + 1)
-        }
+        disabled={currentPage === totalPages}
+        onClick={() => onPageChange(currentPage + 1)}
       >
         Next
       </Button>
-
-    </div>
+    </nav>
   )
 }

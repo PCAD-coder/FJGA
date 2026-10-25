@@ -1,11 +1,6 @@
-import {
-  Shield,
-  Users,
-  UserCheck,
-  Briefcase,
-} from "lucide-react"
+import { Shield, Users, UserCheck, Briefcase } from "lucide-react"
 
-import { Card, CardContent } from "@/components/ui/card"
+import { DashboardCard } from "@/components/dashboard_cards"
 
 interface Props {
   total: number
@@ -15,53 +10,49 @@ interface Props {
   clients: number
 }
 
-export default function Stats({
-  total,
-  active,
-  admins,
-  clients,
-}: Props) {
+export default function Stats({ total, active, admins, clients }: Props) {
   const cards = [
     {
       title: "Total Users",
+      description: "All registered accounts",
+      color: "text-blue-600 dark:text-blue-400",
       value: total,
       icon: Users,
     },
     {
       title: "Active Users",
+      description: "Accounts with active access",
+      color: "text-emerald-600 dark:text-emerald-400",
       value: active,
       icon: UserCheck,
     },
     {
       title: "Administrators",
+      description: "Accounts with administrator access",
+      color: "text-primary",
       value: admins,
       icon: Shield,
     },
     {
       title: "Clients",
+      description: "Registered customer accounts",
+      color: "text-amber-600 dark:text-amber-400",
       value: clients,
       icon: Briefcase,
     },
   ]
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {cards.map((card) => (
-        <Card key={card.title}>
-          <CardContent className="flex items-center justify-between p-6">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                {card.title}
-              </p>
-
-              <h2 className="mt-2 text-3xl font-bold">
-                {card.value}
-              </h2>
-            </div>
-
-            <card.icon className="h-9 w-9 text-muted-foreground" />
-          </CardContent>
-        </Card>
+        <DashboardCard
+          key={card.title}
+          title={card.title}
+          value={String(card.value)}
+          description={card.description}
+          icon={card.icon}
+          color={card.color}
+        />
       ))}
     </div>
   )

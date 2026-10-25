@@ -1,6 +1,8 @@
-"use client";
+"use client"
 
-import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner"
+
+import { useEffect, useMemo, useState } from "react"
 
 import {
   Dialog,
@@ -8,21 +10,21 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dialog"
 
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 
-import { LaborPricing } from "../../types/pricing";
-import { updateLaborPricing } from "../../services/pricing-service";
+import { LaborPricing } from "../../types/pricing"
+import { updateLaborPricing } from "../../services/pricing-service"
 
 interface Props {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open: boolean
+  onOpenChange: (open: boolean) => void
 
-  service: LaborPricing | null;
+  service: LaborPricing | null
 
-  refresh: () => Promise<void>;
+  refresh: () => Promise<void>
 }
 
 export default function EditServiceDialog({
@@ -31,77 +33,76 @@ export default function EditServiceDialog({
   service,
   refresh,
 }: Props) {
-  const [serviceName, setServiceName] = useState("");
+  const [serviceName, setServiceName] = useState("")
 
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState("")
 
-  const [unit, setUnit] = useState("");
+  const [unit, setUnit] = useState("")
 
-  const [laborCost, setLaborCost] = useState(0);
+  const [laborCost, setLaborCost] = useState(0)
 
-  const [markup, setMarkup] = useState(0);
+  const [markup, setMarkup] = useState(0)
 
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    if (!service) return;
+    if (!service) return
 
-    setServiceName(service.service_name);
-    setDescription(service.description ?? "");
-    setUnit(service.unit);
-    setLaborCost(service.labor_cost);
-    setMarkup(service.markup_percentage);
-  }, [service]);
+    setServiceName(service.service_name)
+    setDescription(service.description ?? "")
+    setUnit(service.unit)
+    setLaborCost(service.labor_cost)
+    setMarkup(service.markup_percentage)
+  }, [service])
 
-    const sellingPrice = useMemo(() => {
-    return laborCost * (1 + markup / 100);
-  }, [laborCost, markup]);
+  const sellingPrice = useMemo(() => {
+    return laborCost * (1 + markup / 100)
+  }, [laborCost, markup])
 
-  if (!service) return null;
+  if (!service) return null
 
   // TypeScript-safe reference
-  const selectedService = service;
+  const selectedService = service
 
   async function handleSave() {
     try {
-      setSaving(true);
+      setSaving(true)
 
       await updateLaborPricing(selectedService.id, {
         labor_cost: laborCost,
         markup_percentage: markup,
-      });
+      })
 
-      await refresh();
+      toast.success("Labor pricing updated successfully.")
+      await refresh()
 
-      onOpenChange(false);
+      onOpenChange(false)
     } catch (error) {
-      console.error("Update Labor Pricing:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to save pricing changes."
+      )
+      console.error("Update Labor Pricing:", error)
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
-
         <DialogHeader>
-          <DialogTitle>
-            Update Labor Pricing
-          </DialogTitle>
+          <DialogTitle>Update Labor Pricing</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-
           <div>
             <label className="mb-2 block text-sm font-medium">
               Service Name
             </label>
 
-            <Input
-              value={serviceName}
-              disabled
-            />
+            <Input value={serviceName} disabled />
           </div>
 
           <div>
@@ -109,34 +110,22 @@ export default function EditServiceDialog({
               Description
             </label>
 
-            <Input
-              value={description}
-              disabled
-            />
+            <Input value={description} disabled />
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium">
-              Unit
-            </label>
+            <label className="mb-2 block text-sm font-medium">Unit</label>
 
-            <Input
-              value={unit}
-              disabled
-            />
+            <Input value={unit} disabled />
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium">
-              Labor Cost
-            </label>
+            <label className="mb-2 block text-sm font-medium">Labor Cost</label>
 
             <Input
               type="number"
               value={laborCost}
-              onChange={(e) =>
-                setLaborCost(Number(e.target.value))
-              }
+              onChange={(e) => setLaborCost(Number(e.target.value))}
             />
           </div>
 
@@ -148,9 +137,7 @@ export default function EditServiceDialog({
             <Input
               type="number"
               value={markup}
-              onChange={(e) =>
-                setMarkup(Number(e.target.value))
-              }
+              onChange={(e) => setMarkup(Number(e.target.value))}
             />
           </div>
 
@@ -159,16 +146,11 @@ export default function EditServiceDialog({
               Selling Price
             </label>
 
-            <Input
-              value={`₱${sellingPrice.toFixed(2)}`}
-              disabled
-            />
+            <Input value={`\u20B1${sellingPrice.toFixed(2)}`} disabled />
           </div>
-
         </div>
 
         <DialogFooter>
-
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -177,16 +159,11 @@ export default function EditServiceDialog({
             Cancel
           </Button>
 
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-          >
+          <Button onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : "Save Changes"}
           </Button>
-
         </DialogFooter>
-
       </DialogContent>
     </Dialog>
-  );
+  )
 }

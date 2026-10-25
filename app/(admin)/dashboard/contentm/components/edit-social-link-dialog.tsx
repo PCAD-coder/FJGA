@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -22,10 +24,7 @@ import {
 
 import { updateContentSocialLink } from "../services/content"
 
-import type {
-  ContentSocialLink,
-  SocialPlatform,
-} from "../types/content"
+import type { ContentSocialLink, SocialPlatform } from "../types/content"
 
 interface Props {
   open: boolean
@@ -53,19 +52,15 @@ export default function EditSocialLinkDialog({
   link,
   onUpdated,
 }: Props) {
-  const [platform, setPlatform] =
-    useState<SocialPlatform>("facebook")
+  const [platform, setPlatform] = useState<SocialPlatform>("facebook")
 
   const [label, setLabel] = useState("")
   const [url, setUrl] = useState("")
-  const [displayOrder, setDisplayOrder] =
-    useState("0")
+  const [displayOrder, setDisplayOrder] = useState("0")
 
-  const [error, setError] =
-    useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  const [isSaving, setIsSaving] =
-    useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
     if (!link) return
@@ -73,15 +68,9 @@ export default function EditSocialLinkDialog({
     setPlatform(link.platform)
     setLabel(link.label)
 
-    if (
-      link.platform === "email" &&
-      link.url.startsWith("mailto:")
-    ) {
+    if (link.platform === "email" && link.url.startsWith("mailto:")) {
       setUrl(link.url.slice("mailto:".length))
-    } else if (
-      link.platform === "phone" &&
-      link.url.startsWith("tel:")
-    ) {
+    } else if (link.platform === "phone" && link.url.startsWith("tel:")) {
       setUrl(link.url.slice("tel:".length))
     } else {
       setUrl(link.url)
@@ -95,32 +84,20 @@ export default function EditSocialLinkDialog({
     const value = url.trim()
 
     if (!value) {
-      throw new Error(
-        "Social media or contact link is required."
-      )
+      throw new Error("Social media or contact link is required.")
     }
 
     if (platform === "email") {
-      if (
-        !value.startsWith("mailto:") &&
-        !value.includes("@")
-      ) {
-        throw new Error(
-          "Enter a valid email address."
-        )
+      if (!value.startsWith("mailto:") && !value.includes("@")) {
+        throw new Error("Enter a valid email address.")
       }
 
       return
     }
 
     if (platform === "phone") {
-      if (
-        !value.startsWith("tel:") &&
-        !/^[+0-9()\-\s]+$/.test(value)
-      ) {
-        throw new Error(
-          "Enter a valid phone number."
-        )
+      if (!value.startsWith("tel:") && !/^[+0-9()\-\s]+$/.test(value)) {
+        throw new Error("Enter a valid phone number.")
       }
 
       return
@@ -129,10 +106,7 @@ export default function EditSocialLinkDialog({
     try {
       const parsedUrl = new URL(value)
 
-      if (
-        parsedUrl.protocol !== "http:" &&
-        parsedUrl.protocol !== "https:"
-      ) {
+      if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
         throw new Error()
       }
     } catch {
@@ -145,17 +119,11 @@ export default function EditSocialLinkDialog({
   function normalizeUrl() {
     const value = url.trim()
 
-    if (
-      platform === "email" &&
-      !value.startsWith("mailto:")
-    ) {
+    if (platform === "email" && !value.startsWith("mailto:")) {
       return `mailto:${value}`
     }
 
-    if (
-      platform === "phone" &&
-      !value.startsWith("tel:")
-    ) {
+    if (platform === "phone" && !value.startsWith("tel:")) {
       return `tel:${value.replace(/[\s()-]/g, "")}`
     }
 
@@ -170,16 +138,10 @@ export default function EditSocialLinkDialog({
       return
     }
 
-    const parsedDisplayOrder =
-      Number(displayOrder)
+    const parsedDisplayOrder = Number(displayOrder)
 
-    if (
-      !Number.isInteger(parsedDisplayOrder) ||
-      parsedDisplayOrder < 0
-    ) {
-      setError(
-        "Display order must be a whole number of 0 or greater."
-      )
+    if (!Number.isInteger(parsedDisplayOrder) || parsedDisplayOrder < 0) {
+      setError("Display order must be a whole number of 0 or greater.")
       return
     }
 
@@ -189,29 +151,24 @@ export default function EditSocialLinkDialog({
       setIsSaving(true)
       setError(null)
 
-      const updatedLink =
-        await updateContentSocialLink(
-          link.id,
-          {
-            platform,
-            label,
-            url: normalizeUrl(),
-            displayOrder: parsedDisplayOrder,
-          }
-        )
+      const updatedLink = await updateContentSocialLink(link.id, {
+        platform,
+        label,
+        url: normalizeUrl(),
+        displayOrder: parsedDisplayOrder,
+      })
 
+      toast.success("Social link updated successfully.")
       onUpdated(updatedLink)
       onOpenChange(false)
     } catch (error) {
-      console.error(
-        "Failed to update social link:",
-        error
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save content."
       )
+      console.error("Failed to update social link:", error)
 
       setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to update social link."
+        error instanceof Error ? error.message : "Failed to update social link."
       )
     } finally {
       setIsSaving(false)
@@ -231,9 +188,7 @@ export default function EditSocialLinkDialog({
     >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>
-            Edit Social Link
-          </DialogTitle>
+          <DialogTitle>Edit Social Link</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -243,11 +198,7 @@ export default function EditSocialLinkDialog({
             <Select
               value={platform}
               disabled={isSaving}
-              onValueChange={(value) =>
-                setPlatform(
-                  value as SocialPlatform
-                )
-              }
+              onValueChange={(value) => setPlatform(value as SocialPlatform)}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -255,10 +206,7 @@ export default function EditSocialLinkDialog({
 
               <SelectContent>
                 {platforms.map((item) => (
-                  <SelectItem
-                    key={item.value}
-                    value={item.value}
-                  >
+                  <SelectItem key={item.value} value={item.value}>
                     {item.label}
                   </SelectItem>
                 ))}
@@ -267,39 +215,29 @@ export default function EditSocialLinkDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-social-label">
-              Label
-            </Label>
+            <Label htmlFor="edit-social-label">Label</Label>
 
             <Input
               id="edit-social-label"
               value={label}
               disabled={isSaving}
-              onChange={(event) =>
-                setLabel(event.target.value)
-              }
+              onChange={(event) => setLabel(event.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-social-url">
-              Link / Contact
-            </Label>
+            <Label htmlFor="edit-social-url">Link / Contact</Label>
 
             <Input
               id="edit-social-url"
               value={url}
               disabled={isSaving}
-              onChange={(event) =>
-                setUrl(event.target.value)
-              }
+              onChange={(event) => setUrl(event.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-social-order">
-              Display Order
-            </Label>
+            <Label htmlFor="edit-social-order">Display Order</Label>
 
             <Input
               id="edit-social-order"
@@ -308,19 +246,11 @@ export default function EditSocialLinkDialog({
               step="1"
               value={displayOrder}
               disabled={isSaving}
-              onChange={(event) =>
-                setDisplayOrder(
-                  event.target.value
-                )
-              }
+              onChange={(event) => setDisplayOrder(event.target.value)}
             />
           </div>
 
-          {error && (
-            <p className="text-sm text-destructive">
-              {error}
-            </p>
-          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
 
         <DialogFooter>
@@ -333,14 +263,8 @@ export default function EditSocialLinkDialog({
             Cancel
           </Button>
 
-          <Button
-            type="button"
-            disabled={isSaving}
-            onClick={handleSave}
-          >
-            {isSaving
-              ? "Saving..."
-              : "Save Changes"}
+          <Button type="button" disabled={isSaving} onClick={handleSave}>
+            {isSaving ? "Saving..." : "Save Changes"}
           </Button>
         </DialogFooter>
       </DialogContent>

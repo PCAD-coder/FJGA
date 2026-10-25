@@ -45,18 +45,13 @@ export default function DeleteSocialLinkDialog({
             <AlertTriangle className="size-5 text-destructive" />
           </div>
 
-          <DialogTitle>
-            Delete Social Link?
-          </DialogTitle>
+          <DialogTitle>Delete Social Link?</DialogTitle>
         </DialogHeader>
 
         <p className="text-sm text-muted-foreground">
           This will permanently delete{" "}
-          <span className="font-medium text-foreground">
-            {link.label}
-          </span>{" "}
-          from Content Management. This action cannot be
-          undone.
+          <span className="font-medium text-foreground">{link.label}</span> from
+          Content Management. This action cannot be undone.
         </p>
 
         <DialogFooter>
@@ -75,9 +70,7 @@ export default function DeleteSocialLinkDialog({
             disabled={deleting}
             onClick={onConfirm}
           >
-            {deleting
-              ? "Deleting..."
-              : "Delete Social Link"}
+            {deleting ? "Deleting..." : "Delete Social Link"}
           </Button>
         </DialogFooter>
       </DialogContent>

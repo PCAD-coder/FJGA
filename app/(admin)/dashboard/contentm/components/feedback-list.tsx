@@ -1,11 +1,8 @@
 "use client"
 
-import {
-  Eye,
-  EyeOff,
-  MessageSquareQuote,
-  Star,
-} from "lucide-react"
+import { ContentPanelSkeleton } from "./content-skeleton"
+
+import { Eye, EyeOff, MessageSquareQuote, Star } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -49,21 +46,13 @@ export default function FeedbackList({
   onToggleFeatured,
 }: Props) {
   if (loading) {
-    return (
-      <div className="rounded-lg border p-10 text-center">
-        <p className="text-sm text-muted-foreground">
-          Loading feedback...
-        </p>
-      </div>
-    )
+    return <ContentPanelSkeleton variant="cards" />
   }
 
   if (error) {
     return (
       <div className="rounded-lg border border-destructive/50 p-10 text-center">
-        <p className="text-sm text-destructive">
-          {error}
-        </p>
+        <p className="text-sm text-destructive">{error}</p>
       </div>
     )
   }
@@ -73,13 +62,11 @@ export default function FeedbackList({
       <div className="flex min-h-64 flex-col items-center justify-center rounded-lg border border-dashed p-10 text-center">
         <MessageSquareQuote className="mb-3 size-9 text-muted-foreground" />
 
-        <p className="font-medium">
-          No customer feedback yet
-        </p>
+        <p className="font-medium">No customer feedback yet</p>
 
         <p className="mt-1 max-w-md text-sm text-muted-foreground">
-          Customer feedback will appear here once it has
-          been submitted through the system.
+          Customer feedback will appear here once it has been submitted through
+          the system.
         </p>
       </div>
     )
@@ -94,7 +81,7 @@ export default function FeedbackList({
         return (
           <div
             key={item.id}
-            className="rounded-xl border bg-card p-5"
+            className="min-w-0 rounded-xl border border-border/80 bg-card p-4"
           >
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0 flex-1 space-y-4">
@@ -103,32 +90,26 @@ export default function FeedbackList({
                     className="flex items-center gap-1"
                     aria-label={`${item.rating} out of 5 stars`}
                   >
-                    {Array.from({ length: 5 }).map(
-                      (_, index) => (
-                        <Star
-                          key={index}
-                          className={
-                            index < item.rating
-                              ? "size-4 fill-current"
-                              : "size-4 text-muted-foreground/40"
-                          }
-                        />
-                      )
-                    )}
+                    {Array.from({ length: 5 }).map((_, index) => (
+                      <Star
+                        key={index}
+                        className={
+                          index < item.rating
+                            ? "size-4 fill-current"
+                            : "size-4 text-muted-foreground/40"
+                        }
+                      />
+                    ))}
                   </div>
 
                   <Badge
                     variant={getStatusVariant(item.status)}
-                    className="capitalize"
+                    className="rounded-full text-[11px] capitalize"
                   >
                     {item.status}
                   </Badge>
 
-                  {item.featured && (
-                    <Badge variant="secondary">
-                      Featured
-                    </Badge>
-                  )}
+                  {item.featured && <Badge variant="secondary">Featured</Badge>}
                 </div>
 
                 <blockquote className="text-sm leading-6">
@@ -143,9 +124,7 @@ export default function FeedbackList({
 
                 {item.adminReply && (
                   <div className="rounded-lg bg-muted/50 p-3">
-                    <p className="mb-1 text-xs font-medium">
-                      Admin Reply
-                    </p>
+                    <p className="mb-1 text-xs font-medium">Admin Reply</p>
 
                     <p className="text-sm text-muted-foreground">
                       {item.adminReply}
@@ -157,39 +136,26 @@ export default function FeedbackList({
               <div className="shrink-0">
                 <Button
                   type="button"
-                  variant={
-                    item.featured
-                      ? "outline"
-                      : "default"
-                  }
-                  disabled={
-                    !canFeature || isUpdating
-                  }
-                  onClick={() =>
-                    onToggleFeatured(item)
-                  }
+                  variant={item.featured ? "outline" : "default"}
+                  disabled={!canFeature || isUpdating}
+                  onClick={() => onToggleFeatured(item)}
                 >
                   {item.featured ? (
                     <>
                       <EyeOff className="mr-2 size-4" />
-                      {isUpdating
-                        ? "Updating..."
-                        : "Remove from Website"}
+                      {isUpdating ? "Updating..." : "Remove from Website"}
                     </>
                   ) : (
                     <>
                       <Eye className="mr-2 size-4" />
-                      {isUpdating
-                        ? "Updating..."
-                        : "Feature on Website"}
+                      {isUpdating ? "Updating..." : "Feature on Website"}
                     </>
                   )}
                 </Button>
 
                 {!canFeature && (
                   <p className="mt-2 max-w-48 text-xs text-muted-foreground">
-                    Only published feedback can be
-                    featured on the website.
+                    Only published feedback can be featured on the website.
                   </p>
                 )}
               </div>

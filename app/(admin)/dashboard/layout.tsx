@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { requireAdmin } from "@/lib/auth/require-admin"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import { DEFAULT_MAX_POSTPONED_STATE_SIZE } from "next/dist/server/config-shared"
@@ -16,15 +16,15 @@ export default async function Layout({
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
-      <div className="flex min-h-screen w-full">
+      <div className="flex min-h-screen w-full min-w-0">
         <AppSidebar items={adminMenu} menuLabel="ADMIN MENU" />
-        <main className="w-full flex-1">
+        <main className="min-w-0 flex-1">
           <div className="flex items-center gap-2 p-4">
             <SidebarTrigger />
             <Navbar />
           </div>
 
-          <div className="w-full flex-1 px-4">{children}</div>
+          <div className="w-full min-w-0 px-3 sm:px-4">{children}</div>
         </main>
       </div>
     </SidebarProvider>

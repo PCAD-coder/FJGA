@@ -1,13 +1,14 @@
 export default function ReturnHeader() {
   return (
-    <div className="space-y-1">
-      <h1 className="text-3xl font-bold tracking-tight">
-        Returns & Complaints
+    <header className="border-b border-border/70 pb-5">
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+        Let us help make it right.
       </h1>
 
-      <p className="text-muted-foreground">
-        Report issues with your orders and track return requests.
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">
+        Share an issue with your order and follow your return or complaint
+        request.
       </p>
-    </div>
-  );
+    </header>
+  )
 }

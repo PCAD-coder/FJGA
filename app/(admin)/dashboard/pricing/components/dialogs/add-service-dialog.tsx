@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { useMemo, useState } from "react"
 
 import {
@@ -59,6 +61,7 @@ export default function AddServiceDialog({
         markup_percentage: Number(markup),
       })
 
+      toast.success("Labor service added successfully.")
       await refresh()
 
       onOpenChange(false)
@@ -69,6 +72,11 @@ export default function AddServiceDialog({
       setLaborCost("")
       setMarkup("")
     } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to save pricing changes."
+      )
       console.error("Create Labor Service:", JSON.stringify(error, null, 2))
     } finally {
       setSaving(false)
@@ -136,7 +144,7 @@ export default function AddServiceDialog({
               Selling Price
             </label>
 
-            <Input value={`₱${sellingPrice.toFixed(2)}`} disabled />
+            <Input value={`\u20B1${sellingPrice.toFixed(2)}`} disabled />
           </div>
         </div>
 

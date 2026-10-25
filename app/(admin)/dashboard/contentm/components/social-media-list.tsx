@@ -1,5 +1,7 @@
 "use client"
 
+import { ContentPanelSkeleton } from "./content-skeleton"
+
 import {
   Facebook,
   Instagram,
@@ -14,10 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
-import type {
-  ContentSocialLink,
-  SocialPlatform,
-} from "../types/content"
+import type { ContentSocialLink, SocialPlatform } from "../types/content"
 
 interface Props {
   links: ContentSocialLink[]
@@ -29,11 +28,7 @@ interface Props {
   onToggleVisibility: (link: ContentSocialLink) => void
 }
 
-function PlatformIcon({
-  platform,
-}: {
-  platform: SocialPlatform
-}) {
+function PlatformIcon({ platform }: { platform: SocialPlatform }) {
   switch (platform) {
     case "facebook":
       return <Facebook className="size-5" />
@@ -68,36 +63,26 @@ export default function SocialMediaList({
   onToggleVisibility,
 }: Props) {
   if (loading) {
-    return (
-      <div className="rounded-lg border p-10 text-center">
-        <p className="text-sm text-muted-foreground">
-          Loading social media links...
-        </p>
-      </div>
-    )
+    return <ContentPanelSkeleton variant="cards" />
   }
 
   if (error) {
     return (
       <div className="rounded-lg border border-destructive/50 p-10 text-center">
-        <p className="text-sm text-destructive">
-          {error}
-        </p>
+        <p className="text-sm text-destructive">{error}</p>
       </div>
     )
   }
 
   return (
     <div className="space-y-5">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold">
-            Social Media
-          </h2>
+          <h2 className="text-lg font-semibold">Social Media</h2>
 
           <p className="text-sm text-muted-foreground">
-            Manage social media and contact links displayed
-            on the FJ Glass and Aluminum website.
+            Manage social media and contact links displayed on the FJ Glass and
+            Aluminum website.
           </p>
         </div>
 
@@ -111,59 +96,42 @@ export default function SocialMediaList({
         <div className="flex min-h-64 flex-col items-center justify-center rounded-lg border border-dashed p-10 text-center">
           <LinkIcon className="mb-3 size-9 text-muted-foreground" />
 
-          <p className="font-medium">
-            No social links yet
-          </p>
+          <p className="font-medium">No social links yet</p>
 
           <p className="mt-1 max-w-md text-sm text-muted-foreground">
-            Add FJ Glass and Aluminum&apos;s social media
-            or contact links to display them on the website.
+            Add FJ Glass and Aluminum&apos;s social media or contact links to
+            display them on the website.
           </p>
 
-          <Button
-            className="mt-5"
-            onClick={onAdd}
-          >
+          <Button className="mt-5" onClick={onAdd}>
             <Plus className="mr-2 size-4" />
             Add First Social Link
           </Button>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-4">
           {links.map((link) => (
             <div
               key={link.id}
-              className="rounded-xl border bg-card p-5"
+              className="min-w-0 rounded-xl border border-border/80 bg-card p-4"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
                   <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-                    <PlatformIcon
-                      platform={link.platform}
-                    />
+                    <PlatformIcon platform={link.platform} />
                   </div>
 
                   <div className="min-w-0">
-                    <p className="font-medium">
-                      {link.label}
-                    </p>
+                    <p className="font-medium">{link.label}</p>
 
-                    <p className="text-sm capitalize text-muted-foreground">
+                    <p className="text-sm text-muted-foreground capitalize">
                       {link.platform}
                     </p>
                   </div>
                 </div>
 
-                <Badge
-                  variant={
-                    link.isVisible
-                      ? "default"
-                      : "secondary"
-                  }
-                >
-                  {link.isVisible
-                    ? "Visible"
-                    : "Hidden"}
+                <Badge variant={link.isVisible ? "default" : "secondary"}>
+                  {link.isVisible ? "Visible" : "Hidden"}
                 </Badge>
               </div>
 
@@ -177,18 +145,14 @@ export default function SocialMediaList({
                 </p>
               </div>
 
-              <div className="mt-5 flex flex-wrap gap-2 border-t pt-4">
+              <div className="mt-5 mt-auto flex flex-wrap gap-2 border-t pt-3 [&>button]:h-8 [&>button]:text-xs">
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
-                  onClick={() =>
-                    onToggleVisibility(link)
-                  }
+                  onClick={() => onToggleVisibility(link)}
                 >
-                  {link.isVisible
-                    ? "Hide"
-                    : "Show"}
+                  {link.isVisible ? "Hide" : "Show"}
                 </Button>
 
                 <Button

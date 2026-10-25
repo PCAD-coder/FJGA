@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { useState } from "react"
 
 import { Star } from "lucide-react"
@@ -42,8 +44,7 @@ export default function FeedbackDialog({
 
   const [loading, setLoading] = useState(false)
 
-  const [error, setError] =
-    useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   async function handleSubmit() {
     try {
@@ -70,18 +71,17 @@ export default function FeedbackDialog({
       setRating(0)
       setComment("")
 
+      toast.success("Your feedback has been submitted. Thank you!")
       onSubmitted()
       onOpenChange(false)
     } catch (err) {
-      console.error(
-        "Failed to submit feedback:",
-        err
+      toast.error(
+        err instanceof Error ? err.message : "Unable to submit feedback."
       )
+      console.error("Failed to submit feedback:", err)
 
       setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to submit feedback."
+        err instanceof Error ? err.message : "Failed to submit feedback."
       )
     } finally {
       setLoading(false)
@@ -95,15 +95,10 @@ export default function FeedbackDialog({
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={handleOpenChange}
-    >
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>
-            Leave Feedback
-          </DialogTitle>
+          <DialogTitle>Leave Feedback</DialogTitle>
 
           <DialogDescription>
             {projectName} · {orderNumber}
@@ -121,14 +116,10 @@ export default function FeedbackDialog({
                 <button
                   key={value}
                   type="button"
-                  onClick={() =>
-                    setRating(value)
-                  }
+                  onClick={() => setRating(value)}
                   disabled={loading}
                   className="rounded-md p-1 transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
-                  aria-label={`${value} star${
-                    value > 1 ? "s" : ""
-                  }`}
+                  aria-label={`${value} star${value > 1 ? "s" : ""}`}
                 >
                   <Star
                     className={`h-7 w-7 ${
@@ -143,34 +134,24 @@ export default function FeedbackDialog({
           </div>
 
           <div className="space-y-2">
-            <p className="text-sm font-medium">
-              Your feedback
-            </p>
+            <p className="text-sm font-medium">Your feedback</p>
 
             <Textarea
               value={comment}
-              onChange={(event) =>
-                setComment(event.target.value)
-              }
+              onChange={(event) => setComment(event.target.value)}
               placeholder="Tell us about your experience..."
               rows={5}
               disabled={loading}
             />
           </div>
 
-          {error && (
-            <p className="text-sm text-destructive">
-              {error}
-            </p>
-          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
 
         <DialogFooter>
           <Button
             variant="outline"
-            onClick={() =>
-              handleOpenChange(false)
-            }
+            onClick={() => handleOpenChange(false)}
             disabled={loading}
           >
             Cancel
@@ -178,15 +159,9 @@ export default function FeedbackDialog({
 
           <Button
             onClick={handleSubmit}
-            disabled={
-              loading ||
-              rating === 0 ||
-              !comment.trim()
-            }
+            disabled={loading || rating === 0 || !comment.trim()}
           >
-            {loading
-              ? "Submitting..."
-              : "Submit Feedback"}
+            {loading ? "Submitting..." : "Submit Feedback"}
           </Button>
         </DialogFooter>
       </DialogContent>

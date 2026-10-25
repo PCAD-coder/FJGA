@@ -3,10 +3,10 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export function ProductCardSkeleton() {
   return (
-    <Card className="overflow-hidden">
-      <Skeleton className="h-48 w-full" />
+    <Card className="h-full gap-0 overflow-hidden rounded-xl border border-border/80 py-0 shadow-sm ring-0">
+      <Skeleton className="aspect-[3/2] w-full rounded-none motion-reduce:animate-none" />
 
-      <CardContent className="space-y-4 p-4">
+      <CardContent className="space-y-3 p-4">
         <div className="space-y-2">
           <Skeleton className="h-5 w-3/4" />
           <Skeleton className="h-4 w-1/2" />
@@ -24,8 +24,8 @@ export function ProductCardSkeleton() {
         </div>
 
         <div className="flex gap-2 pt-2">
-          <Skeleton className="h-9 flex-1" />
-          <Skeleton className="h-9 flex-1" />
+          <Skeleton className="h-9 flex-1 motion-reduce:animate-none" />
+          <Skeleton className="h-9 flex-1 motion-reduce:animate-none" />
         </div>
       </CardContent>
     </Card>

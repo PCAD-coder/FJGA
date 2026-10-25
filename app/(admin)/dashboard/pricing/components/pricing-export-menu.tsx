@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { Download, FileSpreadsheet, Printer } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -10,10 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-import type {
-  LaborPricing,
-  MaterialPricing,
-} from "../types/pricing"
+import type { LaborPricing, MaterialPricing } from "../types/pricing"
 
 interface PricingExportMenuProps {
   activeTab: "materials" | "labor"
@@ -64,6 +63,7 @@ function downloadCsv(csv: string, filename: string) {
   document.body.removeChild(link)
 
   URL.revokeObjectURL(url)
+  toast.success("Pricing CSV download started.")
 }
 
 export default function PricingExportMenu({
@@ -135,13 +135,10 @@ export default function PricingExportMenu({
   }
 
   function handlePrintReport() {
-    const printWindow = window.open(
-      "",
-      "_blank",
-      "width=1200,height=800"
-    )
+    const printWindow = window.open("", "_blank", "width=1200,height=800")
 
     if (!printWindow) {
+      toast.error("The print window was blocked. Allow pop-ups and try again.")
       return
     }
 
@@ -149,22 +146,18 @@ export default function PricingExportMenu({
 
     const isMaterials = activeTab === "materials"
 
-    const recordCount = isMaterials
-      ? materials.length
-      : laborServices.length
+    const recordCount = isMaterials ? materials.length : laborServices.length
 
     const averageMarkup =
       recordCount === 0
         ? 0
         : isMaterials
           ? materials.reduce(
-              (sum, material) =>
-                sum + Number(material.markup_percentage ?? 0),
+              (sum, material) => sum + Number(material.markup_percentage ?? 0),
               0
             ) / materials.length
           : laborServices.reduce(
-              (sum, service) =>
-                sum + Number(service.markup_percentage ?? 0),
+              (sum, service) => sum + Number(service.markup_percentage ?? 0),
               0
             ) / laborServices.length
 
@@ -173,13 +166,11 @@ export default function PricingExportMenu({
         ? 0
         : isMaterials
           ? materials.reduce(
-              (sum, material) =>
-                sum + Number(material.selling_price || 0),
+              (sum, material) => sum + Number(material.selling_price || 0),
               0
             ) / materials.length
           : laborServices.reduce(
-              (sum, service) =>
-                sum + Number(service.selling_price || 0),
+              (sum, service) => sum + Number(service.selling_price || 0),
               0
             ) / laborServices.length
 
@@ -211,7 +202,7 @@ export default function PricingExportMenu({
         (service) => `
           <tr>
             <td>${escapeHtml(service.service_name)}</td>
-            <td>${escapeHtml(service.description ?? "—")}</td>
+            <td>${escapeHtml(service.description ?? "\u2014")}</td>
             <td>${escapeHtml(service.unit)}</td>
             <td class="number">
               ${escapeHtml(formatCurrency(service.labor_cost))}
@@ -290,9 +281,7 @@ export default function PricingExportMenu({
       <html>
         <head>
           <title>
-            FJGA ${
-              isMaterials ? "Material Pricing" : "Labor Pricing"
-            } Report
+            FJGA ${isMaterials ? "Material Pricing" : "Labor Pricing"} Report
           </title>
 
           <style>
@@ -406,9 +395,7 @@ export default function PricingExportMenu({
 
             <div class="report-title">
               ${
-                isMaterials
-                  ? "Material Pricing Report"
-                  : "Labor Pricing Report"
+                isMaterials ? "Material Pricing Report" : "Labor Pricing Report"
               }
             </div>
 
@@ -449,7 +436,7 @@ export default function PricingExportMenu({
           ${table}
 
           <div class="footer">
-            FJ Glass and Aluminum — Pricing Management Report
+            FJ Glass and Aluminum \u2014 Pricing Management Report
           </div>
         </body>
       </html>
@@ -460,6 +447,7 @@ export default function PricingExportMenu({
     setTimeout(() => {
       printWindow.focus()
       printWindow.print()
+      toast.info("Print dialog opened. Choose a printer or save as PDF.")
     }, 250)
   }
 
@@ -473,12 +461,30 @@ export default function PricingExportMenu({
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={handleExportCsv}>
+        <DropdownMenuItem
+          onClick={() => {
+            try {
+              handleExportCsv()
+            } catch {
+              toast.error("Unable to export pricing records. Please try again.")
+            }
+          }}
+        >
           <FileSpreadsheet className="mr-2 h-4 w-4" />
           Export CSV
         </DropdownMenuItem>
 
-        <DropdownMenuItem onClick={handlePrintReport}>
+        <DropdownMenuItem
+          onClick={() => {
+            try {
+              handlePrintReport()
+            } catch {
+              toast.error(
+                "Unable to prepare the pricing report. Please try again."
+              )
+            }
+          }}
+        >
           <Printer className="mr-2 h-4 w-4" />
           Print Report
         </DropdownMenuItem>

@@ -2,20 +2,15 @@
 
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
 } from "recharts"
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 import { RevenueData } from "../types/analytics"
 
@@ -23,62 +18,67 @@ interface Props {
   data: RevenueData[]
 }
 
-export default function RevenueChart({
-  data,
-}: Props) {
+export default function RevenueChart({ data }: Props) {
   return (
-    <Card>
-
-      <CardHeader>
-
-        <CardTitle>
-          Revenue Trend
-        </CardTitle>
-
+    <Card className="min-w-0 gap-0 overflow-hidden rounded-xl border border-border/80 py-0 shadow-none ring-0">
+      <CardHeader className="border-b border-border/60 px-5 py-4">
+        <CardTitle className="text-base font-semibold">Revenue Trend</CardTitle>
       </CardHeader>
 
-      <CardContent>
-
-        <div className="h-[350px]">
-
-          <ResponsiveContainer
-            width="100%"
-            height="100%"
-          >
-            <LineChart data={data}>
-
+      <CardContent className="px-3 py-4 sm:px-5">
+        <div className="h-[280px] min-w-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data}>
               <CartesianGrid
-                strokeDasharray="3 3"
+                vertical={false}
+                stroke="var(--border)"
+                strokeDasharray="4 4"
+                opacity={0.6}
               />
 
               <XAxis
                 dataKey="month"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+                tickMargin={10}
+                minTickGap={20}
               />
 
-              <YAxis />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                width={65}
+                tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+              />
 
               <Tooltip
+                contentStyle={{
+                  backgroundColor: "var(--popover)",
+                  color: "var(--popover-foreground)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 12,
+                  fontSize: 12,
+                }}
+                labelStyle={{ color: "var(--popover-foreground)" }}
                 formatter={(value) => [
-                  `₱${Number(
-                    value
-                  ).toLocaleString()}`,
+                  `₱${Number(value).toLocaleString()}`,
                   "Revenue",
                 ]}
               />
 
-              <Line
+              <Area
                 type="monotone"
                 dataKey="revenue"
+                stroke="var(--primary)"
+                fill="var(--primary)"
+                fillOpacity={0.1}
                 strokeWidth={3}
               />
-
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
-
         </div>
-
       </CardContent>
-
     </Card>
   )
 }

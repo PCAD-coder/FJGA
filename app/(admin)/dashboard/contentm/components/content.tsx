@@ -1,5 +1,10 @@
 "use client"
 
+import { DashboardCard } from "@/components/dashboard_cards"
+import { ContentPanelSkeleton } from "./content-skeleton"
+import ContentPagination from "./content-pagination"
+import { toast } from "sonner"
+
 import { useEffect, useState } from "react"
 import { Facebook, House, ImageIcon, MessageSquareQuote } from "lucide-react"
 
@@ -38,6 +43,9 @@ import {
 } from "../services/content"
 
 export default function Content() {
+  const [projectsPage, setProjectsPage] = useState(1)
+  const [feedbackPage, setFeedbackPage] = useState(1)
+  const [socialPage, setSocialPage] = useState(1)
   const [homepage, setHomepage] = useState<HomepageContent | null>(null)
   const [projects, setProjects] = useState<ContentProject[]>([])
   const [projectsLoading, setProjectsLoading] = useState(true)
@@ -172,20 +180,64 @@ export default function Content() {
     void loadSocialLinks()
   }, [])
 
+  const projectPage = Math.min(
+    projectsPage,
+    Math.max(1, Math.ceil(projects.length / 10))
+  )
+  const reviewPage = Math.min(
+    feedbackPage,
+    Math.max(1, Math.ceil(feedback.length / 10))
+  )
+  const linkPage = Math.min(
+    socialPage,
+    Math.max(1, Math.ceil(socialLinks.length / 10))
+  )
+
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
+    <div className="mx-auto w-full max-w-[1600px] min-w-0 space-y-4 px-1 pt-2 pb-12 sm:px-4 sm:pt-3 lg:px-6">
+      <div className="border-b border-border/70 pb-4">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
           Content Management
         </h1>
 
-        <p className="text-muted-foreground">
+        <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
           Manage the content displayed on the FJ Glass and Aluminum website.
         </p>
       </div>
 
-      <Tabs defaultValue="homepage" className="space-y-6">
-        <TabsList>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-3">
+        <DashboardCard
+          title="Homepage Content"
+          value={homepageLoading ? "..." : String(homepage ? 1 : 0)}
+          description="Homepage content configuration"
+          icon={House}
+          color="text-blue-600 dark:text-blue-400"
+        />
+        <DashboardCard
+          title="Projects"
+          value={projectsLoading ? "..." : String(projects.length)}
+          description="Projects in the content library"
+          icon={ImageIcon}
+          color="text-primary"
+        />
+        <DashboardCard
+          title="Customer Feedback"
+          value={feedbackLoading ? "..." : String(feedback.length)}
+          description="Customer reviews available to feature"
+          icon={MessageSquareQuote}
+          color="text-amber-600 dark:text-amber-400"
+        />
+        <DashboardCard
+          title="Social Links"
+          value={socialLinksLoading ? "..." : String(socialLinks.length)}
+          description="Social and contact links"
+          icon={Facebook}
+          color="text-emerald-600 dark:text-emerald-400"
+        />
+      </div>
+
+      <Tabs defaultValue="homepage" className="space-y-4">
+        <TabsList className="h-auto max-w-full flex-wrap justify-start gap-1 rounded-lg border bg-card p-1">
           <TabsTrigger value="homepage" className="gap-2">
             <House className="size-4" />
             Homepage
@@ -209,11 +261,7 @@ export default function Content() {
 
         <TabsContent value="homepage">
           {homepageLoading ? (
-            <div className="rounded-lg border p-10 text-center">
-              <p className="text-sm text-muted-foreground">
-                Loading homepage content...
-              </p>
-            </div>
+            <ContentPanelSkeleton variant="homepage" />
           ) : homepageError ? (
             <div className="rounded-lg border border-destructive/50 p-10 text-center">
               <p className="text-sm text-destructive">{homepageError}</p>
@@ -233,7 +281,7 @@ export default function Content() {
         </TabsContent>
         <TabsContent value="projects">
           <ProjectList
-            projects={projects}
+            projects={projects.slice((projectPage - 1) * 10, projectPage * 10)}
             loading={projectsLoading}
             error={projectsError}
             onAdd={() => setAddProjectOpen(true)}
@@ -251,6 +299,7 @@ export default function Content() {
                   isVisible: !project.isVisible,
                 })
 
+                toast.success("Project visibility updated.")
                 setProjects((currentProjects) =>
                   currentProjects.map((currentProject) =>
                     currentProject.id === updatedProject.id
@@ -260,9 +309,22 @@ export default function Content() {
                 )
               } catch (error) {
                 console.error("Failed to update project visibility:", error)
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : "Unable to update content."
+                )
               }
             }}
           />
+          {!projectsLoading && !projectsError && (
+            <ContentPagination
+              total={projects.length}
+              page={projectPage}
+              onPageChange={setProjectsPage}
+              label="projects"
+            />
+          )}
         </TabsContent>
         <TabsContent value="feedback">
           <div className="space-y-5">
@@ -276,7 +338,7 @@ export default function Content() {
             </div>
 
             <FeedbackList
-              feedback={feedback}
+              feedback={feedback.slice((reviewPage - 1) * 10, reviewPage * 10)}
               loading={feedbackLoading}
               error={feedbackError}
               updatingId={updatingFeedbackId}
@@ -290,6 +352,7 @@ export default function Content() {
                     !item.featured
                   )
 
+                  toast.success("Featured feedback updated.")
                   setFeedback((currentFeedback) =>
                     currentFeedback.map((currentItem) =>
                       currentItem.id === updatedFeedback.id
@@ -299,6 +362,11 @@ export default function Content() {
                   )
                 } catch (error) {
                   console.error("Failed to update featured feedback:", error)
+                  toast.error(
+                    error instanceof Error
+                      ? error.message
+                      : "Unable to update content."
+                  )
 
                   setFeedbackError(
                     error instanceof Error
@@ -311,10 +379,18 @@ export default function Content() {
               }}
             />
           </div>
+          {!feedbackLoading && !feedbackError && (
+            <ContentPagination
+              total={feedback.length}
+              page={reviewPage}
+              onPageChange={setFeedbackPage}
+              label="feedback"
+            />
+          )}
         </TabsContent>
         <TabsContent value="social-media">
           <SocialMediaList
-            links={socialLinks}
+            links={socialLinks.slice((linkPage - 1) * 10, linkPage * 10)}
             loading={socialLinksLoading}
             error={socialLinksError}
             onAdd={() => setAddSocialLinkOpen(true)}
@@ -330,6 +406,7 @@ export default function Content() {
                   isVisible: !link.isVisible,
                 })
 
+                toast.success("Social link visibility updated.")
                 setSocialLinks((currentLinks) =>
                   currentLinks.map((currentLink) =>
                     currentLink.id === updatedLink.id
@@ -339,6 +416,11 @@ export default function Content() {
                 )
               } catch (error) {
                 console.error("Failed to change social link visibility:", error)
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : "Unable to update content."
+                )
 
                 setSocialLinksError(
                   error instanceof Error
@@ -352,6 +434,14 @@ export default function Content() {
               setDeleteSocialLinkOpen(true)
             }}
           />
+          {!socialLinksLoading && !socialLinksError && (
+            <ContentPagination
+              total={socialLinks.length}
+              page={linkPage}
+              onPageChange={setSocialPage}
+              label="social-media"
+            />
+          )}
         </TabsContent>
       </Tabs>
       {homepage && (
@@ -368,6 +458,7 @@ export default function Content() {
               heroImageUrl: updatedContent.heroImageUrl,
             })
 
+            toast.success("Homepage content saved.")
             setHomepage(savedContent)
             setEditHomepageOpen(false)
 
@@ -505,10 +596,16 @@ export default function Content() {
               )
             )
 
+            toast.success("Social link deleted.")
             setDeleteSocialLinkOpen(false)
             setSelectedSocialLink(null)
           } catch (error) {
             console.error("Failed to delete social link:", error)
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Unable to update content."
+            )
 
             setSocialLinksError(
               error instanceof Error

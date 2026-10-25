@@ -26,9 +26,9 @@ export default function MaterialPricingTable({
   onEdit,
 }: MaterialPricingTableProps) {
   return (
-    <div className="rounded-lg border">
-      <Table>
-        <TableHeader>
+    <div className="min-w-0 overflow-hidden rounded-xl border border-border/80 bg-card [&_td]:px-4 [&_td]:py-3 [&_th]:px-4">
+      <Table className="min-w-[700px]">
+        <TableHeader className="bg-muted/50">
           <TableRow>
             <TableHead>Category</TableHead>
 
@@ -56,14 +56,16 @@ export default function MaterialPricingTable({
 
                 <TableCell>{material.unit}</TableCell>
 
-                <TableCell>₱{(material.unit_cost ?? 0).toFixed(2)}</TableCell>
+                <TableCell>
+                  &#8369;{(material.unit_cost ?? 0).toFixed(2)}
+                </TableCell>
 
                 <TableCell>
                   {(material.markup_percentage ?? 0).toFixed(2)}%
                 </TableCell>
 
-                <TableCell className="font-semibold text-green-600">
-                  ₱{material.selling_price.toFixed(2)}
+                <TableCell className="font-semibold text-primary tabular-nums">
+                  &#8369;{material.selling_price.toFixed(2)}
                 </TableCell>
 
                 <TableCell>

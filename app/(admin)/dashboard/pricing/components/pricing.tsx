@@ -1,5 +1,7 @@
 "use client"
 
+import PricingSkeleton from "./pricing-skeleton"
+
 import { useMemo, useState } from "react"
 
 import { usePricing } from "../hooks/use-pricing"
@@ -58,28 +60,36 @@ export default function PricingModule() {
     )
   }, [laborServices, search])
 
-  const perPage = 5
+  const perPage = 10
 
   const data = activeTab === "materials" ? filteredMaterials : filteredServices
 
   const totalPages = Math.max(1, Math.ceil(data.length / perPage))
 
+  const page = Math.min(currentPage, totalPages)
+
   const paginatedMaterials = filteredMaterials.slice(
-    (currentPage - 1) * perPage,
-    currentPage * perPage
+    (page - 1) * perPage,
+    page * perPage
   )
 
   const paginatedServices = filteredServices.slice(
-    (currentPage - 1) * perPage,
-    currentPage * perPage
+    (page - 1) * perPage,
+    page * perPage
   )
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Pricing Management</h1>
+  if (loading) {
+    return <PricingSkeleton />
+  }
 
-        <p className="text-muted-foreground">
+  return (
+    <div className="mx-auto w-full max-w-[1600px] min-w-0 space-y-4 px-1 pt-2 pb-12 sm:px-4 sm:pt-3 lg:px-6">
+      <div className="border-b border-border/70 pb-4">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Pricing Management
+        </h1>
+
+        <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
           Manage material and labor pricing.
         </p>
       </div>
@@ -91,15 +101,21 @@ export default function PricingModule() {
         averageLaborMarkup={stats.averageLaborMarkup}
       />
 
-<PricingToolbar
-  activeTab={activeTab}
-  onTabChange={setActiveTab}
-  search={search}
-  onSearchChange={setSearch}
-  onAddService={() => setAddServiceOpen(true)}
-  materials={filteredMaterials}
-  laborServices={filteredServices}
-/>
+      <PricingToolbar
+        activeTab={activeTab}
+        onTabChange={(value) => {
+          setActiveTab(value)
+          setCurrentPage(1)
+        }}
+        search={search}
+        onSearchChange={(value) => {
+          setSearch(value)
+          setCurrentPage(1)
+        }}
+        onAddService={() => setAddServiceOpen(true)}
+        materials={filteredMaterials}
+        laborServices={filteredServices}
+      />
 
       {activeTab === "materials" ? (
         <MaterialPricingTable
@@ -123,11 +139,17 @@ export default function PricingModule() {
         />
       )}
 
-      <PricingPagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-      />
+      <div className="flex flex-col gap-3 rounded-xl border bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <p aria-live="polite" className="text-sm text-muted-foreground">
+          Showing {data.length === 0 ? 0 : (page - 1) * perPage + 1} to{" "}
+          {Math.min(page * perPage, data.length)} of {data.length} records
+        </p>
+        <PricingPagination
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      </div>
 
       <EditMaterialDialog
         open={editMaterialOpen}

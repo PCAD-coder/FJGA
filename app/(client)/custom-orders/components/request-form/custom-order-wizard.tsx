@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { useState } from "react"
 import { ArrowLeft, ArrowRight, X } from "lucide-react"
 
@@ -102,8 +104,14 @@ export function CustomOrderWizard({
         deliveryAddress,
       })
 
+      toast.success("Custom request submitted successfully.")
       onSuccess()
     } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to submit your custom request."
+      )
       console.error("Failed to create custom order request:", error)
 
       setError(
@@ -127,24 +135,24 @@ export function CustomOrderWizard({
     initialSpecifications
   )
 
-const [contactNumber, setContactNumber] = useState("")
+  const [contactNumber, setContactNumber] = useState("")
 
-const [deliveryAddress, setDeliveryAddress] =
-  useState<DeliveryAddressInput>(
+  const [deliveryAddress, setDeliveryAddress] = useState<DeliveryAddressInput>(
     initialDeliveryAddress
   )
 
-const [deliveryZone, setDeliveryZone] =
-  useState<DeliveryZoneResult | null>(null)
+  const [deliveryZone, setDeliveryZone] = useState<DeliveryZoneResult | null>(
+    null
+  )
 
-const isDeliveryValid =
-  contactNumber.trim() !== "" &&
-  deliveryAddress.houseBuildingNumber.trim() !== "" &&
-  deliveryAddress.street.trim() !== "" &&
-  deliveryAddress.regionPsgcCode !== "" &&
-  deliveryAddress.cityPsgcCode !== "" &&
-  deliveryAddress.barangayPsgcCode !== "" &&
-  deliveryZone !== null
+  const isDeliveryValid =
+    contactNumber.trim() !== "" &&
+    deliveryAddress.houseBuildingNumber.trim() !== "" &&
+    deliveryAddress.street.trim() !== "" &&
+    deliveryAddress.regionPsgcCode !== "" &&
+    deliveryAddress.cityPsgcCode !== "" &&
+    deliveryAddress.barangayPsgcCode !== "" &&
+    deliveryZone !== null
 
   const [error, setError] = useState<string | null>(null)
 
@@ -208,22 +216,19 @@ const isDeliveryValid =
     return true
   }
   function validateDelivery() {
-      const normalizedContactNumber = contactNumber.replace(
-    /[\s()-]/g,
-    ""
-  )
+    const normalizedContactNumber = contactNumber.replace(/[\s()-]/g, "")
 
-  if (!contactNumber.trim()) {
-    setError("Please enter your contact number.")
-    return false
-  }
+    if (!contactNumber.trim()) {
+      setError("Please enter your contact number.")
+      return false
+    }
 
-  if (!/^(\+639|09)\d{9}$/.test(normalizedContactNumber)) {
-    setError(
-      "Please enter a valid Philippine mobile number, such as 09171234567."
-    )
-    return false
-  }
+    if (!/^(\+639|09)\d{9}$/.test(normalizedContactNumber)) {
+      setError(
+        "Please enter a valid Philippine mobile number, such as 09171234567."
+      )
+      return false
+    }
 
     if (!deliveryAddress.houseBuildingNumber.trim()) {
       setError("Please enter your house or building number.")
@@ -406,25 +411,25 @@ const isDeliveryValid =
 
           {currentStep === 4 && (
             <DeliveryStep
-  contactNumber={contactNumber}
-  onContactNumberChange={(value) => {
-    setContactNumber(value)
+              contactNumber={contactNumber}
+              onContactNumberChange={(value) => {
+                setContactNumber(value)
 
-    if (error) {
-      setError(null)
-    }
-  }}
-  data={deliveryAddress}
-  onChange={(data) => {
-    setDeliveryAddress(data)
+                if (error) {
+                  setError(null)
+                }
+              }}
+              data={deliveryAddress}
+              onChange={(data) => {
+                setDeliveryAddress(data)
 
-    if (error) {
-      setError(null)
-    }
-  }}
-  deliveryZone={deliveryZone}
-  onDeliveryZoneChange={setDeliveryZone}
-/>
+                if (error) {
+                  setError(null)
+                }
+              }}
+              deliveryZone={deliveryZone}
+              onDeliveryZoneChange={setDeliveryZone}
+            />
           )}
 
           {currentStep === 5 && deliveryZone && (

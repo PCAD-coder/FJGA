@@ -1,11 +1,20 @@
 "use client"
 
 import { useState } from "react"
-import type { DeliveryZone } from "../types/delivery-zone"
+import type { DeliveryZone, DeliveryZoneCity } from "../types/delivery-zone"
 
 import EditDeliveryZoneDialog from "./edit-delivery-zone-dialog"
 import AddDeliveryZoneDialog from "./add-delivery-zone-dialog"
-import { MapPin, PhilippinePeso, Plus, Pencil, MapPinPlus } from "lucide-react"
+import RemoveCityFromZoneDialog from "./remove-city-from-zone-dialog"
+import ChangeDeliveryZoneStatusDialog from "./change-delivery-zone-status-dialog"
+import {
+  MapPin,
+  PhilippinePeso,
+  Plus,
+  Pencil,
+  MapPinPlus,
+  Trash2,
+} from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -20,6 +29,7 @@ import { Separator } from "@/components/ui/separator"
 
 import { useDeliveryZones } from "../hooks/use-delivery-zones"
 import AddCityToZoneDialog from "./add-city-to-zone-dialog"
+import ManageBarangaysDialog from "./manage-barangays-dialog"
 
 interface ManageDeliveryZonesDialogProps {
   open: boolean
@@ -33,10 +43,23 @@ export default function ManageDeliveryZonesDialog({
   const [addOpen, setAddOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [addCityOpen, setAddCityOpen] = useState(false)
-
   const [addCityZone, setAddCityZone] = useState<DeliveryZone | null>(null)
-
   const [selectedZone, setSelectedZone] = useState<DeliveryZone | null>(null)
+  const [removeCityOpen, setRemoveCityOpen] = useState(false)
+  const [removeCityZone, setRemoveCityZone] = useState<DeliveryZone | null>(
+    null
+  )
+  const [selectedCity, setSelectedCity] = useState<DeliveryZoneCity | null>(
+    null
+  )
+  const [barangayOpen, setBarangayOpen] = useState(false)
+
+  const [barangayCity, setBarangayCity] = useState<DeliveryZoneCity | null>(
+    null
+  )
+  const [statusOpen, setStatusOpen] = useState(false)
+
+  const [statusZone, setStatusZone] = useState<DeliveryZone | null>(null)
 
   const {
     zones,
@@ -44,10 +67,14 @@ export default function ManageDeliveryZonesDialog({
     creating,
     updating,
     addingCity,
+    removingCity,
+    changingStatus,
     error,
     addZone,
     editZone,
     addCity,
+    removeCity,
+    changeZoneStatus,
   } = useDeliveryZones()
 
   return (
@@ -161,41 +188,118 @@ export default function ManageDeliveryZonesDialog({
                       <Pencil className="mr-2 h-4 w-4" />
                       Edit
                     </Button>
+
+                    <Button
+                      type="button"
+                      variant={zone.isActive ? "outline" : "default"}
+                      size="sm"
+                      onClick={() => {
+                        setStatusZone(zone)
+                        setStatusOpen(true)
+                      }}
+                    >
+                      {zone.isActive ? "Deactivate" : "Activate"}
+                    </Button>
                   </div>
                 </div>
 
                 <Separator className="my-4" />
 
                 <div>
-                  <p className="mb-2 text-sm font-medium">Assigned Cities</p>
-
                   {zone.cities.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No cities assigned to this zone.
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {zone.cities.map((city) => (
-                        <div
-                          key={city.id}
-                          className="flex items-start gap-2 rounded-md bg-muted/50 p-3"
-                        >
-                          <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                    <div>
+                      <p className="mb-2 text-sm font-medium">
+                        Assigned Cities
+                      </p>
 
-                          <div>
-                            <p className="text-sm font-medium">
-                              {city.cityName}
-                            </p>
-
-                            <p className="text-xs text-muted-foreground">
-                              {[city.provinceName, city.regionName]
-                                .filter(Boolean)
-                                .join(" · ")}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+                      <p className="text-sm text-muted-foreground">
+                        No cities assigned to this zone.
+                      </p>
                     </div>
+                  ) : (
+                    <details className="group">
+                      <summary className="flex cursor-pointer list-none items-center justify-between rounded-md px-1 py-2 text-sm font-medium transition-colors hover:bg-muted/50 [&::-webkit-details-marker]:hidden">
+                        <div className="flex items-center gap-2">
+                          <span>Assigned Cities</span>
+
+                          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
+                            {zone.cities.length}
+                          </span>
+                        </div>
+
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="text-muted-foreground transition-transform duration-200 group-open:rotate-180"
+                        >
+                          <path d="m6 9 6 6 6-6" />
+                        </svg>
+                      </summary>
+
+                      <div className="mt-2 space-y-2">
+                        {zone.cities.map((city) => (
+                          <div
+                            key={city.id}
+                            className="flex items-center justify-between gap-3 rounded-md border p-3"
+                          >
+                            <div className="flex min-w-0 items-start gap-2">
+                              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium">
+                                  {city.cityName}
+                                </p>
+
+                                <p className="text-xs text-muted-foreground">
+                                  {[city.provinceName, city.regionName]
+                                    .filter(Boolean)
+                                    .join(" · ")}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex shrink-0 items-center gap-1">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setBarangayCity(city)
+                                  setBarangayOpen(true)
+                                }}
+                              >
+                                Barangays
+                              </Button>
+
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                title={`Remove ${city.cityName}`}
+                                onClick={() => {
+                                  setRemoveCityZone(zone)
+                                  setSelectedCity(city)
+                                  setRemoveCityOpen(true)
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+
+                                <span className="sr-only">
+                                  Remove {city.cityName}
+                                </span>
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
                   )}
                 </div>
               </div>
@@ -249,6 +353,49 @@ export default function ManageDeliveryZonesDialog({
         addingCity={addingCity}
         onAddCity={async (zoneId, cityPsgcCode) => {
           await addCity(zoneId, cityPsgcCode)
+        }}
+      />
+      <RemoveCityFromZoneDialog
+        zone={removeCityZone}
+        city={selectedCity}
+        open={removeCityOpen}
+        onOpenChange={(open) => {
+          setRemoveCityOpen(open)
+
+          if (!open) {
+            setRemoveCityZone(null)
+            setSelectedCity(null)
+          }
+        }}
+        removingCity={removingCity}
+        onRemoveCity={async (zoneId, cityPsgcCode) => {
+          await removeCity(zoneId, cityPsgcCode)
+        }}
+      />
+      <ManageBarangaysDialog
+        city={barangayCity}
+        open={barangayOpen}
+        onOpenChange={(open) => {
+          setBarangayOpen(open)
+
+          if (!open) {
+            setBarangayCity(null)
+          }
+        }}
+      />
+      <ChangeDeliveryZoneStatusDialog
+        zone={statusZone}
+        open={statusOpen}
+        onOpenChange={(open) => {
+          setStatusOpen(open)
+
+          if (!open) {
+            setStatusZone(null)
+          }
+        }}
+        changingStatus={changingStatus}
+        onChangeStatus={async (zoneId, isActive) => {
+          await changeZoneStatus(zoneId, isActive)
         }}
       />
     </Dialog>

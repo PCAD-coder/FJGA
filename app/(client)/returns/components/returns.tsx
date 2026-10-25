@@ -1,63 +1,51 @@
-"use client";
+"use client"
 
-import { useCallback, useEffect, useState } from "react";
+import ModuleLoading from "../loading"
 
-import ReturnHeader from "./return-header";
-import ReturnRequestForm from "./return-request-form";
-import ReturnPolicy from "./return-policy";
-import HelpCard from "./help-card";
-import RequestStatusList from "./request-status-list";
+import { useCallback, useEffect, useState } from "react"
 
-import { getReturnPageData } from "../services/return-service";
+import ReturnHeader from "./return-header"
+import ReturnRequestForm from "./return-request-form"
+import ReturnPolicy from "./return-policy"
+import HelpCard from "./help-card"
+import RequestStatusList from "./request-status-list"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-import type {
-  CustomerOrder,
-  ReturnRequest,
-} from "../types/return";
+import { getReturnPageData } from "../services/return-service"
+
+import type { CustomerOrder, ReturnRequest } from "../types/return"
 
 export default function Returns() {
-  const [orders, setOrders] = useState<CustomerOrder[]>([]);
-  const [requests, setRequests] = useState<ReturnRequest[]>([]);
+  const [orders, setOrders] = useState<CustomerOrder[]>([])
+  const [requests, setRequests] = useState<ReturnRequest[]>([])
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const loadReturns = useCallback(async () => {
     try {
-      setLoading(true);
-      setError(null);
+      setLoading(true)
+      setError(null)
 
-      const data = await getReturnPageData();
+      const data = await getReturnPageData()
 
-      setOrders(data.orders);
-      setRequests(data.requests);
+      setOrders(data.orders)
+      setRequests(data.requests)
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to load return information"
-      );
+        err instanceof Error ? err.message : "Failed to load return information"
+      )
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, []);
+  }, [])
 
   useEffect(() => {
-    loadReturns();
-  }, [loadReturns]);
+    loadReturns()
+  }, [loadReturns])
 
   if (loading) {
-    return (
-      <div className="space-y-8">
-        <ReturnHeader />
-
-        <div className="flex min-h-[300px] items-center justify-center rounded-xl border bg-card">
-          <p className="text-sm text-muted-foreground">
-            Loading returns...
-          </p>
-        </div>
-      </div>
-    );
+    return <ModuleLoading />
   }
 
   if (error) {
@@ -70,33 +58,45 @@ export default function Returns() {
             Unable to load returns
           </h2>
 
-          <p className="mt-2 text-sm text-muted-foreground">
-            {error}
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">{error}</p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
     <div className="space-y-8">
       <ReturnHeader />
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <ReturnRequestForm
-            orders={orders}
-            onSubmitted={loadReturns}
-          />
-        </div>
+      <Tabs defaultValue="request" className="space-y-5">
+        <TabsList className="h-10 rounded-lg border bg-card p-1">
+          <TabsTrigger value="request" className="px-4 text-sm">
+            Request a Return
+          </TabsTrigger>
+          <TabsTrigger value="status" className="px-4 text-sm">
+            Request Status
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent
+          value="request"
+          className="mt-0 data-[state=inactive]:hidden"
+          forceMount
+        >
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <ReturnRequestForm orders={orders} onSubmitted={loadReturns} />
+            </div>
 
-        <div className="space-y-6">
-          <ReturnPolicy />
-          <HelpCard />
-        </div>
-      </div>
-
-      <RequestStatusList requests={requests} />
+            <div className="space-y-6">
+              <ReturnPolicy />
+              <HelpCard />
+            </div>
+          </div>
+        </TabsContent>
+        <TabsContent value="status" className="mt-0">
+          <RequestStatusList requests={requests} />
+        </TabsContent>
+      </Tabs>
     </div>
-  );
+  )
 }

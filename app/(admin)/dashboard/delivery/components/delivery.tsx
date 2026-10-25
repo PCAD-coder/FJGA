@@ -1,7 +1,18 @@
 "use client"
 
 import { useMemo, useState, useEffect } from "react"
-import { Search, Settings2 } from "lucide-react"
+import { DashboardCard } from "@/components/dashboard_cards"
+import DeliverySkeleton from "./delivery-skeleton"
+import { toast } from "sonner"
+
+import {
+  Search,
+  Settings2,
+  Truck,
+  CalendarDays,
+  Navigation,
+  CircleCheck,
+} from "lucide-react"
 import type {
   Delivery,
   DeliveryDetails,
@@ -74,7 +85,7 @@ export default function DeliveryModule() {
 
   const [finalPaymentOpen, setFinalPaymentOpen] = useState(false)
 
-  const deliveriesPerPage = 4
+  const deliveriesPerPage = 10
   const loadDeliveries = async () => {
     try {
       setLoading(true)
@@ -130,9 +141,11 @@ export default function DeliveryModule() {
   const totalPages =
     Math.ceil(filteredDeliveries.length / deliveriesPerPage) || 1
 
+  const page = Math.min(currentPage, totalPages)
+
   const paginatedDeliveries = filteredDeliveries.slice(
-    (currentPage - 1) * deliveriesPerPage,
-    currentPage * deliveriesPerPage
+    (page - 1) * deliveriesPerPage,
+    page * deliveriesPerPage
   )
   const handleViewDetails = async (delivery: Delivery) => {
     try {
@@ -158,6 +171,11 @@ export default function DeliveryModule() {
       }
     } catch (error) {
       console.error("Failed to load delivery details:", error)
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to load delivery details."
+      )
     } finally {
       setDetailsLoading(false)
     }
@@ -182,12 +200,18 @@ export default function DeliveryModule() {
           notes: notes.trim() || null,
         })
 
+        toast.success("Return delivery completed successfully.")
         setUpdateOpen(false)
         setSelectedDelivery(null)
 
         await loadDeliveries()
       } catch (error) {
         console.error("Failed to complete return delivery:", error)
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Unable to complete return delivery."
+        )
 
         setError(
           error instanceof Error
@@ -219,6 +243,7 @@ export default function DeliveryModule() {
         selectedDelivery.deliveryType
       )
 
+      toast.success("Delivery status updated successfully.")
       setDeliveries((prev) =>
         prev.map((delivery) =>
           delivery.id === selectedDelivery.id
@@ -242,6 +267,11 @@ export default function DeliveryModule() {
       setUpdateOpen(false)
     } catch (error) {
       console.error("Failed to update delivery status:", error)
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to update delivery status."
+      )
 
       setError(
         error instanceof Error
@@ -267,15 +297,21 @@ export default function DeliveryModule() {
 
   const [manageZonesOpen, setManageZonesOpen] = useState(false)
 
+  if (loading) {
+    return <DeliverySkeleton />
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-[1600px] min-w-0 space-y-4 px-1 pt-2 pb-12 sm:px-4 sm:pt-3 lg:px-6">
       {/* HEADER */}
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 pb-4">
         <div>
-          <h1 className="text-3xl font-bold">Delivery Management</h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Delivery Management
+          </h1>
 
-          <p className="text-muted-foreground">
+          <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
             Manage and monitor delivery schedules.
           </p>
         </div>
@@ -292,56 +328,47 @@ export default function DeliveryModule() {
 
       {/* KPI */}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground">Total Deliveries</p>
-
-            <h2 className="text-3xl font-bold">{totalDeliveries}</h2>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground">Scheduled</p>
-
-            <h2 className="text-3xl font-bold text-yellow-600">
-              {scheduledCount}
-            </h2>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground">Out For Delivery</p>
-
-            <h2 className="text-3xl font-bold text-orange-600">
-              {outForDeliveryCount}
-            </h2>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground">Delivered</p>
-
-            <h2 className="text-3xl font-bold text-green-600">
-              {deliveredCount}
-            </h2>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-3">
+        <DashboardCard
+          title="Total Deliveries"
+          value={String(totalDeliveries)}
+          description="All order and return deliveries"
+          icon={Truck}
+          color="text-blue-600 dark:text-blue-400"
+        />
+        <DashboardCard
+          title="Scheduled"
+          value={String(scheduledCount)}
+          description="Deliveries awaiting dispatch"
+          icon={CalendarDays}
+          color="text-amber-600 dark:text-amber-400"
+        />
+        <DashboardCard
+          title="Out For Delivery"
+          value={String(outForDeliveryCount)}
+          description="Deliveries currently in transit"
+          icon={Navigation}
+          color="text-primary"
+        />
+        <DashboardCard
+          title="Delivered"
+          value={String(deliveredCount)}
+          description="Completed deliveries"
+          icon={CircleCheck}
+          color="text-emerald-600 dark:text-emerald-400"
+        />
       </div>
 
       {/* FILTERS */}
 
-      <div className="space-y-4">
+      <div className="space-y-3 rounded-xl border border-border/80 bg-card p-4">
         <ToggleGroup
           type="single"
           value={statusFilter}
           onValueChange={(value) => {
             if (value) setStatusFilter(value)
           }}
-          className="flex-wrap justify-start"
+          className="h-auto max-w-full flex-wrap justify-start gap-1"
         >
           <ToggleGroupItem value="all">All</ToggleGroupItem>
 
@@ -357,11 +384,12 @@ export default function DeliveryModule() {
         </ToggleGroup>
 
         <div className="relative max-w-md">
-          <Search className="absolute top-3 left-3 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 
           <Input
             placeholder="Search project or client..."
-            className="pl-9"
+            aria-label="Search deliveries"
+            className="h-9 rounded-lg bg-background/50 pl-9 shadow-none"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -388,7 +416,7 @@ export default function DeliveryModule() {
       {/* DELIVERY CARDS */}
 
       {!loading && !error && (
-        <div className="space-y-6">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] items-stretch gap-4">
           {paginatedDeliveries.map((delivery) => (
             <DeliveryCard
               key={delivery.id}
@@ -423,12 +451,19 @@ export default function DeliveryModule() {
 
       {/* PAGINATION */}
 
-      {filteredDeliveries.length > deliveriesPerPage && (
-        <DeliveryPagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-        />
+      {!loading && !error && filteredDeliveries.length > 0 && (
+        <div className="flex flex-col gap-3 rounded-xl border bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p aria-live="polite" className="text-sm text-muted-foreground">
+            Showing {(page - 1) * deliveriesPerPage + 1} to{" "}
+            {Math.min(page * deliveriesPerPage, filteredDeliveries.length)} of{" "}
+            {filteredDeliveries.length} deliveries
+          </p>
+          <DeliveryPagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </div>
       )}
 
       {/* DIALOGS */}
@@ -468,9 +503,9 @@ export default function DeliveryModule() {
       />
 
       <ManageDeliveryZonesDialog
-  open={manageZonesOpen}
-  onOpenChange={setManageZonesOpen}
-/>
+        open={manageZonesOpen}
+        onOpenChange={setManageZonesOpen}
+      />
     </div>
   )
 }

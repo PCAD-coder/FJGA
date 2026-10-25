@@ -8,6 +8,7 @@ import DashboardSummaryCard from "./components/dashboard-summary-card"
 import ProjectStatusChart from "./components/project-status-chart"
 import NotificationsList from "./components/notifications-list"
 import RecentOrdersTable from "./components/recent-orders-table"
+import DashboardSkeleton from "./components/dashboard-skeleton"
 
 import type {
   ProjectStatus,
@@ -51,17 +52,13 @@ export default function ClientDashboard({ profile }: Props) {
         setLoading(true)
         setError(null)
 
-        const [
-          summary,
-          projectStatus,
-          recentOrders,
-          recentNotifications,
-        ] = await Promise.all([
-          getClientDashboardSummary(),
-          getClientProjectStatus(),
-          getClientRecentOrders(),
-          getClientRecentNotifications(),
-        ])
+        const [summary, projectStatus, recentOrders, recentNotifications] =
+          await Promise.all([
+            getClientDashboardSummary(),
+            getClientProjectStatus(),
+            getClientRecentOrders(),
+            getClientRecentNotifications(),
+          ])
 
         setReadyForDelivery(summary.readyForDelivery)
 
@@ -90,14 +87,23 @@ export default function ClientDashboard({ profile }: Props) {
     loadDashboard()
   }, [])
 
+  if (loading) {
+    return <DashboardSkeleton />
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-[1440px] space-y-6 px-1 pt-4 pb-12 sm:px-4 sm:pt-6 lg:px-6">
       {/* HEADER */}
 
-      <div>
-        <h1 className="text-3xl font-bold">Client Overview</h1>
+      <div className="border-b border-border/70 pb-6">
+        <p className="mb-2 text-xs font-medium tracking-[0.2em] text-muted-foreground uppercase">
+          Your workspace
+        </p>
+        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+          Client Overview
+        </h1>
 
-        <p className="text-muted-foreground">
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
           Welcome back! Here's what's happening with your projects.
         </p>
       </div>
@@ -105,7 +111,7 @@ export default function ClientDashboard({ profile }: Props) {
       {/* ERROR */}
 
       {error && (
-        <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+        <div className="rounded-xl border border-destructive/25 bg-destructive/5 p-4 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -116,13 +122,17 @@ export default function ClientDashboard({ profile }: Props) {
         <DashboardSummaryCard
           title="Ready for Delivery"
           value={loading ? "..." : readyForDelivery}
-          icon={<FileText className="h-6 w-6 text-blue-500" />}
+          icon={
+            <FileText className="size-5 text-blue-600 dark:text-blue-400" />
+          }
         />
 
         <DashboardSummaryCard
           title="Orders in Production"
           value={loading ? "..." : ordersInProduction}
-          icon={<Package className="h-6 w-6 text-green-500" />}
+          icon={
+            <Package className="size-5 text-emerald-600 dark:text-emerald-400" />
+          }
         />
 
         <DashboardSummaryCard
@@ -135,9 +145,13 @@ export default function ClientDashboard({ profile }: Props) {
                   maximumFractionDigits: 2,
                 })}`
           }
-          icon={<Wallet className="h-6 w-6 text-purple-500" />}
+          icon={<Wallet className="size-5 text-primary" />}
         />
       </div>
+
+      {/* RECENT ORDERS */}
+
+      <RecentOrdersTable orders={recentOrdersData} />
 
       {/* CHART + NOTIFICATIONS */}
 
@@ -146,10 +160,6 @@ export default function ClientDashboard({ profile }: Props) {
 
         <NotificationsList notifications={notifications} />
       </div>
-
-      {/* RECENT ORDERS */}
-
-      <RecentOrdersTable orders={recentOrdersData} />
     </div>
   )
 }

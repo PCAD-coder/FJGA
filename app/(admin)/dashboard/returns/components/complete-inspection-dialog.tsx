@@ -32,19 +32,13 @@ interface CompleteInspectionDialogProps {
 }
 
 export interface CompleteInspectionData {
-  inspectionResult:
-    | "damage_confirmed"
-    | "no_issue"
-    | "not_covered"
+  inspectionResult: "damage_confirmed" | "no_issue" | "not_covered"
 
   damageConfirmed: boolean
 
   damageDescription: string
 
-  resolutionType:
-    | "repair"
-    | "replacement"
-    | "no_action"
+  resolutionType: "repair" | "replacement" | "no_action"
 
   resolutionNotes: string
 }
@@ -62,8 +56,7 @@ export default function CompleteInspectionDialog({
   onOpenChange,
   onComplete,
 }: CompleteInspectionDialogProps) {
-  const [form, setForm] =
-    useState<CompleteInspectionData>(defaultForm)
+  const [form, setForm] = useState<CompleteInspectionData>(defaultForm)
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -95,9 +88,7 @@ export default function CompleteInspectionDialog({
     }
 
     if (form.damageDescription.trim().length < 10) {
-      setError(
-        "Please provide a more detailed inspection description."
-      )
+      setError("Please provide a more detailed inspection description.")
       return
     }
 
@@ -107,9 +98,7 @@ export default function CompleteInspectionDialog({
     }
 
     if (form.resolutionNotes.trim().length < 10) {
-      setError(
-        "Please provide more detailed resolution notes."
-      )
+      setError("Please provide more detailed resolution notes.")
       return
     }
 
@@ -126,10 +115,7 @@ export default function CompleteInspectionDialog({
 
       onOpenChange(false)
     } catch (err) {
-      console.error(
-        "Failed to complete inspection:",
-        err
-      )
+      console.error("Failed to complete inspection:", err)
 
       setError(
         err instanceof Error
@@ -171,23 +157,19 @@ export default function CompleteInspectionDialog({
         onOpenChange(value)
       }}
     >
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col">
         <DialogHeader>
-          <DialogTitle>
-            Complete Inspection
-          </DialogTitle>
+          <DialogTitle>Complete Inspection</DialogTitle>
 
           <DialogDescription>
-            Record the findings of the physical inspection
-            and determine the appropriate resolution.
+            Record the findings of the physical inspection and determine the
+            appropriate resolution.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto pr-2">
           <div className="space-y-2">
-            <Label>
-              Inspection Result
-            </Label>
+            <Label>Inspection Result</Label>
 
             <Select
               value={form.inspectionResult}
@@ -203,33 +185,20 @@ export default function CompleteInspectionDialog({
                   Damage Confirmed
                 </SelectItem>
 
-                <SelectItem value="no_issue">
-                  No Issue Found
-                </SelectItem>
+                <SelectItem value="no_issue">No Issue Found</SelectItem>
 
-                <SelectItem value="not_covered">
-                  Not Covered
-                </SelectItem>
+                <SelectItem value="not_covered">Not Covered</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label>
-              Damage Confirmed
-            </Label>
+            <Label>Damage Confirmed</Label>
 
             <Select
-              value={
-                form.damageConfirmed
-                  ? "yes"
-                  : "no"
-              }
+              value={form.damageConfirmed ? "yes" : "no"}
               onValueChange={(value) =>
-                updateForm(
-                  "damageConfirmed",
-                  value === "yes"
-                )
+                updateForm("damageConfirmed", value === "yes")
               }
               disabled={saving}
             >
@@ -238,47 +207,35 @@ export default function CompleteInspectionDialog({
               </SelectTrigger>
 
               <SelectContent>
-                <SelectItem value="yes">
-                  Yes
-                </SelectItem>
+                <SelectItem value="yes">Yes</SelectItem>
 
-                <SelectItem value="no">
-                  No
-                </SelectItem>
+                <SelectItem value="no">No</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="damage-description">
-              Inspection Findings
-            </Label>
+            <Label htmlFor="damage-description">Inspection Findings</Label>
 
             <Textarea
               id="damage-description"
               placeholder="Describe what was found during the physical inspection..."
               value={form.damageDescription}
               onChange={(event) =>
-                updateForm(
-                  "damageDescription",
-                  event.target.value
-                )
+                updateForm("damageDescription", event.target.value)
               }
               disabled={saving}
               rows={5}
             />
 
             <p className="text-xs text-muted-foreground">
-              Include the affected component, type of
-              damage, and any relevant measurements or
-              observations.
+              Include the affected component, type of damage, and any relevant
+              measurements or observations.
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label>
-              Resolution
-            </Label>
+            <Label>Resolution</Label>
 
             <Select
               value={form.resolutionType}
@@ -299,52 +256,40 @@ export default function CompleteInspectionDialog({
               </SelectTrigger>
 
               <SelectContent>
-                <SelectItem value="repair">
-                  Repair
-                </SelectItem>
+                <SelectItem value="repair">Repair</SelectItem>
 
-                <SelectItem value="replacement">
-                  Replacement
-                </SelectItem>
+                <SelectItem value="replacement">Replacement</SelectItem>
 
-                <SelectItem value="no_action">
-                  No Action
-                </SelectItem>
+                <SelectItem value="no_action">No Action</SelectItem>
               </SelectContent>
             </Select>
 
             {(form.inspectionResult === "no_issue" ||
               form.inspectionResult === "not_covered") && (
               <p className="text-xs text-muted-foreground">
-                No action is automatically selected because
-                the inspection did not confirm a qualifying
-                damage.
+                No action is automatically selected because the inspection did
+                not confirm a qualifying damage.
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="resolution-notes">
-              Resolution Notes
-            </Label>
+            <Label htmlFor="resolution-notes">Resolution Notes</Label>
 
             <Textarea
               id="resolution-notes"
               placeholder="Describe the work that should be performed..."
               value={form.resolutionNotes}
               onChange={(event) =>
-                updateForm(
-                  "resolutionNotes",
-                  event.target.value
-                )
+                updateForm("resolutionNotes", event.target.value)
               }
               disabled={saving}
               rows={5}
             />
 
             <p className="text-xs text-muted-foreground">
-              These notes will be used when the repair or
-              replacement work is prepared.
+              These notes will be used when the repair or replacement work is
+              prepared.
             </p>
           </div>
 
@@ -365,18 +310,10 @@ export default function CompleteInspectionDialog({
             Cancel
           </Button>
 
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={saving}
-          >
-            {saving && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            )}
+          <Button type="button" onClick={handleSubmit} disabled={saving}>
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
 
-            {saving
-              ? "Completing..."
-              : "Complete Inspection"}
+            {saving ? "Completing..." : "Complete Inspection"}
           </Button>
         </DialogFooter>
       </DialogContent>

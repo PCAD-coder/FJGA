@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { Download, FileSpreadsheet, Printer } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -161,16 +163,14 @@ export function InventoryExportMenu({
     document.body.removeChild(link)
 
     URL.revokeObjectURL(url)
+    toast.success("Inventory CSV download started.")
   }
 
   function handlePrintReport() {
-    const printWindow = window.open(
-      "",
-      "_blank",
-      "width=1200,height=800"
-    )
+    const printWindow = window.open("", "_blank", "width=1200,height=800")
 
     if (!printWindow) {
+      toast.error("The print window was blocked. Allow pop-ups and try again.")
       return
     }
 
@@ -191,8 +191,7 @@ export function InventoryExportMenu({
 
     const expiringCount = materials.filter(
       (material) =>
-        material.tracks_expiration &&
-        material.expiring_soon_quantity > 0
+        material.tracks_expiration && material.expiring_soon_quantity > 0
     ).length
 
     const generatedAt = new Date().toLocaleString()
@@ -407,7 +406,7 @@ export function InventoryExportMenu({
           </table>
 
           <div class="footer">
-            FJ Glass and Aluminum — Inventory Management Report
+            FJ Glass and Aluminum \u2014 Inventory Management Report
           </div>
         </body>
       </html>
@@ -418,6 +417,7 @@ export function InventoryExportMenu({
     setTimeout(() => {
       printWindow.focus()
       printWindow.print()
+      toast.info("Print dialog opened. Choose a printer or save as PDF.")
     }, 250)
   }
 
@@ -431,12 +431,32 @@ export function InventoryExportMenu({
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={handleExportCsv}>
+        <DropdownMenuItem
+          onClick={() => {
+            try {
+              handleExportCsv()
+            } catch {
+              toast.error(
+                "Unable to export inventory records. Please try again."
+              )
+            }
+          }}
+        >
           <FileSpreadsheet className="mr-2 h-4 w-4" />
           Export CSV
         </DropdownMenuItem>
 
-        <DropdownMenuItem onClick={handlePrintReport}>
+        <DropdownMenuItem
+          onClick={() => {
+            try {
+              handlePrintReport()
+            } catch {
+              toast.error(
+                "Unable to prepare the inventory report. Please try again."
+              )
+            }
+          }}
+        >
           <Printer className="mr-2 h-4 w-4" />
           Print Report
         </DropdownMenuItem>

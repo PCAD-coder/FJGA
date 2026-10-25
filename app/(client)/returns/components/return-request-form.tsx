@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 
@@ -93,35 +95,38 @@ export default function ReturnRequestForm({ orders, onSubmitted }: Props) {
       setSubmitting(true)
 
       const returnRequest = await createReturnRequest({
-  orderId: selectedOrder,
-  issueType,
-  description,
-  contactNumber,
-})
+        orderId: selectedOrder,
+        issueType,
+        description,
+        contactNumber,
+      })
 
-if (photos && photos.length > 0) {
-  await uploadReturnPhotos(returnRequest.id, photos)
-}
+      if (photos && photos.length > 0) {
+        await uploadReturnPhotos(returnRequest.id, photos)
+      }
 
-const supabase = createClient()
+      const supabase = createClient()
 
-const { error: notificationError } = await supabase.rpc(
-  "notify_return_request_submitted",
-  {
-    p_return_request_id: returnRequest.id,
-  }
-)
+      const { error: notificationError } = await supabase.rpc(
+        "notify_return_request_submitted",
+        {
+          p_return_request_id: returnRequest.id,
+        }
+      )
 
-if (notificationError) {
-  console.error(
-    "Failed to notify admins about return request:",
-    notificationError
-  )
-}
+      if (notificationError) {
+        console.error(
+          "Failed to notify admins about return request:",
+          notificationError
+        )
+      }
 
-setSuccess(
-  `Return request ${returnRequest.return_number} has been submitted.`
-)
+      toast.success(
+        `Return request ${returnRequest.return_number} submitted successfully.`
+      )
+      setSuccess(
+        `Return request ${returnRequest.return_number} has been submitted.`
+      )
 
       setSelectedOrder("")
       setIssueType("")
@@ -130,6 +135,11 @@ setSuccess(
 
       onSubmitted?.()
     } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Unable to submit your return request."
+      )
       setError(
         err instanceof Error ? err.message : "Failed to submit return request."
       )

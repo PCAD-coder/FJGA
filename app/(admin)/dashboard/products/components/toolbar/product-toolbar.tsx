@@ -44,28 +44,35 @@ export function ProductToolbar({
   onAddProduct,
 }: ProductToolbarProps) {
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-4 md:flex-row md:justify-between">
-        <div className="relative w-full md:max-w-md">
-          <Search className="absolute top-3 left-3 h-4 w-4 text-muted-foreground" />
+    <div className="space-y-3 rounded-xl border border-border/80 bg-card p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-md">
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 
           <Input
-            className="pl-9"
+            aria-label="Search products"
+            className="h-10 rounded-lg bg-background/50 pl-9 shadow-none"
             placeholder="Search by product name or code..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
 
-        <Button onClick={onAddProduct}>
+        <Button
+          onClick={onAddProduct}
+          className="h-10 shrink-0 rounded-lg px-4 shadow-none"
+        >
           <Plus className="mr-2 h-4 w-4" />
           Add Product
         </Button>
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:max-w-md sm:grid-cols-2">
         <Select value={selectedCategory} onValueChange={onCategoryChange}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger
+            className="h-9 w-full rounded-lg bg-background/50 shadow-none"
+            aria-label="Filter by category"
+          >
             <SelectValue placeholder="Category" />
           </SelectTrigger>
 
@@ -81,7 +88,10 @@ export function ProductToolbar({
         </Select>
 
         <Select value={selectedType} onValueChange={onTypeChange}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger
+            className="h-9 w-full rounded-lg bg-background/50 shadow-none"
+            aria-label="Filter by product type"
+          >
             <SelectValue placeholder="Product Type" />
           </SelectTrigger>
 

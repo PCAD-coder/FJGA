@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import {
   ArrowRight,
+  BookOpen,
+  CircleHelp,
   Gem,
   Hammer,
   Headphones,
@@ -16,6 +19,12 @@ import {
   type PublicHomepageContent,
 } from "@/app/services/public-content"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { HeroHeader } from "./header"
 
 const benefits = [
@@ -42,8 +51,7 @@ const benefits = [
 ]
 
 export default function HeroSection() {
-  const [content, setContent] =
-    useState<PublicHomepageContent | null>(null)
+  const [content, setContent] = useState<PublicHomepageContent | null>(null)
 
   useEffect(() => {
     async function loadHomepageContent() {
@@ -51,18 +59,14 @@ export default function HeroSection() {
         const data = await getPublicHomepageContent()
         setContent(data)
       } catch (error) {
-        console.error(
-          "Failed to load public homepage content:",
-          error
-        )
+        console.error("Failed to load public homepage content:", error)
       }
     }
 
     void loadHomepageContent()
   }, [])
 
-  const heroTitle =
-    content?.heroTitle || "FJ Glass and Aluminum"
+  const heroTitle = content?.heroTitle || "FJ Glass and Aluminum"
 
   const heroDescription =
     content?.heroDescription ||
@@ -84,6 +88,40 @@ export default function HeroSection() {
   return (
     <>
       <HeroHeader />
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            size="icon"
+            aria-label="Help and guides"
+            title="Help and guides"
+            className="fixed right-4 bottom-4 z-40 size-12 rounded-full shadow-lg sm:right-6 sm:bottom-6"
+          >
+            <CircleHelp className="size-5" aria-hidden="true" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          side="top"
+          align="end"
+          sideOffset={12}
+          className="w-14 min-w-0 space-y-1 p-1"
+        >
+          <DropdownMenuItem asChild className="size-12 justify-center p-0">
+            <Link
+              href="/documentation"
+              aria-label="User Guide"
+              title="User Guide"
+            >
+              <BookOpen className="size-5" aria-hidden="true" />
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild className="size-12 justify-center p-0">
+            <Link href="/faq" aria-label="FAQs" title="FAQs">
+              <CircleHelp className="size-5" aria-hidden="true" />
+            </Link>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <main id="home" className="pt-20">
         {/* Hero image */}
@@ -134,7 +172,6 @@ export default function HeroSection() {
                     className="group h-12 rounded-md px-6"
                   >
                     Explore Our Products
-
                     <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
                   </Button>
 
@@ -177,9 +214,7 @@ export default function HeroSection() {
                     </div>
 
                     <div>
-                      <h2 className="text-sm font-semibold">
-                        {benefit.title}
-                      </h2>
+                      <h2 className="text-sm font-semibold">{benefit.title}</h2>
 
                       <p className="mt-1 text-xs leading-5 text-muted-foreground">
                         {benefit.description}

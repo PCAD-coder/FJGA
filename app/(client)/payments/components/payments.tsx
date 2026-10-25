@@ -1,5 +1,7 @@
 "use client"
 
+import ModuleLoading from "../loading"
+
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 
@@ -8,6 +10,7 @@ import PaymentSummaryCards from "./payment-summary-cards"
 import PaymentMethods from "./payment-methods"
 import PaymentHistoryTable from "./payment-history-table"
 import PendingInvoices from "./pending-invoices"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import type { PaymentSummary, Invoice, PaymentHistory } from "../types/payment"
 
@@ -119,8 +122,12 @@ export default function Payments() {
     }
   }, [paymentStatus, paymentOrderId])
 
+  if (loading) {
+    return <ModuleLoading />
+  }
+
   return (
-    <div className="space-y-8">
+    <div className="mx-auto w-full max-w-[1440px] space-y-6 px-1 pt-4 pb-12 sm:px-4 sm:pt-6 lg:px-6">
       <PaymentHeader />
 
       {loading && (
@@ -130,7 +137,7 @@ export default function Payments() {
       )}
 
       {!loading && error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+        <div className="rounded-xl border border-destructive/25 bg-destructive/5 p-5 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -139,11 +146,25 @@ export default function Payments() {
         <>
           <PaymentSummaryCards summary={summary} />
 
-          <PendingInvoices invoices={invoices} />
-
-          <PaymentMethods />
-
-          <PaymentHistoryTable history={history} />
+          <Tabs defaultValue="due" className="space-y-5">
+            <TabsList className="h-10 rounded-lg border bg-card p-1">
+              <TabsTrigger value="due" className="px-4 text-sm">
+                Payments Due
+              </TabsTrigger>
+              <TabsTrigger value="history" className="px-4 text-sm">
+                Payment History
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="due" className="mt-0">
+              <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
+                <PendingInvoices invoices={invoices} />
+                <PaymentMethods />
+              </div>
+            </TabsContent>
+            <TabsContent value="history" className="mt-0">
+              <PaymentHistoryTable history={history} />
+            </TabsContent>
+          </Tabs>
         </>
       )}
     </div>

@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { useState } from "react"
 import { CreditCard, ExternalLink, ShieldCheck } from "lucide-react"
 
@@ -30,10 +32,7 @@ function formatCurrency(value: number) {
   }).format(value)
 }
 
-export default function PaymentDialog({
-  invoice,
-  onSubmitted,
-}: Props) {
+export default function PaymentDialog({ invoice, onSubmitted }: Props) {
   const [open, setOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -49,14 +48,20 @@ export default function PaymentDialog({
 
       onSubmitted?.()
 
+      toast.info(
+        "Opening secure checkout. Payment will be confirmed after processing."
+      )
       window.location.href = checkoutUrl
     } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to open payment checkout."
+      )
       console.error("PAYMONGO PAYMENT ERROR:", error)
 
       setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to start payment."
+        error instanceof Error ? error.message : "Failed to start payment."
       )
 
       setSubmitting(false)
@@ -93,19 +98,15 @@ export default function PaymentDialog({
         <div className="space-y-5">
           <div className="overflow-hidden rounded-xl border">
             <div className="border-b bg-muted/30 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                 Order
               </p>
-              <p className="mt-1 font-semibold">
-                {invoice.orderNumber}
-              </p>
+              <p className="mt-1 font-semibold">{invoice.orderNumber}</p>
             </div>
 
             <div className="space-y-3 p-4">
               <div className="flex items-start justify-between gap-4">
-                <span className="text-sm text-muted-foreground">
-                  Product
-                </span>
+                <span className="text-sm text-muted-foreground">Product</span>
 
                 <span className="text-right text-sm font-medium">
                   {invoice.productName}
@@ -146,13 +147,11 @@ export default function PaymentDialog({
               <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
 
               <div>
-                <p className="text-sm font-medium">
-                  Secure online payment
-                </p>
+                <p className="text-sm font-medium">Secure online payment</p>
 
                 <p className="mt-1 text-sm text-muted-foreground">
-                  You will be redirected to PayMongo to complete your
-                  payment securely.
+                  You will be redirected to PayMongo to complete your payment
+                  securely.
                 </p>
 
                 <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">

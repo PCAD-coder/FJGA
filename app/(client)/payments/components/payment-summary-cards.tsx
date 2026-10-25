@@ -1,63 +1,63 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Wallet, CircleCheck, CreditCard } from "lucide-react";
-import { PaymentSummary } from "../types/payment";
+import { Card, CardContent } from "@/components/ui/card"
+import { Wallet, CircleCheck, CreditCard } from "lucide-react"
+import { PaymentSummary } from "../types/payment"
 
 interface Props {
-  summary: PaymentSummary;
+  summary: PaymentSummary
 }
 
-export default function PaymentSummaryCards({
-  summary,
-}: Props) {
+export default function PaymentSummaryCards({ summary }: Props) {
   const cards = [
     {
       title: "Payment Required",
-      value: `₱${summary.totalPending.toLocaleString()}`,
+      value: `\u20B1${summary.totalPending.toLocaleString()}`,
       icon: Wallet,
       iconClass:
-        "bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400",
+        "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400",
     },
     {
       title: "Paid This Month",
-      value: `₱${summary.paidThisMonth.toLocaleString()}`,
+      value: `\u20B1${summary.paidThisMonth.toLocaleString()}`,
       icon: CircleCheck,
       iconClass:
-        "bg-green-100 text-green-600 dark:bg-green-950 dark:text-green-400",
+        "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400",
     },
     {
-      title: "Orderd Awaiting Payment",
+      title: "Orders Awaiting Payment",
       value: summary.outstandingInvoices,
       icon: CreditCard,
-      iconClass:
-        "bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400",
+      iconClass: "bg-primary/10 text-primary",
     },
-  ];
+  ]
 
   return (
     <div className="grid gap-4 md:grid-cols-3">
       {cards.map((card) => {
-        const Icon = card.icon;
+        const Icon = card.icon
 
         return (
-          <Card key={card.title}>
-            <CardContent className="flex items-center justify-between p-6">
-              <div>
-                <p className="text-sm text-muted-foreground">
+          <Card
+            key={card.title}
+            className="gap-0 rounded-xl border border-border/80 py-0 shadow-none ring-0"
+          >
+            <CardContent className="flex items-start justify-between gap-3 p-5">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-muted-foreground">
                   {card.title}
                 </p>
 
-                <h2 className="mt-2 text-3xl font-bold">
+                <h2 className="mt-3 text-2xl font-semibold tracking-tight wrap-break-word tabular-nums">
                   {card.value}
                 </h2>
               </div>
 
-              <div className={`rounded-full p-3 ${card.iconClass}`}>
+              <div className={`shrink-0 rounded-xl p-3 ${card.iconClass}`}>
                 <Icon className="h-5 w-5" />
               </div>
             </CardContent>
           </Card>
-        );
+        )
       })}
     </div>
-  );
+  )
 }

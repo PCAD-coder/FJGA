@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { useCallback, useEffect, useState } from "react"
 
 import { createOrder, getOrders } from "../services/orders"
@@ -15,42 +17,70 @@ import {
   startOrderProduction,
 } from "../services/orders"
 
-export function useOrders() {
-const changeStatus = async (
-  orderId: string,
-  status: OrderStatus,
-  options?: {
-    assignedTo?: string
-    estimatedCompletionDate?: string
+async function notifyOrderAction<T>(
+  action: () => Promise<T>,
+  message: string
+): Promise<T> {
+  try {
+    const result = await action()
+    toast.success(message)
+    return result
+  } catch (error) {
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : "Unable to complete the order action."
+    )
+    throw error
   }
-) => {
-  await updateOrderStatus(orderId, status, options)
-  await loadOrders()
+}
+
+export function useOrders() {
+  const changeStatus = async (
+    orderId: string,
+    status: OrderStatus,
+    options?: {
+      assignedTo?: string
+      estimatedCompletionDate?: string
+    }
+  ) => {
+    await notifyOrderAction(
+      () => updateOrderStatus(orderId, status, options),
+      "Order status updated successfully."
+    )
+    await loadOrders()
   }
 
   const startProduction = async (
-  orderId: string,
-  options: {
-    assignedTo: string
-    estimatedCompletionDate: string
-  }
-) => {
-  await startOrderProduction(
-    orderId,
-    options.assignedTo,
-    options.estimatedCompletionDate
-  )
+    orderId: string,
+    options: {
+      assignedTo: string
+      estimatedCompletionDate: string
+    }
+  ) => {
+    await notifyOrderAction(
+      () =>
+        startOrderProduction(
+          orderId,
+          options.assignedTo,
+          options.estimatedCompletionDate
+        ),
+      "Production started successfully."
+    )
 
-  await loadOrders()
-} 
+    await loadOrders()
+  }
 
   const approve = async (orderId: string) => {
-    await approveOrder(orderId)
+    await notifyOrderAction(
+      () => approveOrder(orderId),
+      "Order approved successfully."
+    )
     await loadOrders()
   }
 
   const deny = async (orderId: string, reason: string) => {
-    await denyOrder(orderId, reason)
+    await notifyOrderAction(() => denyOrder(orderId, reason), "Order denied.")
     await loadOrders()
   }
 
@@ -58,7 +88,10 @@ const changeStatus = async (
     orderId: string,
     quotation: Record<string, any>
   ) => {
-    await saveOrderQuotation(orderId, quotation)
+    await notifyOrderAction(
+      () => saveOrderQuotation(orderId, quotation),
+      "Quotation saved successfully."
+    )
     await loadOrders()
   }
   const [orders, setOrders] = useState<Order[]>([])
@@ -93,8 +126,12 @@ const changeStatus = async (
 
       await loadOrders()
 
+      toast.success("Order created successfully.")
       return order
     } catch (err: any) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to create order."
+      )
       console.error("Create Order Error:", err)
       setError(err.message ?? "Failed to create order")
       throw err

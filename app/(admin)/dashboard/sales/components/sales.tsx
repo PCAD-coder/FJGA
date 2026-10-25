@@ -1,5 +1,8 @@
 "use client"
 
+import SalesSkeleton from "./sales-skeleton"
+import { DashboardCard } from "@/components/dashboard_cards"
+
 import { useEffect, useMemo, useState } from "react"
 
 import { CreditCard, DollarSign, Eye, Search, WalletCards } from "lucide-react"
@@ -40,7 +43,7 @@ import { approvePaymentSubmission } from "../services/payment-service"
 import { SalesExportMenu } from "./sales-export-menu"
 
 function formatCurrency(value: number) {
-  return `₱${value.toLocaleString(undefined, {
+  return `\u20B1${value.toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`
@@ -48,7 +51,7 @@ function formatCurrency(value: number) {
 
 function formatDate(value: string | null) {
   if (!value) {
-    return "—"
+    return "\u2014"
   }
 
   return new Date(value).toLocaleDateString()
@@ -79,22 +82,25 @@ function getPaymentMethodLabel(paymentMethod: SalesRecord["paymentMethod"]) {
       return "GCash"
 
     default:
-      return "—"
+      return "\u2014"
   }
 }
 
 type PaymentStatusFilter = "all" | SalesRecord["paymentStatus"]
 
+const PAGE_SIZE = 10
+
 export default function Sales() {
+  const [page, setPage] = useState(1)
   const [sales, setSales] = useState<SalesRecord[]>([])
   const [pendingPayments, setPendingPayments] = useState<PaymentSubmission[]>(
     []
   )
   const [loading, setLoading] = useState(true)
-const [search, setSearch] = useState("")
-const [paymentStatusFilter, setPaymentStatusFilter] =
-  useState<PaymentStatusFilter>("all")
-const [error, setError] = useState<string | null>(null)
+  const [search, setSearch] = useState("")
+  const [paymentStatusFilter, setPaymentStatusFilter] =
+    useState<PaymentStatusFilter>("all")
+  const [error, setError] = useState<string | null>(null)
   const [selectedSale, setSelectedSale] = useState<SalesRecord | null>(null)
   const [paymentSale, setPaymentSale] = useState<SalesRecord | null>(null)
 
@@ -136,22 +142,27 @@ const [error, setError] = useState<string | null>(null)
   }, [])
 
   const filteredSales = useMemo(() => {
-  const searchValue = search.trim().toLowerCase()
+    const searchValue = search.trim().toLowerCase()
 
-  return sales.filter((sale) => {
-    const matchesSearch =
-      !searchValue ||
-      sale.orderNumber.toLowerCase().includes(searchValue) ||
-      sale.customerName.toLowerCase().includes(searchValue) ||
-      sale.contactNumber?.toLowerCase().includes(searchValue)
+    return sales.filter((sale) => {
+      const matchesSearch =
+        !searchValue ||
+        sale.orderNumber.toLowerCase().includes(searchValue) ||
+        sale.customerName.toLowerCase().includes(searchValue) ||
+        sale.contactNumber?.toLowerCase().includes(searchValue)
 
-    const matchesPaymentStatus =
-      paymentStatusFilter === "all" ||
-      sale.paymentStatus === paymentStatusFilter
+      const matchesPaymentStatus =
+        paymentStatusFilter === "all" ||
+        sale.paymentStatus === paymentStatusFilter
 
-    return matchesSearch && matchesPaymentStatus
-  })
-}, [sales, search, paymentStatusFilter])
+      return matchesSearch && matchesPaymentStatus
+    })
+  }, [sales, search, paymentStatusFilter])
+
+  const totalPages = Math.max(1, Math.ceil(filteredSales.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const startIndex = (currentPage - 1) * PAGE_SIZE
+  const paginatedSales = filteredSales.slice(startIndex, startIndex + PAGE_SIZE)
 
   const totalSales = useMemo(() => {
     return sales.reduce((total, sale) => total + sale.totalAmount, 0)
@@ -169,8 +180,12 @@ const [error, setError] = useState<string | null>(null)
     return sales.filter((sale) => sale.paymentStatus === "paid").length
   }, [sales])
 
+  if (loading) {
+    return <SalesSkeleton />
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-[1600px] space-y-4 px-1 pt-2 pb-12 sm:px-4 sm:pt-3 lg:px-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Sales</h1>
 
@@ -181,79 +196,35 @@ const [error, setError] = useState<string | null>(null)
 
       {/* KPI CARDS */}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
-
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(totalSales)}
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              Across {sales.length} order
-              {sales.length !== 1 ? "s" : ""}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              Amount Collected
-            </CardTitle>
-
-            <WalletCards className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(totalCollected)}
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              Actual payments recorded
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              Outstanding Balance
-            </CardTitle>
-
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(totalOutstanding)}
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              Remaining amount to collect
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Paid Orders</CardTitle>
-
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-
-          <CardContent>
-            <div className="text-2xl font-bold">{paidOrders}</div>
-
-            <p className="text-xs text-muted-foreground">Fully paid orders</p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <DashboardCard
+          title="Total Sales"
+          value={formatCurrency(totalSales)}
+          description={`Across ${sales.length} order${sales.length !== 1 ? "s" : ""}`}
+          icon={DollarSign}
+          color="text-blue-600 dark:text-blue-400"
+        />
+        <DashboardCard
+          title="Amount Collected"
+          value={formatCurrency(totalCollected)}
+          description="Actual payments recorded"
+          icon={WalletCards}
+          color="text-emerald-600 dark:text-emerald-400"
+        />
+        <DashboardCard
+          title="Outstanding Balance"
+          value={formatCurrency(totalOutstanding)}
+          description="Remaining amount to collect"
+          icon={CreditCard}
+          color="text-amber-600 dark:text-amber-400"
+        />
+        <DashboardCard
+          title="Paid Orders"
+          value={String(paidOrders)}
+          description="Fully paid orders"
+          icon={DollarSign}
+          color="text-primary"
+        />
       </div>
       {/* PENDING PAYMENT SUBMISSIONS */}
 
@@ -276,59 +247,63 @@ const [error, setError] = useState<string | null>(null)
 
       {/* FILTERS & SEARCH */}
 
-<Card>
-  <CardContent className="pt-6">
-    <div className="flex flex-col gap-4 md:flex-row md:items-center">
-      <div className="relative w-full md:max-w-md">
-        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center">
+            <div className="relative w-full md:max-w-md">
+              <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 
-        <Input
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search order or customer..."
-          className="pl-9"
-        />
-      </div>
+              <Input
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value)
+                  setPage(1)
+                }}
+                placeholder="Search order or customer..."
+                className="pl-9"
+              />
+            </div>
 
-      <Select
-        value={paymentStatusFilter}
-        onValueChange={(value) =>
-          setPaymentStatusFilter(value as PaymentStatusFilter)
-        }
-      >
-        <SelectTrigger className="w-full md:w-[200px]">
-          <SelectValue placeholder="Payment status" />
-        </SelectTrigger>
+            <Select
+              value={paymentStatusFilter}
+              onValueChange={(value) => {
+                setPaymentStatusFilter(value as PaymentStatusFilter)
+                setPage(1)
+              }}
+            >
+              <SelectTrigger className="w-full md:w-[200px]">
+                <SelectValue placeholder="Payment status" />
+              </SelectTrigger>
 
-        <SelectContent>
-          <SelectItem value="all">All Statuses</SelectItem>
-          <SelectItem value="unpaid">Unpaid</SelectItem>
-          <SelectItem value="partial">Partially Paid</SelectItem>
-          <SelectItem value="paid">Paid</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-  </CardContent>
-</Card>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="unpaid">Unpaid</SelectItem>
+                <SelectItem value="partial">Partially Paid</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* SALES TABLE */}
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-4">
-  <div>
-    <CardTitle>Sales Records</CardTitle>
+          <div>
+            <CardTitle>Sales Records</CardTitle>
 
-    <p className="mt-1 text-sm text-muted-foreground">
-      Showing {filteredSales.length} of {sales.length} records
-    </p>
-  </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Showing {filteredSales.length} of {sales.length} records
+            </p>
+          </div>
 
-  <SalesExportMenu
-    sales={filteredSales}
-    paymentStatusFilter={paymentStatusFilter}
-    search={search}
-  />
-</CardHeader>
+          <SalesExportMenu
+            sales={filteredSales}
+            paymentStatusFilter={paymentStatusFilter}
+            search={search}
+          />
+        </CardHeader>
 
         <CardContent>
           {loading ? (
@@ -371,7 +346,7 @@ const [error, setError] = useState<string | null>(null)
                 </TableHeader>
 
                 <TableBody>
-                  {filteredSales.map((sale) => (
+                  {paginatedSales.map((sale) => (
                     <TableRow key={sale.orderId}>
                       <TableCell className="font-medium">
                         {sale.orderNumber}
@@ -435,6 +410,41 @@ const [error, setError] = useState<string | null>(null)
           )}
         </CardContent>
       </Card>
+      {!error && filteredSales.length > 0 && (
+        <nav
+          aria-label="Sales records pagination"
+          className="flex flex-col gap-3 rounded-xl border bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p aria-live="polite" className="text-sm text-muted-foreground">
+            Showing {startIndex + 1} to{" "}
+            {Math.min(startIndex + PAGE_SIZE, filteredSales.length)} of{" "}
+            {filteredSales.length} records
+          </p>
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={currentPage === 1}
+              onClick={() => setPage(currentPage - 1)}
+            >
+              Previous
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={currentPage === totalPages}
+              onClick={() => setPage(currentPage + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </nav>
+      )}
       <SaleDetailsDialog
         sale={selectedSale}
         open={!!selectedSale}

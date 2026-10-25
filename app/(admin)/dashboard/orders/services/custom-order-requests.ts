@@ -16,9 +16,12 @@ function getClientName(profile: any) {
   const lastName =
     typeof profile?.last_name === "string" ? profile.last_name.trim() : ""
 
-  const fullName = [firstName, lastName].filter(Boolean).join(" ")
+  const nameFromParts = [firstName, lastName].filter(Boolean).join(" ")
 
-  return fullName || "Unknown Client"
+  const fullName =
+    typeof profile?.full_name === "string" ? profile.full_name.trim() : ""
+
+  return nameFromParts || fullName || "Unknown Client"
 }
 
 async function getSignedReferenceImages(
@@ -81,7 +84,8 @@ export async function getCustomOrderRequests(): Promise<CustomOrder[]> {
 
       profiles (
         first_name,
-        last_name
+        last_name,
+        full_name
       ),
 
       custom_order_images (

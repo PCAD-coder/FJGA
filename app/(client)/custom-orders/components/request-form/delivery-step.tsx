@@ -27,7 +27,9 @@ import {
 } from "@/app/services/delivery/psgc-service"
 
 import {
-  getDeliveryFeeForCity,
+  getDeliveryFeeForAddress,
+  getDeliveryLocationCoverage,
+  type DeliveryLocationCoverage,
   type DeliveryZoneResult,
 } from "@/app/services/delivery/delivery-zone-service"
 
@@ -60,10 +62,90 @@ export function DeliveryStep({
   const [isLoadingCities, setIsLoadingCities] = useState(false)
   const [isLoadingBarangays, setIsLoadingBarangays] = useState(false)
   const [isCheckingDelivery, setIsCheckingDelivery] = useState(false)
+  const [locationCoverage, setLocationCoverage] =
+  useState<DeliveryLocationCoverage | null>(null)
+
+const [isCheckingCoverage, setIsCheckingCoverage] = useState(false)
 
   const [deliveryChecked, setDeliveryChecked] = useState(
     Boolean(data.cityPsgcCode)
   )
+
+  useEffect(() => {
+  async function checkLocationCoverage() {
+    if (!data.regionPsgcCode) {
+      setLocationCoverage(null)
+      setIsCheckingCoverage(false)
+      return
+    }
+
+    /*
+     * If this region has provinces, wait for the client
+     * to choose one before moving beyond region coverage.
+     *
+     * The RPC automatically checks the most specific
+     * geographic level currently available.
+     */
+    try {
+      setIsCheckingCoverage(true)
+
+      const result = await getDeliveryLocationCoverage(
+        data.regionPsgcCode,
+        data.provincePsgcCode,
+        data.cityPsgcCode || null
+      )
+
+      setLocationCoverage(result)
+    } catch (error) {
+      console.error("Failed to check delivery coverage:", error)
+      setLocationCoverage(null)
+    } finally {
+      setIsCheckingCoverage(false)
+    }
+  }
+
+  void checkLocationCoverage()
+}, [
+  data.regionPsgcCode,
+  data.provincePsgcCode,
+  data.cityPsgcCode,
+])
+
+useEffect(() => {
+  async function checkDelivery() {
+    if (!data.cityPsgcCode || !data.barangayPsgcCode) {
+      onDeliveryZoneChange(null)
+      setDeliveryChecked(false)
+      setIsCheckingDelivery(false)
+      return
+    }
+
+    try {
+      setIsCheckingDelivery(true)
+      setDeliveryChecked(false)
+
+      const result = await getDeliveryFeeForAddress(
+        data.cityPsgcCode,
+        data.barangayPsgcCode
+      )
+
+      onDeliveryZoneChange(result)
+    } catch (error) {
+      console.error("Failed to check delivery availability:", error)
+
+      onDeliveryZoneChange(null)
+    } finally {
+      setIsCheckingDelivery(false)
+      setDeliveryChecked(true)
+    }
+  }
+
+  void checkDelivery()
+}, [
+  data.cityPsgcCode,
+  data.barangayPsgcCode,
+  onDeliveryZoneChange,
+])
 
   useEffect(() => {
     async function loadRegions() {
@@ -164,34 +246,6 @@ export function DeliveryStep({
 
     void loadBarangays()
   }, [data.cityPsgcCode])
-
-  useEffect(() => {
-    async function checkDelivery() {
-      if (!data.cityPsgcCode) {
-        onDeliveryZoneChange(null)
-        setDeliveryChecked(false)
-        return
-      }
-
-      try {
-        setIsCheckingDelivery(true)
-        setDeliveryChecked(false)
-
-        const result = await getDeliveryFeeForCity(data.cityPsgcCode)
-
-        onDeliveryZoneChange(result)
-      } catch (error) {
-        console.error("Failed to check delivery availability:", error)
-
-        onDeliveryZoneChange(null)
-      } finally {
-        setIsCheckingDelivery(false)
-        setDeliveryChecked(true)
-      }
-    }
-
-    void checkDelivery()
-  }, [data.cityPsgcCode, onDeliveryZoneChange])
 
   function updateField<K extends keyof DeliveryAddressInput>(
     field: K,
@@ -589,80 +643,116 @@ export function DeliveryStep({
         </div>
       </section>
 
-      {data.cityPsgcCode && (
-        <section className="border-t pt-6">
-          {isCheckingDelivery ? (
-            <div className="flex items-center gap-3 rounded-xl border p-4">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      {data.regionPsgcCode && (
+  <section className="border-t pt-6">
+    {isCheckingCoverage || isCheckingDelivery ? (
+      <div className="flex items-center gap-3 rounded-xl border p-4">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
 
-              <div>
-                <p className="font-medium">Checking delivery availability...</p>
+        <div>
+          <p className="font-medium">Checking delivery coverage...</p>
 
-                <p className="text-sm text-muted-foreground">
-                  Please wait while we check your selected city.
-                </p>
-              </div>
+          <p className="text-sm text-muted-foreground">
+            Please wait while we check your selected location.
+          </p>
+        </div>
+      </div>
+    ) : data.barangayPsgcCode && deliveryChecked && deliveryZone ? (
+      <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+
+        <div className="flex-1">
+          <p className="font-semibold">Delivery Available</p>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            FJGA currently delivers to your selected location.
+          </p>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div>
+              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Delivery Zone
+              </p>
+
+              <p className="mt-1 font-medium">{deliveryZone.zoneName}</p>
             </div>
-          ) : deliveryChecked && deliveryZone ? (
-            <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
-              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
 
-              <div className="flex-1">
-                <p className="font-semibold">Delivery Available</p>
+            <div>
+              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Estimated Delivery Fee
+              </p>
 
-                <p className="mt-1 text-sm text-muted-foreground">
-                  FJGA currently delivers to your selected location.
-                </p>
-
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                      Delivery Zone
-                    </p>
-
-                    <p className="mt-1 font-medium">{deliveryZone.zoneName}</p>
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                      Estimated Delivery Fee
-                    </p>
-
-                    <p className="mt-1 font-medium">
-                      {new Intl.NumberFormat("en-PH", {
-                        style: "currency",
-                        currency: "PHP",
-                      }).format(deliveryZone.deliveryFee)}
-                    </p>
-                  </div>
-                </div>
-
-                <p className="mt-3 text-xs text-muted-foreground">
-                  The delivery fee will be confirmed when FJGA prepares your
-                  official quotation.
-                </p>
-              </div>
-
-              <Truck className="h-5 w-5 shrink-0 text-primary" />
+              <p className="mt-1 font-medium">
+                {new Intl.NumberFormat("en-PH", {
+                  style: "currency",
+                  currency: "PHP",
+                }).format(deliveryZone.deliveryFee)}
+              </p>
             </div>
-          ) : deliveryChecked ? (
-            <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
-              <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+          </div>
 
-              <div>
-                <p className="font-semibold text-destructive">
-                  Delivery Unavailable
-                </p>
+          <p className="mt-3 text-xs text-muted-foreground">
+            The delivery fee will be confirmed when FJGA prepares your
+            official quotation.
+          </p>
+        </div>
 
-                <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  FJGA currently does not have an active delivery zone for this
-                  city or municipality. Please select another delivery location.
-                </p>
-              </div>
-            </div>
-          ) : null}
-        </section>
-      )}
+        <Truck className="h-5 w-5 shrink-0 text-primary" />
+      </div>
+    ) : data.barangayPsgcCode && deliveryChecked ? (
+      <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+        <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+
+        <div>
+          <p className="font-semibold text-destructive">
+            Delivery Unavailable
+          </p>
+
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            FJGA currently does not deliver to this barangay. Please select
+            another delivery location or contact FJGA for assistance.
+          </p>
+        </div>
+      </div>
+    ) : locationCoverage && !locationCoverage.isAvailable ? (
+      <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+        <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+
+        <div>
+          <p className="font-semibold text-destructive">
+            Delivery Coverage Unavailable
+          </p>
+
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            {locationCoverage.coverageLevel === "region"
+              ? "FJGA currently does not have delivery coverage within this region. Please select another region."
+              : locationCoverage.coverageLevel === "province"
+                ? "FJGA currently does not have delivery coverage within this province. Please select another province."
+                : "FJGA currently does not deliver to this city or municipality. Please select another city or municipality."}
+          </p>
+        </div>
+      </div>
+    ) : locationCoverage?.isAvailable ? (
+      <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+
+        <div>
+          <p className="font-semibold">Delivery Coverage Available</p>
+
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            {locationCoverage.coverageLevel === "region"
+              ? regionHasProvinces
+                ? "FJGA has delivery coverage within this region. Select your province to continue."
+                : "FJGA has delivery coverage within this region. Select your city or municipality to continue."
+              : locationCoverage.coverageLevel === "province"
+                ? "FJGA has delivery coverage within this province. Select your city or municipality to continue."
+                : "FJGA delivers to this city or municipality. Select your barangay to confirm final delivery availability."}
+          </p>
+        </div>
+      </div>
+    ) : null}
+  </section>
+)}
     </div>
   )
 }

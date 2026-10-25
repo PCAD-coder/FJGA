@@ -1,20 +1,10 @@
 "use client"
 
-import {
-  CalendarDays,
-  FileText,
-  Package,
-  User,
-} from "lucide-react"
+import { CalendarDays, FileText, Package, User } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 
 import type {
   QuotationListItem,
@@ -26,9 +16,7 @@ interface QuotationCardProps {
   onView?: () => void
 }
 
-function getStatusLabel(
-  status: QuotationStatus
-): string {
+function getStatusLabel(status: QuotationStatus): string {
   switch (status) {
     case "draft":
       return "Draft"
@@ -66,12 +54,8 @@ function getStatusVariant(
   }
 }
 
-function getSourceLabel(
-  sourceType: QuotationListItem["sourceType"]
-): string {
-  return sourceType === "custom_request"
-    ? "Custom Request"
-    : "Catalog"
+function getSourceLabel(sourceType: QuotationListItem["sourceType"]): string {
+  return sourceType === "custom_request" ? "Custom Request" : "Catalog"
 }
 
 function formatCurrency(value: number): string {
@@ -85,7 +69,7 @@ function formatCurrency(value: number): string {
 
 function formatDate(value: string | null): string {
   if (!value) {
-    return "—"
+    return "â€”"
   }
 
   return new Intl.DateTimeFormat("en-PH", {
@@ -95,9 +79,7 @@ function formatDate(value: string | null): string {
   }).format(new Date(value))
 }
 
-function getRelevantDate(
-  quotation: QuotationListItem
-): {
+function getRelevantDate(quotation: QuotationListItem): {
   label: string
   value: string
 } {
@@ -136,25 +118,19 @@ export default function QuotationCard({
   const relevantDate = getRelevantDate(quotation)
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="min-w-0 overflow-hidden rounded-xl border border-border/80 shadow-none ring-0">
       <CardHeader className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-semibold">
-                {quotation.quotationNumber}
-              </span>
+              <span className="font-semibold">{quotation.quotationNumber}</span>
               {quotation.revisionNumber !== null && (
-  <Badge variant="outline">
-    Revision {quotation.revisionNumber}
-  </Badge>
-)}
+                <Badge variant="outline">
+                  Revision {quotation.revisionNumber}
+                </Badge>
+              )}
 
-              <Badge
-                variant={getStatusVariant(
-                  quotation.status
-                )}
-              >
+              <Badge variant={getStatusVariant(quotation.status)}>
                 {getStatusLabel(quotation.status)}
               </Badge>
             </div>
@@ -165,14 +141,10 @@ export default function QuotationCard({
           </div>
 
           <div className="text-left sm:text-right">
-            <p className="text-xs text-muted-foreground">
-              Quotation Total
-            </p>
+            <p className="text-xs text-muted-foreground">Quotation Total</p>
 
             <p className="text-xl font-semibold">
-              {formatCurrency(
-                quotation.totalAmount
-              )}
+              {formatCurrency(quotation.totalAmount)}
             </p>
           </div>
         </div>
@@ -184,9 +156,7 @@ export default function QuotationCard({
             <User className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
 
             <div className="min-w-0">
-              <p className="text-xs text-muted-foreground">
-                Client
-              </p>
+              <p className="text-xs text-muted-foreground">Client</p>
 
               <p className="truncate text-sm font-medium">
                 {quotation.clientName}
@@ -198,14 +168,10 @@ export default function QuotationCard({
             <Package className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
 
             <div className="min-w-0">
-              <p className="text-xs text-muted-foreground">
-                Source
-              </p>
+              <p className="text-xs text-muted-foreground">Source</p>
 
               <p className="text-sm font-medium">
-                {getSourceLabel(
-                  quotation.sourceType
-                )}
+                {getSourceLabel(quotation.sourceType)}
               </p>
             </div>
           </div>
@@ -214,12 +180,10 @@ export default function QuotationCard({
             <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
 
             <div className="min-w-0">
-              <p className="text-xs text-muted-foreground">
-                Request
-              </p>
+              <p className="text-xs text-muted-foreground">Request</p>
 
               <p className="text-sm font-medium">
-                {quotation.requestNumber ?? "—"}
+                {quotation.requestNumber ?? "â€”"}
               </p>
             </div>
           </div>
@@ -232,47 +196,33 @@ export default function QuotationCard({
                 {relevantDate.label}
               </p>
 
-              <p className="text-sm font-medium">
-                {relevantDate.value}
-              </p>
+              <p className="text-sm font-medium">{relevantDate.value}</p>
             </div>
           </div>
         </div>
 
         <div className="mt-5 grid gap-3 border-t pt-4 sm:grid-cols-3">
           <div>
-            <p className="text-xs text-muted-foreground">
-              Subtotal
-            </p>
+            <p className="text-xs text-muted-foreground">Subtotal</p>
 
             <p className="text-sm font-medium">
-              {formatCurrency(
-                quotation.subtotal
-              )}
+              {formatCurrency(quotation.subtotal)}
             </p>
           </div>
 
           <div>
-            <p className="text-xs text-muted-foreground">
-              Delivery Fee
-            </p>
+            <p className="text-xs text-muted-foreground">Delivery Fee</p>
 
             <p className="text-sm font-medium">
-              {formatCurrency(
-                quotation.deliveryFee
-              )}
+              {formatCurrency(quotation.deliveryFee)}
             </p>
           </div>
 
           <div>
-            <p className="text-xs text-muted-foreground">
-              Total
-            </p>
+            <p className="text-xs text-muted-foreground">Total</p>
 
             <p className="text-sm font-semibold">
-              {formatCurrency(
-                quotation.totalAmount
-              )}
+              {formatCurrency(quotation.totalAmount)}
             </p>
           </div>
         </div>

@@ -30,10 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
-import type {
-  InventoryMaterial,
-  InventoryUpdate,
-} from "../../types/inventory"
+import type { InventoryMaterial, InventoryUpdate } from "../../types/inventory"
 import type {
   DisposeExpiredBatchInput,
   EnableExpirationTrackingInput,
@@ -52,14 +49,9 @@ import { useCategories } from "../../hooks/use-categories"
 interface InventoryTableProps {
   materials: InventoryMaterial[]
 
-  onEditMaterial: (
-    id: string,
-    form: InventoryUpdate
-  ) => Promise<void>
+  onEditMaterial: (id: string, form: InventoryUpdate) => Promise<void>
 
-  onArchiveMaterial: (
-    id: string
-  ) => Promise<void>
+  onArchiveMaterial: (id: string) => Promise<void>
 
   onRestock: (input: {
     materialId: string
@@ -78,15 +70,10 @@ interface InventoryTableProps {
     input: EnableExpirationTrackingInput
   ) => Promise<unknown>
 
-  onDisposeExpiredBatch: (
-    input: DisposeExpiredBatchInput
-  ) => Promise<unknown>
+  onDisposeExpiredBatch: (input: DisposeExpiredBatchInput) => Promise<unknown>
 }
 
-function getStatus(
-  stock: number,
-  minimumStock: number
-) {
+function getStatus(stock: number, minimumStock: number) {
   if (stock === 0) {
     return {
       label: "Out of Stock",
@@ -123,8 +110,8 @@ export function InventoryTable({
 
   return (
     <>
-      <Card>
-        <CardContent className="pt-6">
+      <Card className="max-w-full min-w-0 gap-0 overflow-hidden rounded-xl border border-border/80 py-0 shadow-none ring-0">
+        <CardContent className="px-0 py-0 [&_[data-slot=badge]]:rounded-full [&_[data-slot=badge]]:text-[10px] [&_table]:min-w-[1000px] [&_td]:px-4 [&_td]:py-3 [&_th]:h-12 [&_th]:px-4 [&_th]:text-xs [&_thead]:bg-muted/50">
           <Table>
             <TableHeader>
               <TableRow>
@@ -139,9 +126,7 @@ export function InventoryTable({
                 <TableHead>Minimum Stock</TableHead>
                 <TableHead>Status</TableHead>
 
-                <TableHead className="w-[60px] text-right">
-                  Actions
-                </TableHead>
+                <TableHead className="w-[60px] text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
 
@@ -163,8 +148,7 @@ export function InventoryTable({
                   )
 
                   const category = categories.find(
-                    (item) =>
-                      item.category_name === material.category
+                    (item) => item.category_name === material.category
                   )
 
                   const categorySupportsExpiration =
@@ -180,8 +164,7 @@ export function InventoryTable({
                     material.unbatched_quantity > 0
 
                   const hasExpiredStock =
-                    material.tracks_expiration &&
-                    material.expired_quantity > 0
+                    material.tracks_expiration && material.expired_quantity > 0
 
                   const hasExpirationActions =
                     canEnableExpirationTracking ||
@@ -194,29 +177,17 @@ export function InventoryTable({
                         {material.material_name}
                       </TableCell>
 
-                      <TableCell>
-                        {material.category}
-                      </TableCell>
+                      <TableCell>{material.category}</TableCell>
 
-                      <TableCell>
-                        {material.series ?? "—"}
-                      </TableCell>
+                      <TableCell>{material.series ?? "\u2014"}</TableCell>
 
-                      <TableCell>
-                        {material.specification}
-                      </TableCell>
+                      <TableCell>{material.specification}</TableCell>
 
-                      <TableCell>
-                        {material.thickness ?? "—"}
-                      </TableCell>
+                      <TableCell>{material.thickness ?? "\u2014"}</TableCell>
 
-                      <TableCell>
-                        {material.size}
-                      </TableCell>
+                      <TableCell>{material.size}</TableCell>
 
-                      <TableCell>
-                        {material.unit}
-                      </TableCell>
+                      <TableCell>{material.unit}</TableCell>
 
                       <TableCell>
                         <div className="space-y-1">
@@ -237,8 +208,8 @@ export function InventoryTable({
                               {material.expiring_soon_quantity > 0 && (
                                 <div>
                                   <Badge variant="secondary">
-                                    {material.expiring_soon_quantity}{" "}
-                                    expiring soon
+                                    {material.expiring_soon_quantity} expiring
+                                    soon
                                   </Badge>
                                 </div>
                               )}
@@ -247,14 +218,10 @@ export function InventoryTable({
                         </div>
                       </TableCell>
 
-                      <TableCell>
-                        {material.minimum_stock}
-                      </TableCell>
+                      <TableCell>{material.minimum_stock}</TableCell>
 
                       <TableCell>
-                        <Badge variant={status.variant}>
-                          {status.label}
-                        </Badge>
+                        <Badge variant={status.variant}>{status.label}</Badge>
                       </TableCell>
 
                       <TableCell className="text-right">
@@ -271,10 +238,7 @@ export function InventoryTable({
                             </Button>
                           </DropdownMenuTrigger>
 
-                          <DropdownMenuContent
-                            align="end"
-                            className="w-60"
-                          >
+                          <DropdownMenuContent align="end" className="w-60">
                             <DropdownMenuLabel>
                               Material Actions
                             </DropdownMenuLabel>
@@ -286,9 +250,7 @@ export function InventoryTable({
                               onRestock={onRestock}
                               trigger={
                                 <DropdownMenuItem
-                                  onSelect={(event) =>
-                                    event.preventDefault()
-                                  }
+                                  onSelect={(event) => event.preventDefault()}
                                 >
                                   <PackagePlus className="mr-2 h-4 w-4" />
                                   Restock
@@ -301,9 +263,7 @@ export function InventoryTable({
                               onSubmit={onEditMaterial}
                               trigger={
                                 <DropdownMenuItem
-                                  onSelect={(event) =>
-                                    event.preventDefault()
-                                  }
+                                  onSelect={(event) => event.preventDefault()}
                                 >
                                   <Pencil className="mr-2 h-4 w-4" />
                                   Edit Material
@@ -311,9 +271,7 @@ export function InventoryTable({
                               }
                             />
 
-                            {hasExpirationActions && (
-                              <DropdownMenuSeparator />
-                            )}
+                            {hasExpirationActions && <DropdownMenuSeparator />}
 
                             {canEnableExpirationTracking && (
                               <EnableExpirationTrackingDialog
@@ -321,9 +279,7 @@ export function InventoryTable({
                                 onSubmit={onEnableExpirationTracking}
                                 trigger={
                                   <DropdownMenuItem
-                                    onSelect={(event) =>
-                                      event.preventDefault()
-                                    }
+                                    onSelect={(event) => event.preventDefault()}
                                   >
                                     <CalendarClock className="mr-2 h-4 w-4" />
                                     Enable Expiration Tracking
@@ -349,9 +305,7 @@ export function InventoryTable({
                                 onDispose={onDisposeExpiredBatch}
                                 trigger={
                                   <DropdownMenuItem
-                                    onSelect={(event) =>
-                                      event.preventDefault()
-                                    }
+                                    onSelect={(event) => event.preventDefault()}
                                     className="text-destructive focus:text-destructive"
                                   >
                                     <Trash2 className="mr-2 h-4 w-4" />
@@ -368,9 +322,7 @@ export function InventoryTable({
                               onArchive={onArchiveMaterial}
                               trigger={
                                 <DropdownMenuItem
-                                  onSelect={(event) =>
-                                    event.preventDefault()
-                                  }
+                                  onSelect={(event) => event.preventDefault()}
                                   className="text-destructive focus:text-destructive"
                                 >
                                   <Archive className="mr-2 h-4 w-4" />

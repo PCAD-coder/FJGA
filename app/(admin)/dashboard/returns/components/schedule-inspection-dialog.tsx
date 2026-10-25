@@ -17,9 +17,7 @@ import { Button } from "@/components/ui/button"
 interface Props {
   open: boolean
 
-  onOpenChange: (
-    open: boolean
-  ) => void
+  onOpenChange: (open: boolean) => void
 
   onConfirm: (
     date: string,
@@ -37,26 +35,16 @@ export default function ScheduleInspectionDialog({
   onConfirm,
   requestTitle,
 }: Props) {
-  const [date, setDate] =
-    useState("")
+  const [date, setDate] = useState("")
 
-  const [time, setTime] =
-    useState("")
+  const [time, setTime] = useState("")
 
-  const [assignedStaff,
-    setAssignedStaff] =
-    useState("")
+  const [assignedStaff, setAssignedStaff] = useState("")
 
-  const [notes, setNotes] =
-    useState("")
+  const [notes, setNotes] = useState("")
 
   const handleSchedule = () => {
-    onConfirm(
-      date,
-      time,
-      assignedStaff,
-      notes
-    )
+    onConfirm(date, time, assignedStaff, notes)
 
     setDate("")
     setTime("")
@@ -65,104 +53,55 @@ export default function ScheduleInspectionDialog({
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={
-        onOpenChange
-      }
-    >
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-
         <DialogHeader>
-
-          <DialogTitle>
-            Schedule Inspection
-          </DialogTitle>
+          <DialogTitle>Schedule Inspection</DialogTitle>
 
           <DialogDescription>
-            Set an inspection schedule
-            for this return request.
+            Set an inspection schedule for this return request.
           </DialogDescription>
-
         </DialogHeader>
 
         <div className="space-y-4">
-
           <div className="rounded-lg border p-4">
+            <p className="text-sm text-muted-foreground">Request</p>
 
-            <p className="text-sm text-muted-foreground">
-              Request
-            </p>
-
-            <p className="font-medium">
-              {requestTitle}
-            </p>
-
+            <p className="font-medium">{requestTitle}</p>
           </div>
 
           <Input
             type="date"
             value={date}
-            onChange={(e) =>
-              setDate(
-                e.target.value
-              )
-            }
+            onChange={(e) => setDate(e.target.value)}
           />
 
           <Input
             type="time"
             value={time}
-            onChange={(e) =>
-              setTime(
-                e.target.value
-              )
-            }
+            onChange={(e) => setTime(e.target.value)}
           />
 
           <Input
             placeholder="Assigned Staff (optional)"
             value={assignedStaff}
-            onChange={(e) =>
-              setAssignedStaff(
-                e.target.value
-              )
-            }
+            onChange={(e) => setAssignedStaff(e.target.value)}
           />
 
           <Input
             placeholder="Inspection Notes"
             value={notes}
-            onChange={(e) =>
-              setNotes(
-                e.target.value
-              )
-            }
+            onChange={(e) => setNotes(e.target.value)}
           />
-
         </div>
 
         <DialogFooter>
-
-          <Button
-            variant="outline"
-            onClick={() =>
-              onOpenChange(false)
-            }
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
 
-          <Button
-            onClick={
-              handleSchedule
-            }
-          >
-            Schedule
-          </Button>
-
+          <Button onClick={handleSchedule}>Schedule</Button>
         </DialogFooter>
-
       </DialogContent>
     </Dialog>
   )

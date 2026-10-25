@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { useEffect, useState } from "react"
 
 import type { Delivery } from "../types/delivery"
@@ -32,7 +34,6 @@ export default function ScheduleDeliveryDialog({
   onOpenChange,
   onSaved,
 }: ScheduleDeliveryDialogProps) {
-
   // Get today's date in local time
   const getToday = () => {
     const date = new Date()
@@ -56,9 +57,7 @@ export default function ScheduleDeliveryDialog({
 
   const today = getToday()
 
-  const [currentTime, setCurrentTime] = useState(
-    getCurrentTime()
-  )
+  const [currentTime, setCurrentTime] = useState(getCurrentTime())
 
   const [scheduledDate, setScheduledDate] = useState("")
   const [scheduledTime, setScheduledTime] = useState("")
@@ -76,10 +75,7 @@ export default function ScheduleDeliveryDialog({
 
     updateCurrentTime()
 
-    const interval = setInterval(
-      updateCurrentTime,
-      60 * 1000
-    )
+    const interval = setInterval(updateCurrentTime, 60 * 1000)
 
     return () => clearInterval(interval)
   }, [])
@@ -90,25 +86,15 @@ export default function ScheduleDeliveryDialog({
       return
     }
 
-    setScheduledDate(
-      delivery.deliveryDate ?? ""
-    )
+    setScheduledDate(delivery.deliveryDate ?? "")
 
-    setScheduledTime(
-      delivery.deliveryTime ?? ""
-    )
+    setScheduledTime(delivery.deliveryTime ?? "")
 
-    setAssignedDriver(
-      delivery.assignedDriver ?? ""
-    )
+    setAssignedDriver(delivery.assignedDriver ?? "")
 
-    setAssignedTruck(
-      delivery.assignedTruck ?? ""
-    )
+    setAssignedTruck(delivery.assignedTruck ?? "")
 
-    setDeliveryNotes(
-      delivery.deliveryNotes ?? ""
-    )
+    setDeliveryNotes(delivery.deliveryNotes ?? "")
 
     setError(null)
   }, [delivery, open])
@@ -117,9 +103,7 @@ export default function ScheduleDeliveryDialog({
     return null
   }
 
-  const handleDateChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newDate = event.target.value
 
     setScheduledDate(newDate)
@@ -127,11 +111,7 @@ export default function ScheduleDeliveryDialog({
 
     // If changing to today and the currently selected
     // time is already in the past, clear it.
-    if (
-      newDate === today &&
-      scheduledTime &&
-      scheduledTime < currentTime
-    ) {
+    if (newDate === today && scheduledTime && scheduledTime < currentTime) {
       setScheduledTime("")
     }
   }
@@ -153,10 +133,7 @@ export default function ScheduleDeliveryDialog({
     }
 
     // If delivery is today, make sure the time isn't past
-    if (
-      scheduledDate === today &&
-      scheduledTime < currentTime
-    ) {
+    if (scheduledDate === today && scheduledTime < currentTime) {
       setError("Delivery time cannot be in the past.")
       return
     }
@@ -166,30 +143,28 @@ export default function ScheduleDeliveryDialog({
       setError(null)
 
       await scheduleDelivery({
-  deliveryId: delivery.id,
-  deliveryType: delivery.deliveryType,
-  scheduledDate,
-  scheduledTime,
-  assignedDriver:
-    assignedDriver.trim() || null,
-  assignedTruck:
-    assignedTruck.trim() || null,
-  deliveryNotes:
-    deliveryNotes.trim() || null,
-})
+        deliveryId: delivery.id,
+        deliveryType: delivery.deliveryType,
+        scheduledDate,
+        scheduledTime,
+        assignedDriver: assignedDriver.trim() || null,
+        assignedTruck: assignedTruck.trim() || null,
+        deliveryNotes: deliveryNotes.trim() || null,
+      })
 
+      toast.success("Delivery schedule saved successfully.")
       onOpenChange(false)
       onSaved()
     } catch (error) {
-      console.error(
-        "Failed to schedule delivery:",
-        error
-      )
-
-      setError(
+      toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to schedule delivery"
+          : "Unable to save delivery changes."
+      )
+      console.error("Failed to schedule delivery:", error)
+
+      setError(
+        error instanceof Error ? error.message : "Failed to schedule delivery"
       )
     } finally {
       setSaving(false)
@@ -197,36 +172,23 @@ export default function ScheduleDeliveryDialog({
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
-
         <DialogHeader>
-          <DialogTitle>
-            Schedule Delivery
-          </DialogTitle>
+          <DialogTitle>Schedule Delivery</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-5">
-
           {/* PROJECT */}
           <div>
-            <p className="text-sm text-muted-foreground">
-              Project
-            </p>
+            <p className="text-sm text-muted-foreground">Project</p>
 
-            <p className="font-medium">
-              {delivery.projectName}
-            </p>
+            <p className="font-medium">{delivery.projectName}</p>
           </div>
 
           {/* DATE */}
           <div className="space-y-2">
-            <Label htmlFor="delivery-date">
-              Delivery Date
-            </Label>
+            <Label htmlFor="delivery-date">Delivery Date</Label>
 
             <Input
               id="delivery-date"
@@ -239,23 +201,15 @@ export default function ScheduleDeliveryDialog({
 
           {/* TIME */}
           <div className="space-y-2">
-            <Label htmlFor="delivery-time">
-              Delivery Time
-            </Label>
+            <Label htmlFor="delivery-time">Delivery Time</Label>
 
             <Input
               id="delivery-time"
               type="time"
-              min={
-                scheduledDate === today
-                  ? currentTime
-                  : undefined
-              }
+              min={scheduledDate === today ? currentTime : undefined}
               value={scheduledTime}
               onChange={(event) => {
-                setScheduledTime(
-                  event.target.value
-                )
+                setScheduledTime(event.target.value)
                 setError(null)
               }}
             />
@@ -263,89 +217,58 @@ export default function ScheduleDeliveryDialog({
 
           {/* TRUCK */}
           <div className="space-y-2">
-            <Label htmlFor="assigned-truck">
-              Assigned Truck
-            </Label>
+            <Label htmlFor="assigned-truck">Assigned Truck</Label>
 
             <Input
               id="assigned-truck"
               placeholder="e.g. Truck 01"
               value={assignedTruck}
-              onChange={(event) =>
-                setAssignedTruck(
-                  event.target.value
-                )
-              }
+              onChange={(event) => setAssignedTruck(event.target.value)}
             />
           </div>
 
           {/* DRIVER */}
           <div className="space-y-2">
-            <Label htmlFor="assigned-driver">
-              Assigned Driver
-            </Label>
+            <Label htmlFor="assigned-driver">Assigned Driver</Label>
 
             <Input
               id="assigned-driver"
               placeholder="e.g. Juan Dela Cruz"
               value={assignedDriver}
-              onChange={(event) =>
-                setAssignedDriver(
-                  event.target.value
-                )
-              }
+              onChange={(event) => setAssignedDriver(event.target.value)}
             />
           </div>
 
           {/* NOTES */}
           <div className="space-y-2">
-            <Label htmlFor="delivery-notes">
-              Delivery Notes
-            </Label>
+            <Label htmlFor="delivery-notes">Delivery Notes</Label>
 
             <Textarea
               id="delivery-notes"
               placeholder="Add delivery instructions or notes..."
               value={deliveryNotes}
-              onChange={(event) =>
-                setDeliveryNotes(
-                  event.target.value
-                )
-              }
+              onChange={(event) => setDeliveryNotes(event.target.value)}
               rows={4}
             />
           </div>
 
           {/* ERROR */}
-          {error && (
-            <p className="text-sm text-destructive">
-              {error}
-            </p>
-          )}
-
+          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
 
         <DialogFooter>
           <Button
             variant="outline"
-            onClick={() =>
-              onOpenChange(false)
-            }
+            onClick={() => onOpenChange(false)}
             disabled={saving}
           >
             Cancel
           </Button>
 
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving
-              ? "Saving..."
-              : "Save Schedule"}
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? "Saving..." : "Save Schedule"}
           </Button>
         </DialogFooter>
-
       </DialogContent>
     </Dialog>
   )

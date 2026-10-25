@@ -8,7 +8,17 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import { CheckCircle2, Circle } from "lucide-react"
+import { ArrowLeft, CheckCircle2, Circle } from "lucide-react"
+import { TERMS_SECTIONS, TERMS_VERSION } from "@/lib/terms"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog"
 
 export default function SignUp() {
   const supabase = createClient()
@@ -22,6 +32,8 @@ export default function SignUp() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
+  const [termsOpen, setTermsOpen] = useState(false)
 
   const passwordRequirements = [
     { label: "At least 12 characters", met: password.length >= 12 },
@@ -37,6 +49,10 @@ export default function SignUp() {
   const passwordsMatch = password.length > 0 && password === confirmPassword
 
   const handleGoogleSignIn = async () => {
+    if (!acceptedTerms) {
+      setError("Please accept the Terms and Conditions before continuing.")
+      return
+    }
     setLoading(true)
 
     const { error } = await supabase.auth.signInWithOAuth({
@@ -66,6 +82,13 @@ export default function SignUp() {
     e.preventDefault()
 
     setError("")
+
+    if (!acceptedTerms) {
+      setError(
+        "Please accept the Terms and Conditions before creating an account."
+      )
+      return
+    }
 
     if (!firstName.trim() || !lastName.trim()) {
       setError("Please enter your first and last name.")
@@ -115,6 +138,8 @@ export default function SignUp() {
             first_name: firstName.trim(),
             last_name: lastName.trim(),
             full_name: `${firstName.trim()} ${lastName.trim()}`,
+            terms_version: TERMS_VERSION,
+            terms_accepted_at: new Date().toISOString(),
           },
         },
       })
@@ -157,14 +182,15 @@ export default function SignUp() {
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className="relative flex min-h-screen bg-zinc-50 px-4 py-16 md:py-32 dark:bg-transparent"
+      className="relative flex min-h-screen items-center justify-center bg-background px-4 py-20 sm:px-6 sm:py-16"
     >
       <Button
         variant="ghost"
-        className="absolute top-4 left-4"
+        className="absolute top-4 left-4 gap-2 text-muted-foreground sm:left-6"
         onClick={() => router.back()}
       >
-        ← Back
+        <ArrowLeft aria-hidden="true" className="size-4" />
+        Back
       </Button>
 
       <motion.form
@@ -172,27 +198,32 @@ export default function SignUp() {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2, duration: 0.4 }}
-        className="m-auto h-fit w-full max-w-sm overflow-hidden rounded-[calc(var(--radius)+.125rem)] border bg-muted shadow-md shadow-zinc-950/5 dark:[--color-muted:var(--color-zinc-900)]"
+        className="w-full max-w-[460px] overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm"
       >
-        <div className="-m-px rounded-[calc(var(--radius)+.125rem)] border bg-card p-8 pb-6">
+        <div className="px-6 pt-7 pb-6 sm:px-8 sm:pt-8">
           <div className="text-center">
             <Link href="/" aria-label="go home" className="mx-auto block w-fit">
               <LogoIcon />
             </Link>
-            <h1 className="mt-4 mb-1 text-xl font-semibold">
-              Create your FJGA Account
+            <h1 className="mt-5 text-2xl font-semibold tracking-tight">
+              Create your account
             </h1>
-            <p className="text-sm">Welcome! Create an account to get started</p>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Join FJGA to order pieces and bring your ideas to life.
+            </p>
           </div>
 
-          <div className="mt-6 space-y-6">
+          <div className="mt-6 space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="firstname" className="block text-sm">
-                  Firstname
+                  First name
                 </Label>
                 <Input
                   id="firstname"
+                  autoComplete="given-name"
+                  placeholder="First name"
+                  className="h-10 rounded-lg bg-background/50 shadow-none"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   required
@@ -200,10 +231,13 @@ export default function SignUp() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastname" className="block text-sm">
-                  Lastname
+                  Last name
                 </Label>
                 <Input
                   id="lastname"
+                  autoComplete="family-name"
+                  placeholder="Last name"
+                  className="h-10 rounded-lg bg-background/50 shadow-none"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   required
@@ -213,10 +247,13 @@ export default function SignUp() {
 
             <div className="space-y-2">
               <Label htmlFor="email" className="block text-sm">
-                Email Address
+                Email address
               </Label>
               <Input
                 id="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                className="h-10 rounded-lg bg-background/50 shadow-none"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -224,7 +261,7 @@ export default function SignUp() {
               />
             </div>
 
-            <div className="space-y-0.5">
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="pwd" className="text-sm">
                   Password
@@ -239,11 +276,11 @@ export default function SignUp() {
                 minLength={12}
                 aria-describedby="password-requirements"
                 required
-                className="input sz-md variant-mixed"
+                className="h-10 rounded-lg bg-background/50 shadow-none"
               />
               <ul
                 id="password-requirements"
-                className="space-y-1 pt-2 text-xs"
+                className="grid gap-x-3 gap-y-1 pt-1 text-[10px] leading-4 sm:grid-cols-2"
                 aria-label="Password requirements"
               >
                 {passwordRequirements.map(({ label, met }) => {
@@ -251,9 +288,9 @@ export default function SignUp() {
                   return (
                     <li
                       key={label}
-                      className={`flex items-center gap-2 ${met ? "text-green-700 dark:text-green-400" : "text-muted-foreground"}`}
+                      className={`flex items-center gap-1.5 ${met ? "text-green-700 dark:text-green-400" : "text-muted-foreground"}`}
                     >
-                      <Icon className="size-4 shrink-0" aria-hidden="true" />
+                      <Icon className="size-3 shrink-0" aria-hidden="true" />
                       <span>
                         <span className="sr-only">
                           {met ? "Met: " : "Not met: "}
@@ -267,7 +304,7 @@ export default function SignUp() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPwd" className="block text-sm">
-                Confirm Password
+                Confirm password
               </Label>
               <Input
                 id="confirmPwd"
@@ -276,44 +313,78 @@ export default function SignUp() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 autoComplete="new-password"
                 required
-                className="input sz-md variant-mixed"
+                className="h-10 rounded-lg bg-background/50 shadow-none"
               />
             </div>
             <p
-              className={`flex items-center gap-2 text-xs ${passwordsMatch ? "text-green-700 dark:text-green-400" : "text-muted-foreground"}`}
+              className={`-mt-1 flex items-center gap-1.5 text-[11px] ${passwordsMatch ? "text-green-700 dark:text-green-400" : "text-muted-foreground"}`}
             >
               {passwordsMatch ? (
-                <CheckCircle2 className="size-4" aria-hidden="true" />
+                <CheckCircle2 className="size-3" aria-hidden="true" />
               ) : (
-                <Circle className="size-4" aria-hidden="true" />
+                <Circle className="size-3" aria-hidden="true" />
               )}
               {passwordsMatch ? "Passwords match" : "Passwords must match"}
             </p>
-            {error && <p className="text-sm text-red-500">{error}</p>}
+            <div className="flex items-start gap-2.5 pt-1">
+              <input
+                id="accept-terms"
+                type="checkbox"
+                required
+                checked={acceptedTerms}
+                onChange={(event) => setAcceptedTerms(event.target.checked)}
+                disabled={loading}
+                className="mt-1 size-4 shrink-0 cursor-pointer accent-primary"
+              />
+              <label
+                htmlFor="accept-terms"
+                className="text-xs leading-6 text-muted-foreground"
+              >
+                I have read and agree to the{" "}
+                <button
+                  type="button"
+                  onClick={() => setTermsOpen(true)}
+                  aria-haspopup="dialog"
+                  className="font-medium text-primary underline underline-offset-4"
+                >
+                  Terms and Conditions
+                </button>
+                .
+              </label>
+            </div>
+            {error && (
+              <p
+                role="alert"
+                className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-xs leading-5 text-destructive"
+              >
+                {error}
+              </p>
+            )}
 
             <Button
               type="submit"
-              className="w-full"
-              disabled={loading || !isPasswordValid || !passwordsMatch}
+              className="h-11 w-full rounded-lg font-medium shadow-none"
+              disabled={
+                loading || !isPasswordValid || !passwordsMatch || !acceptedTerms
+              }
             >
               {loading ? "Creating Account..." : "Create Account"}
             </Button>
           </div>
 
-          <div className="my-6 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-            <hr className="border-dashed" />
-            <span className="text-xs text-muted-foreground">
-              Or continue With
-            </span>
-            <hr className="border-dashed" />
+          <div className="my-5 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+            <hr className="border-border/70" />
+            <span className="text-xs text-muted-foreground">or</span>
+            <hr className="border-border/70" />
           </div>
 
           <div className="grid grid-cols-1 gap-3">
             <Button
               type="button"
               variant="outline"
+              className="h-11 w-full rounded-lg bg-transparent shadow-none"
               onClick={handleGoogleSignIn}
-              disabled={loading}
+              disabled={loading || !acceptedTerms}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -338,20 +409,76 @@ export default function SignUp() {
                   d="M130.55 50.479c24.514 0 41.05 10.589 50.479 19.438l36.844-35.974C195.245 12.91 165.798 0 130.55 0C79.49 0 35.393 29.301 13.925 71.947l42.211 32.783c10.59-31.477 39.891-54.251 74.414-54.251"
                 ></path>
               </svg>
-              <span>Google</span>
+              <span>Continue with Google</span>
             </Button>
           </div>
         </div>
 
-        <div className="p-3">
-          <p className="text-center text-sm text-accent-foreground">
-            Have an account ?
-            <Button asChild variant="link" className="px-2">
+        <div className="border-t border-border/60 bg-muted/30 px-6 py-4">
+          <p className="text-center text-xs text-muted-foreground">
+            Already have an account?
+            <Button
+              asChild
+              variant="link"
+              className="h-auto px-1.5 py-0 text-xs font-semibold"
+            >
               <Link href="/login">Log In</Link>
             </Button>
           </p>
         </div>
       </motion.form>
+      <Dialog open={termsOpen} onOpenChange={setTermsOpen}>
+        <DialogContent className="flex max-h-[85dvh] flex-col overflow-hidden sm:max-w-2xl">
+          <DialogHeader className="shrink-0 pr-8">
+            <DialogTitle>Terms and Conditions</DialogTitle>
+            <DialogDescription>
+              FJ Glass and Aluminum · Version {TERMS_VERSION}. Please read
+              before accepting.
+            </DialogDescription>
+          </DialogHeader>
+          <div
+            tabIndex={0}
+            aria-label="Terms and Conditions content"
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-3 focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            {TERMS_SECTIONS.map((section, index) => (
+              <section
+                key={section.title}
+                className="border-b py-4 last:border-0"
+              >
+                <h2 className="text-sm font-semibold">
+                  {index + 1}. {section.title}
+                </h2>
+                {section.paragraphs.map((paragraph) => (
+                  <p
+                    key={paragraph}
+                    className="mt-3 text-sm leading-7 text-muted-foreground"
+                  >
+                    {paragraph}
+                  </p>
+                ))}
+              </section>
+            ))}
+          </div>
+          <DialogFooter className="shrink-0">
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Close
+              </Button>
+            </DialogClose>
+            <Button
+              type="button"
+              disabled={loading}
+              onClick={() => {
+                setAcceptedTerms(true)
+                setTermsOpen(false)
+              }}
+            >
+              I Agree
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.section>
   )
 }

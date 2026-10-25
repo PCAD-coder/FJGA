@@ -1,12 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import {
-  ArrowRight,
-  CalendarDays,
-  Package,
-  PhilippinePeso,
-} from "lucide-react"
+import { ArrowRight, CalendarDays, Package, PhilippinePeso } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -32,22 +27,23 @@ export default function OrderCard({ order }: Props) {
   const isCustomOrder = order.orderType === "custom"
 
   return (
-    <div className="group overflow-hidden rounded-xl border bg-card shadow-sm transition-shadow hover:shadow-md">
-      <div className="flex flex-col gap-5 p-5 sm:flex-row">
+    <div className="group flex h-full flex-col overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm transition-shadow hover:shadow-md">
+      <div className="flex h-full flex-col">
         {/* Image */}
-        <div className="relative h-48 w-full shrink-0 overflow-hidden rounded-lg bg-muted sm:h-40 sm:w-40">
+        <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden border-b border-border/50 bg-muted">
           <Image
             src={order.image}
             alt={order.productName}
             fill
-            className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover"
           />
 
           {isCustomOrder && (
-            <div className="absolute bottom-2 left-2">
+            <div className="absolute bottom-3 left-3">
               <Badge
                 variant="secondary"
-                className="bg-background/90 text-xs shadow-sm backdrop-blur-sm"
+                className="bg-background/90 px-2 py-1 text-[10px] backdrop-blur-sm"
               >
                 Reference Image
               </Badge>
@@ -56,23 +52,19 @@ export default function OrderCard({ order }: Props) {
         </div>
 
         {/* Content */}
-        <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 flex-1 flex-col p-4">
           {/* Header */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0 space-y-2">
+          <div className="flex flex-col items-start gap-2">
+            <div className="min-w-0 space-y-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="truncate text-lg font-semibold tracking-tight">
+                <h2 className="text-base leading-6 font-semibold tracking-tight wrap-break-word">
                   {order.productName}
                 </h2>
 
-                {isCustomOrder && (
-                  <Badge variant="outline">
-                    Custom Order
-                  </Badge>
-                )}
+                {isCustomOrder && <Badge variant="outline">Custom Order</Badge>}
               </div>
 
-              <p className="text-sm font-medium text-muted-foreground">
+              <p className="text-xs font-medium text-muted-foreground">
                 {order.orderNumber}
               </p>
             </div>
@@ -81,55 +73,53 @@ export default function OrderCard({ order }: Props) {
           </div>
 
           {/* Metadata */}
-          <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4" />
+              <CalendarDays className="size-3.5" />
               <span>{order.orderedAt}</span>
             </div>
 
             <div className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              <span>
-                Qty {order.quantity}
-              </span>
+              <Package className="size-3.5" />
+              <span>Qty {order.quantity}</span>
             </div>
           </div>
 
           {/* Current progress */}
-          <div className="mt-5 rounded-lg border bg-muted/30 p-4">
-            <div className="mb-3 flex items-center justify-between gap-4">
+          <div className="mt-4 mb-4 rounded-lg bg-muted/50 p-3">
+            <div className="mb-1.5 flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
                   Current Stage
                 </p>
 
-                <p className="mt-1 text-sm font-semibold">
+                <p className="mt-0.5 text-xs font-medium">
                   {order.currentStage}
                 </p>
               </div>
 
-              <span className="text-sm font-medium text-muted-foreground">
+              <span className="text-xs font-medium text-muted-foreground">
                 {order.progressPercentage}%
               </span>
             </div>
 
-            <Progress value={order.progressPercentage} />
+            <Progress value={order.progressPercentage} className="h-1.5" />
           </div>
 
           {/* Footer */}
-          <div className="mt-5 flex flex-col gap-4 border-t pt-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t pt-4">
             <div>
-              <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <div className="flex items-center gap-1.5 text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
                 <PhilippinePeso className="h-3.5 w-3.5" />
                 Order Total
               </div>
 
-              <p className="mt-1 text-xl font-semibold tracking-tight">
+              <p className="mt-1 text-lg font-semibold tracking-tight tabular-nums">
                 {formatCurrency(order.total)}
               </p>
 
               {order.deliveryFee > 0 && (
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
                   Includes {formatCurrency(order.deliveryFee)} delivery fee
                 </p>
               )}
@@ -138,7 +128,7 @@ export default function OrderCard({ order }: Props) {
             <div className="flex items-center gap-2">
               <OrderDetailsDialog order={order} />
 
-              <ArrowRight className="hidden h-4 w-4 text-muted-foreground sm:block" />
+              <ArrowRight className="hidden size-3.5 text-muted-foreground xl:block" />
             </div>
           </div>
         </div>

@@ -1,12 +1,13 @@
-"use client";
+"use client"
 
-import { Card, CardContent } from "@/components/ui/card";
+import { DashboardCard } from "@/components/dashboard_cards"
+import { Package, Wrench, Percent, ChartNoAxesCombined } from "lucide-react"
 
 interface PricingKPIsProps {
-  totalMaterials: number;
-  totalServices: number;
-  averageMaterialMarkup: number;
-  averageLaborMarkup: number;
+  totalMaterials: number
+  totalServices: number
+  averageMaterialMarkup: number
+  averageLaborMarkup: number
 }
 
 export default function PricingKPIs({
@@ -16,54 +17,35 @@ export default function PricingKPIs({
   averageLaborMarkup,
 }: PricingKPIsProps) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground">
-            Materials
-          </p>
-
-          <h2 className="text-3xl font-bold">
-            {totalMaterials}
-          </h2>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground">
-            Labor Services
-          </p>
-
-          <h2 className="text-3xl font-bold">
-            {totalServices}
-          </h2>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground">
-            Avg Material Markup
-          </p>
-
-          <h2 className="text-3xl font-bold">
-            {averageMaterialMarkup.toFixed(1)}%
-          </h2>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground">
-            Avg Labor Markup
-          </p>
-
-          <h2 className="text-3xl font-bold">
-            {averageLaborMarkup.toFixed(1)}%
-          </h2>
-        </CardContent>
-      </Card>
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-3">
+      <DashboardCard
+        title="Materials"
+        value={String(totalMaterials)}
+        description="Materials with pricing"
+        icon={Package}
+        color="text-blue-600 dark:text-blue-400"
+      />
+      <DashboardCard
+        title="Labor Services"
+        value={String(totalServices)}
+        description="Available labor services"
+        icon={Wrench}
+        color="text-emerald-600 dark:text-emerald-400"
+      />
+      <DashboardCard
+        title="Avg Material Markup"
+        value={`${averageMaterialMarkup.toFixed(1)}%`}
+        description="Average across material prices"
+        icon={Percent}
+        color="text-amber-600 dark:text-amber-400"
+      />
+      <DashboardCard
+        title="Avg Labor Markup"
+        value={`${averageLaborMarkup.toFixed(1)}%`}
+        description="Average across labor services"
+        icon={ChartNoAxesCombined}
+        color="text-primary"
+      />
     </div>
-  );
+  )
 }

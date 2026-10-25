@@ -11,24 +11,23 @@ interface FeedbackCardProps {
   feedback: Feedback
 }
 
-export default function FeedbackCard({
-  feedback,
-}: FeedbackCardProps) {
+export default function FeedbackCard({ feedback }: FeedbackCardProps) {
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between gap-4">
+    <Card className="gap-0 overflow-hidden rounded-xl border border-border/80 py-0 shadow-none ring-0">
+      <CardContent className="p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h3 className="font-semibold">
+            <h3 className="text-sm font-semibold wrap-break-word">
               {feedback.projectName}
             </h3>
 
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs leading-5 text-muted-foreground">
               Order: {feedback.orderNumber}
             </p>
           </div>
 
           <Badge
+            className="rounded-full px-2.5 py-1 text-[10px] capitalize"
             variant={
               feedback.status === "published"
                 ? "default"
@@ -41,34 +40,30 @@ export default function FeedbackCard({
           </Badge>
         </div>
 
-        <div className="mt-4 flex items-center gap-1">
-          {Array.from({ length: 5 }).map(
-            (_, index) => {
-              const starNumber = index + 1
+        <div className="mt-4 flex items-center gap-1 rounded-lg bg-muted/40 px-3 py-2.5">
+          {Array.from({ length: 5 }).map((_, index) => {
+            const starNumber = index + 1
 
-              return (
-                <Star
-                  key={starNumber}
-                  className={`h-5 w-5 ${
-                    starNumber <= feedback.rating
-                      ? "fill-yellow-400 text-yellow-400"
-                      : "text-muted-foreground"
-                  }`}
-                />
-              )
-            }
-          )}
+            return (
+              <Star
+                key={starNumber}
+                className={`size-4 ${
+                  starNumber <= feedback.rating
+                    ? "fill-amber-400 text-amber-400"
+                    : "text-muted-foreground/35"
+                }`}
+              />
+            )
+          })}
         </div>
 
-        <p className="mt-4 text-sm">
+        <p className="mt-4 text-sm leading-7 wrap-break-word">
           {feedback.comment}
         </p>
 
-        <p className="mt-4 text-xs text-muted-foreground">
+        <p className="mt-4 border-t border-border/60 pt-3 text-[11px] text-muted-foreground">
           Submitted{" "}
-          {new Date(
-            feedback.submittedDate
-          ).toLocaleDateString("en-PH", {
+          {new Date(feedback.submittedDate).toLocaleDateString("en-PH", {
             month: "short",
             day: "numeric",
             year: "numeric",
@@ -76,12 +71,10 @@ export default function FeedbackCard({
         </p>
 
         {feedback.adminReply && (
-          <div className="mt-4 rounded-lg border bg-muted/40 p-4">
-            <p className="text-sm font-medium">
-              FJ Glass and Aluminum
-            </p>
+          <div className="mt-4 rounded-lg border border-primary/10 bg-primary/5 p-4">
+            <p className="text-sm font-medium">FJ Glass and Aluminum</p>
 
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
               {feedback.adminReply}
             </p>
           </div>

@@ -39,12 +39,14 @@ export default function FeedbackCard({
   }
 
   return (
-    <Card>
-      <CardContent className="p-5">
-        <div className="mb-5 flex items-start justify-between">
+    <Card className="min-w-0 gap-0 overflow-hidden rounded-xl border border-border/80 py-0 shadow-none ring-0">
+      <CardContent className="p-4 sm:p-5">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-semibold">{feedback.clientName}</h3>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-base font-semibold tracking-tight wrap-break-word">
+                {feedback.clientName}
+              </h3>
 
               {feedback.featured && <Badge>Featured</Badge>}
             </div>
@@ -57,7 +59,9 @@ export default function FeedbackCard({
           </div>
 
           <div className="text-right">
-            <Badge className={statusStyles[feedback.status]}>
+            <Badge
+              className={`rounded-full px-2.5 py-1 text-[11px] capitalize ${statusStyles[feedback.status]}`}
+            >
               {feedback.status}
             </Badge>
 
@@ -67,7 +71,7 @@ export default function FeedbackCard({
           </div>
         </div>
 
-        <div className="mb-4 flex items-center gap-1">
+        <div className="mb-4 flex w-fit items-center gap-1 rounded-lg bg-amber-50 px-3 py-2 dark:bg-amber-950/20">
           {Array.from({
             length: 5,
           }).map((_, index) => (
@@ -75,18 +79,18 @@ export default function FeedbackCard({
               key={index}
               className={`h-4 w-4 ${
                 index < feedback.rating
-                  ? "fill-yellow-400 text-yellow-400"
+                  ? "fill-amber-400 text-amber-400"
                   : "text-muted-foreground"
               }`}
             />
           ))}
         </div>
 
-        <blockquote className="mb-5 text-muted-foreground italic">
+        <blockquote className="mb-5 rounded-lg border-l-2 border-primary/30 bg-muted/30 px-4 py-3 text-sm leading-7 wrap-break-word text-muted-foreground">
           "{feedback.comment}"
         </blockquote>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 border-t border-border/60 pt-3 [&>button]:h-9 [&>button]:rounded-lg [&>button]:text-xs">
           <Button variant="outline" onClick={onView}>
             <Eye className="mr-2 h-4 w-4" />
             View Details

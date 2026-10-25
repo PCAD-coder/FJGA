@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { Download, FileSpreadsheet, Printer } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -124,7 +126,7 @@ function getPaymentStatusLabel(
 }
 
 function formatPrintCurrency(value: number) {
-  return `₱${value.toLocaleString(undefined, {
+  return `â‚±${value.toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`
@@ -182,7 +184,7 @@ export function SalesExportMenu({
       .map((row) => row.map(escapeCsvValue).join(","))
       .join("\r\n")
 
-    // UTF-8 BOM helps Excel display characters such as ₱ correctly.
+    // UTF-8 BOM helps Excel display characters such as â‚± correctly.
     const blob = new Blob(["\uFEFF", csvContent], {
       type: "text/csv;charset=utf-8;",
     })
@@ -201,48 +203,41 @@ export function SalesExportMenu({
     document.body.removeChild(link)
 
     URL.revokeObjectURL(url)
+    toast.success("Sales CSV download started.")
   }
 
   function printReport() {
-  if (sales.length === 0) {
-    return
-  }
+    if (sales.length === 0) {
+      return
+    }
 
-  const printWindow = window.open("", "_blank", "width=1200,height=800")
+    const printWindow = window.open("", "_blank", "width=1200,height=800")
 
-  if (!printWindow) {
-    window.alert(
-      "The print window was blocked by your browser. Please allow pop-ups and try again."
+    if (!printWindow) {
+      toast.error(
+        "The print window was blocked by your browser. Please allow pop-ups and try again."
+      )
+      return
+    }
+
+    const totalSales = sales.reduce(
+      (total, sale) => total + sale.totalAmount,
+      0
     )
-    return
-  }
 
-  const totalSales = sales.reduce(
-    (total, sale) => total + sale.totalAmount,
-    0
-  )
+    const totalPaid = sales.reduce((total, sale) => total + sale.amountPaid, 0)
 
-  const totalPaid = sales.reduce(
-    (total, sale) => total + sale.amountPaid,
-    0
-  )
+    const totalBalance = sales.reduce((total, sale) => total + sale.balance, 0)
 
-  const totalBalance = sales.reduce(
-    (total, sale) => total + sale.balance,
-    0
-  )
+    const generatedAt = new Date().toLocaleString()
 
-  const generatedAt = new Date().toLocaleString()
+    const statusLabel = getPaymentStatusLabel(paymentStatusFilter)
 
-  const statusLabel = getPaymentStatusLabel(paymentStatusFilter)
+    const searchLabel = search.trim() ? escapeHtml(search.trim()) : "None"
 
-  const searchLabel = search.trim()
-    ? escapeHtml(search.trim())
-    : "None"
-
-  const tableRows = sales
-    .map(
-      (sale) => `
+    const tableRows = sales
+      .map(
+        (sale) => `
         <tr>
           <td>${escapeHtml(sale.orderNumber)}</td>
 
@@ -278,18 +273,18 @@ export function SalesExportMenu({
           </td>
 
           <td>
-            ${escapeHtml(formatDate(sale.lastPaymentDate) || "—")}
+            ${escapeHtml(formatDate(sale.lastPaymentDate) || "â€”")}
           </td>
 
           <td>
-            ${escapeHtml(formatDate(sale.nextPaymentDue) || "—")}
+            ${escapeHtml(formatDate(sale.nextPaymentDue) || "â€”")}
           </td>
         </tr>
       `
-    )
-    .join("")
+      )
+      .join("")
 
-  printWindow.document.write(`
+    printWindow.document.write(`
     <!DOCTYPE html>
     <html>
       <head>
@@ -518,21 +513,22 @@ export function SalesExportMenu({
           </table>
 
           <div class="footer">
-            FJ Glass and Aluminum — Sales Report
+            FJ Glass and Aluminum â€” Sales Report
           </div>
         </main>
       </body>
     </html>
   `)
 
-  printWindow.document.close()
+    printWindow.document.close()
 
-  printWindow.focus()
+    printWindow.focus()
 
-  window.setTimeout(() => {
-    printWindow.print()
-  }, 250)
-}
+    window.setTimeout(() => {
+      printWindow.print()
+      toast.info("Print dialog opened. Choose a printer or save as PDF.")
+    }, 250)
+  }
 
   return (
     <DropdownMenu>
@@ -544,15 +540,33 @@ export function SalesExportMenu({
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={exportCsv}>
+        <DropdownMenuItem
+          onClick={() => {
+            try {
+              exportCsv()
+            } catch {
+              toast.error("Unable to export sales records. Please try again.")
+            }
+          }}
+        >
           <FileSpreadsheet className="mr-2 h-4 w-4" />
           Export CSV
         </DropdownMenuItem>
 
-          <DropdownMenuItem onClick={printReport}>
-  <Printer className="mr-2 h-4 w-4" />
-  Print Report
-</DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => {
+            try {
+              printReport()
+            } catch {
+              toast.error(
+                "Unable to prepare the sales report. Please try again."
+              )
+            }
+          }}
+        >
+          <Printer className="mr-2 h-4 w-4" />
+          Print Report
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

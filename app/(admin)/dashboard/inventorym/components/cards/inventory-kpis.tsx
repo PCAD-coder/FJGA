@@ -1,11 +1,6 @@
-import {
-  AlertTriangle,
-  Clock3,
-  Package,
-  Truck,
-} from "lucide-react"
+import { AlertTriangle, Clock3, Package, Truck } from "lucide-react"
 
-import { Card, CardContent } from "@/components/ui/card"
+import { DashboardCard } from "@/components/dashboard_cards"
 
 interface InventoryKPIsProps {
   totalMaterials: number
@@ -21,78 +16,35 @@ export function InventoryKPIs({
   expiringSoonItems,
 }: InventoryKPIsProps) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
-            <Package className="h-8 w-8 text-blue-500" />
-
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Total Materials
-              </p>
-
-              <h2 className="text-2xl font-bold">
-                {totalMaterials}
-              </h2>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
-            <AlertTriangle className="h-8 w-8 text-yellow-500" />
-
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Low Stock Alerts
-              </p>
-
-              <h2 className="text-2xl font-bold">
-                {lowStockItems}
-              </h2>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
-            <Truck className="h-8 w-8 text-red-500" />
-
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Out of Stock Items
-              </p>
-
-              <h2 className="text-2xl font-bold">
-                {outOfStockItems}
-              </h2>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
-            <Clock3 className="h-8 w-8 text-orange-500" />
-
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Expiring Soon
-              </p>
-
-              <h2 className="text-2xl font-bold">
-                {expiringSoonItems}
-              </h2>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-3">
+      <DashboardCard
+        title="Total Materials"
+        value={String(totalMaterials)}
+        description="Active inventory materials"
+        icon={Package}
+        color="text-blue-600 dark:text-blue-400"
+      />
+      <DashboardCard
+        title="Low Stock Alerts"
+        value={String(lowStockItems)}
+        description="Materials below the stock threshold"
+        icon={AlertTriangle}
+        color="text-amber-600 dark:text-amber-400"
+      />
+      <DashboardCard
+        title="Out of Stock Items"
+        value={String(outOfStockItems)}
+        description="Materials requiring replenishment"
+        icon={Truck}
+        color="text-red-600 dark:text-red-400"
+      />
+      <DashboardCard
+        title="Expiring Soon"
+        value={String(expiringSoonItems)}
+        description="Materials with expiring batches"
+        icon={Clock3}
+        color="text-primary"
+      />
     </div>
   )
 }

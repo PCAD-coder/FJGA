@@ -14,34 +14,30 @@ export default function ProductsPagination({
   onPageChange,
 }: ProductsPaginationProps) {
   return (
-    <div className="flex justify-center gap-2 pt-4">
-
+    <nav aria-label="Production pagination" className="flex items-center gap-2">
       <Button
+        type="button"
+        size="sm"
         variant="outline"
         disabled={currentPage === 1}
-        onClick={() =>
-          onPageChange(currentPage - 1)
-        }
+        onClick={() => onPageChange(currentPage - 1)}
       >
         Previous
       </Button>
 
-      <span className="flex items-center px-4 text-sm">
+      <span className="flex items-center px-2 text-sm">
         Page {currentPage} of {totalPages}
       </span>
 
       <Button
+        type="button"
+        size="sm"
         variant="outline"
-        disabled={
-          currentPage === totalPages
-        }
-        onClick={() =>
-          onPageChange(currentPage + 1)
-        }
+        disabled={currentPage === totalPages}
+        onClick={() => onPageChange(currentPage + 1)}
       >
         Next
       </Button>
-
-    </div>
+    </nav>
   )
 }

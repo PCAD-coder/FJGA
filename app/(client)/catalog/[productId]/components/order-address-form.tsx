@@ -5,6 +5,7 @@ import { useEffect, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 
+import type { DeliveryLocationCoverage } from "../services/delivery-service"
 import {
   Select,
   SelectContent,
@@ -29,11 +30,15 @@ import type { OrderAddressFormInput } from "../../types/address"
 interface Props {
   value: OrderAddressFormInput
   onChange: (address: OrderAddressFormInput) => void
+  locationCoverage: DeliveryLocationCoverage | null
+  loadingLocationCoverage: boolean
 }
 
 export default function OrderAddressForm({
   value,
   onChange,
+  locationCoverage,
+  loadingLocationCoverage,
 }: Props) {
   const [regions, setRegions] = useState<PSGCRegion[]>([])
   const [provinces, setProvinces] = useState<PSGCProvince[]>([])
@@ -108,10 +113,7 @@ export default function OrderAddressForm({
         if (data.length === 0) {
           setLoadingCities(true)
 
-          const cityData = await getCities(
-            value.regionPsgcCode,
-            null
-          )
+          const cityData = await getCities(value.regionPsgcCode, null)
 
           if (!cancelled) {
             setCities(cityData)
@@ -149,10 +151,7 @@ export default function OrderAddressForm({
    * loaded by the region effect above.
    */
   useEffect(() => {
-    if (
-      !value.regionPsgcCode ||
-      !value.provincePsgcCode
-    ) {
+    if (!value.regionPsgcCode || !value.provincePsgcCode) {
       return
     }
 
@@ -205,9 +204,7 @@ export default function OrderAddressForm({
       try {
         setLoadingBarangays(true)
 
-        const data = await getBarangays(
-          value.cityPsgcCode
-        )
+        const data = await getBarangays(value.cityPsgcCode)
 
         if (!cancelled) {
           setBarangays(data)
@@ -233,24 +230,19 @@ export default function OrderAddressForm({
   }, [value.cityPsgcCode])
 
   const selectedRegion = regions.find(
-    (region) =>
-      region.psgc_code === value.regionPsgcCode
+    (region) => region.psgc_code === value.regionPsgcCode
   )
 
   const selectedProvince = provinces.find(
-    (province) =>
-      province.psgc_code === value.provincePsgcCode
+    (province) => province.psgc_code === value.provincePsgcCode
   )
 
   const selectedCity = cities.find(
-    (city) =>
-      city.psgc_code === value.cityPsgcCode
+    (city) => city.psgc_code === value.cityPsgcCode
   )
 
   const handleRegionChange = (regionCode: string) => {
-    const region = regions.find(
-      (item) => item.psgc_code === regionCode
-    )
+    const region = regions.find((item) => item.psgc_code === regionCode)
 
     onChange({
       ...value,
@@ -273,12 +265,8 @@ export default function OrderAddressForm({
     setBarangays([])
   }
 
-  const handleProvinceChange = (
-    provinceCode: string
-  ) => {
-    const province = provinces.find(
-      (item) => item.psgc_code === provinceCode
-    )
+  const handleProvinceChange = (provinceCode: string) => {
+    const province = provinces.find((item) => item.psgc_code === provinceCode)
 
     onChange({
       ...value,
@@ -298,9 +286,7 @@ export default function OrderAddressForm({
   }
 
   const handleCityChange = (cityCode: string) => {
-    const city = cities.find(
-      (item) => item.psgc_code === cityCode
-    )
+    const city = cities.find((item) => item.psgc_code === cityCode)
 
     onChange({
       ...value,
@@ -315,12 +301,8 @@ export default function OrderAddressForm({
     setBarangays([])
   }
 
-  const handleBarangayChange = (
-    barangayCode: string
-  ) => {
-    const barangay = barangays.find(
-      (item) => item.psgc_code === barangayCode
-    )
+  const handleBarangayChange = (barangayCode: string) => {
+    const barangay = barangays.find((item) => item.psgc_code === barangayCode)
 
     onChange({
       ...value,
@@ -331,19 +313,26 @@ export default function OrderAddressForm({
   }
 
   const hasProvinces = provinces.length > 0
+  const regionUnavailable =
+    locationCoverage?.coverageLevel === "region" &&
+    !locationCoverage.isAvailable
+
+  const provinceUnavailable =
+    locationCoverage?.coverageLevel === "province" &&
+    !locationCoverage.isAvailable
+
+  const cityUnavailable =
+    locationCoverage?.coverageLevel === "city" && !locationCoverage.isAvailable
 
   return (
     <div className="space-y-6">
       {/* Address heading */}
 
       <div>
-        <h2 className="text-lg font-semibold">
-          Delivery Address
-        </h2>
+        <h2 className="text-lg font-semibold">Delivery Address</h2>
 
         <p className="mt-1 text-sm text-muted-foreground">
-          Enter the complete address where your order
-          should be delivered.
+          Enter the complete address where your order should be delivered.
         </p>
       </div>
 
@@ -351,9 +340,7 @@ export default function OrderAddressForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <label className="text-sm font-medium">
-            House / Building Number
-          </label>
+          <label className="text-sm font-medium">House / Building Number</label>
 
           <Input
             value={value.houseBuildingNumber}
@@ -368,9 +355,7 @@ export default function OrderAddressForm({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium">
-            Street
-          </label>
+          <label className="text-sm font-medium">Street</label>
 
           <Input
             value={value.street}
@@ -391,9 +376,7 @@ export default function OrderAddressForm({
         <div className="space-y-2">
           <label className="text-sm font-medium">
             Building / Subdivision
-            <span className="ml-1 text-xs text-muted-foreground">
-              Optional
-            </span>
+            <span className="ml-1 text-xs text-muted-foreground">Optional</span>
           </label>
 
           <Input
@@ -411,9 +394,7 @@ export default function OrderAddressForm({
         <div className="space-y-2">
           <label className="text-sm font-medium">
             Unit / Floor
-            <span className="ml-1 text-xs text-muted-foreground">
-              Optional
-            </span>
+            <span className="ml-1 text-xs text-muted-foreground">Optional</span>
           </label>
 
           <Input
@@ -432,30 +413,20 @@ export default function OrderAddressForm({
       {/* Region */}
 
       <div className="space-y-2">
-        <label className="text-sm font-medium">
-          Region
-        </label>
+        <label className="text-sm font-medium">Region</label>
 
-        <Select
-          value={value.regionPsgcCode}
-          onValueChange={handleRegionChange}
-        >
+        <Select value={value.regionPsgcCode} onValueChange={handleRegionChange}>
           <SelectTrigger>
             <SelectValue
               placeholder={
-                loadingRegions
-                  ? "Loading regions..."
-                  : "Select region"
+                loadingRegions ? "Loading regions..." : "Select region"
               }
             />
           </SelectTrigger>
 
           <SelectContent>
             {regions.map((region) => (
-              <SelectItem
-                key={region.psgc_code}
-                value={region.psgc_code}
-              >
+              <SelectItem key={region.psgc_code} value={region.psgc_code}>
                 {region.region_name}
               </SelectItem>
             ))}
@@ -467,31 +438,26 @@ export default function OrderAddressForm({
 
       {value.regionPsgcCode && hasProvinces && (
         <div className="space-y-2">
-          <label className="text-sm font-medium">
-            Province
-          </label>
+          <label className="text-sm font-medium">Province</label>
 
           <Select
             value={value.provincePsgcCode ?? ""}
             onValueChange={handleProvinceChange}
-            disabled={loadingProvinces}
+            disabled={
+              loadingProvinces || loadingLocationCoverage || regionUnavailable
+            }
           >
             <SelectTrigger>
               <SelectValue
                 placeholder={
-                  loadingProvinces
-                    ? "Loading provinces..."
-                    : "Select province"
+                  loadingProvinces ? "Loading provinces..." : "Select province"
                 }
               />
             </SelectTrigger>
 
             <SelectContent>
               {provinces.map((province) => (
-                <SelectItem
-                  key={province.psgc_code}
-                  value={province.psgc_code}
-                >
+                <SelectItem key={province.psgc_code} value={province.psgc_code}>
                   {province.province_name}
                 </SelectItem>
               ))}
@@ -503,9 +469,7 @@ export default function OrderAddressForm({
       {/* City / Municipality */}
 
       <div className="space-y-2">
-        <label className="text-sm font-medium">
-          City / Municipality
-        </label>
+        <label className="text-sm font-medium">City / Municipality</label>
 
         <Select
           value={value.cityPsgcCode}
@@ -513,7 +477,10 @@ export default function OrderAddressForm({
           disabled={
             !value.regionPsgcCode ||
             (hasProvinces && !value.provincePsgcCode) ||
-            loadingCities
+            loadingCities ||
+            loadingLocationCoverage ||
+            regionUnavailable ||
+            provinceUnavailable
           }
         >
           <SelectTrigger>
@@ -528,14 +495,9 @@ export default function OrderAddressForm({
 
           <SelectContent>
             {cities.map((city) => (
-              <SelectItem
-                key={city.psgc_code}
-                value={city.psgc_code}
-              >
+              <SelectItem key={city.psgc_code} value={city.psgc_code}>
                 {city.city_name}
-                {city.locality_type
-                  ? ` (${city.locality_type})`
-                  : ""}
+                {city.locality_type ? ` (${city.locality_type})` : ""}
               </SelectItem>
             ))}
           </SelectContent>
@@ -545,34 +507,29 @@ export default function OrderAddressForm({
       {/* Barangay */}
 
       <div className="space-y-2">
-        <label className="text-sm font-medium">
-          Barangay
-        </label>
+        <label className="text-sm font-medium">Barangay</label>
 
         <Select
           value={value.barangayPsgcCode}
           onValueChange={handleBarangayChange}
           disabled={
             !value.cityPsgcCode ||
-            loadingBarangays
+            loadingBarangays ||
+            loadingLocationCoverage ||
+            cityUnavailable
           }
         >
           <SelectTrigger>
             <SelectValue
               placeholder={
-                loadingBarangays
-                  ? "Loading barangays..."
-                  : "Select barangay"
+                loadingBarangays ? "Loading barangays..." : "Select barangay"
               }
             />
           </SelectTrigger>
 
           <SelectContent>
             {barangays.map((barangay) => (
-              <SelectItem
-                key={barangay.psgc_code}
-                value={barangay.psgc_code}
-              >
+              <SelectItem key={barangay.psgc_code} value={barangay.psgc_code}>
                 {barangay.barangay_name}
               </SelectItem>
             ))}
@@ -585,9 +542,7 @@ export default function OrderAddressForm({
       <div className="space-y-2">
         <label className="text-sm font-medium">
           Postal Code
-          <span className="ml-1 text-xs text-muted-foreground">
-            Optional
-          </span>
+          <span className="ml-1 text-xs text-muted-foreground">Optional</span>
         </label>
 
         <Input
@@ -608,9 +563,7 @@ export default function OrderAddressForm({
       <div className="space-y-2">
         <label className="text-sm font-medium">
           Landmark
-          <span className="ml-1 text-xs text-muted-foreground">
-            Optional
-          </span>
+          <span className="ml-1 text-xs text-muted-foreground">Optional</span>
         </label>
 
         <Textarea

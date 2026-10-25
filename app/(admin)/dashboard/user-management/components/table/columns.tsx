@@ -26,33 +26,28 @@ export function getColumns({
     {
       accessorKey: "first_name",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="User"
-        />
+        <DataTableColumnHeader column={column} title="User" />
       ),
       cell: ({ row }) => {
         const user = row.original
 
         return (
           <div className="flex items-center gap-3">
-            <Avatar>
+            <Avatar className="size-9 border border-border/60">
               <AvatarImage src={user.profile_image ?? ""} />
 
-              <AvatarFallback>
+              <AvatarFallback className="bg-primary/10 text-base font-medium text-primary">
                 {user.first_name?.charAt(0)}
                 {user.last_name?.charAt(0)}
               </AvatarFallback>
             </Avatar>
 
-            <div>
-              <p className="font-medium">
+            <div className="min-w-0">
+              <p className="text-sm font-medium">
                 {user.first_name} {user.last_name}
               </p>
 
-              <p className="text-sm text-muted-foreground">
-                {user.email}
-              </p>
+              <p className="text-sm text-muted-foreground">{user.email}</p>
             </div>
           </div>
         )
@@ -62,27 +57,17 @@ export function getColumns({
     {
       accessorKey: "role",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Role"
-        />
+        <DataTableColumnHeader column={column} title="Role" />
       ),
-      cell: ({ row }) => (
-        <RoleBadge role={row.original.role} />
-      ),
+      cell: ({ row }) => <RoleBadge role={row.original.role} />,
     },
 
     {
       accessorKey: "status",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Status"
-        />
+        <DataTableColumnHeader column={column} title="Status" />
       ),
-      cell: ({ row }) => (
-        <StatusBadge status={row.original.status} />
-      ),
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
     },
 
     {

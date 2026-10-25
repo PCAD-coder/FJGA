@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { useState } from "react"
 import { CircleGauge, Archive } from "lucide-react"
 
@@ -27,8 +29,8 @@ interface ManageThicknessDialogProps {
   trigger?: React.ReactNode
 }
 
-export function ManageThicknessesDialog( {
-    trigger,
+export function ManageThicknessesDialog({
+  trigger,
 }: ManageThicknessDialogProps) {
   const [open, setOpen] = useState(false)
   const [newThickness, setNewThickness] = useState("")
@@ -47,11 +49,15 @@ export function ManageThicknessesDialog( {
       setSaving(true)
 
       await createThickness("Glass", newThickness.trim())
+      toast.success("Thickness added successfully.")
 
       setNewThickness("")
 
       await loadThicknesses()
     } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save thickness."
+      )
       console.error(error)
     } finally {
       setSaving(false)
@@ -61,9 +67,13 @@ export function ManageThicknessesDialog( {
   async function handleArchive(id: string) {
     try {
       await archiveThickness(id)
+      toast.success("Thickness archived successfully.")
 
       await loadThicknesses()
     } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save thickness."
+      )
       console.error(error)
     }
   }
@@ -81,10 +91,10 @@ export function ManageThicknessesDialog( {
     >
       <DialogTrigger asChild>
         {trigger ?? (
-        <Button variant="outline">
-          <CircleGauge className="mr-2 h-4 w-4" />
-          Manage Thicknesses
-        </Button>
+          <Button variant="outline">
+            <CircleGauge className="mr-2 h-4 w-4" />
+            Manage Thicknesses
+          </Button>
         )}
       </DialogTrigger>
 

@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { useState } from "react"
 import { Ruler, Archive } from "lucide-react"
 
@@ -37,11 +39,15 @@ export function ManageUnitsDialog({ trigger }: ManageUnitsDialogProps) {
       setSaving(true)
 
       await createUnit(newUnit.trim())
+      toast.success("Unit added successfully.")
 
       setNewUnit("")
 
       await refresh()
     } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save unit."
+      )
       console.error(error)
     } finally {
       setSaving(false)
@@ -51,9 +57,13 @@ export function ManageUnitsDialog({ trigger }: ManageUnitsDialogProps) {
   async function handleArchive(id: string) {
     try {
       await archiveUnit(id)
+      toast.success("Unit archived successfully.")
 
       await refresh()
     } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save unit."
+      )
       console.error(error)
     }
   }
@@ -62,10 +72,10 @@ export function ManageUnitsDialog({ trigger }: ManageUnitsDialogProps) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger ?? (
-        <Button variant="outline">
-          <Ruler className="mr-2 h-4 w-4" />
-          Manage Units
-        </Button>
+          <Button variant="outline">
+            <Ruler className="mr-2 h-4 w-4" />
+            Manage Units
+          </Button>
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">

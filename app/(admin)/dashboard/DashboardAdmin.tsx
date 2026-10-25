@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 
+import AdminDashboardSkeleton from "./dashboard-skeleton"
+
 import { DashboardCard } from "@/components/dashboard_cards"
 
 import { TrendingUp, ClipboardList, AlertTriangle, Truck } from "lucide-react"
@@ -44,10 +46,7 @@ type CategoryTooltipProps = {
     }
   }>
 }
-function CategoryTooltip({
-  active,
-  payload,
-}: CategoryTooltipProps) {
+function CategoryTooltip({ active, payload }: CategoryTooltipProps) {
   if (!active || !payload || !payload.length) {
     return null
   }
@@ -55,14 +54,14 @@ function CategoryTooltip({
   const data = payload[0].payload
 
   return (
-    <div className="rounded-md border bg-white p-3 shadow-md">
-      <p className="font-medium text-black">{data.name}</p>
+    <div className="rounded-xl border bg-popover p-3 text-popover-foreground shadow-md">
+      <p className="text-sm font-medium">{data.name}</p>
 
-      <p className="text-sm text-black">
+      <p className="text-sm text-muted-foreground">
         Sales Share: {data.value}%
       </p>
 
-      <p className="text-sm text-black">
+      <p className="text-sm text-muted-foreground">
         Products Sold: {data.quantity}
       </p>
     </div>
@@ -92,14 +91,14 @@ export default function DashboardClient({ profile }: DashboardClientProps) {
     { month: string; revenue: number }[]
   >([])
 
-const [categoryData, setCategoryData] = useState<
-  {
-    name: string
-    value: number
-    quantity: number
-    color: string
-  }[]
->([])
+  const [categoryData, setCategoryData] = useState<
+    {
+      name: string
+      value: number
+      quantity: number
+      color: string
+    }[]
+  >([])
 
   useEffect(() => {
     async function loadDashboardStats() {
@@ -122,8 +121,6 @@ const [categoryData, setCategoryData] = useState<
           revenueTrendResult,
           categoryDistributionResult,
         ] = await Promise.all([
-
-
           supabase
             .from("orders")
             .select("id", { count: "exact", head: true })
@@ -156,9 +153,9 @@ const [categoryData, setCategoryData] = useState<
             .lt("created_at", revenueEnd.toISOString()),
 
           supabase
-  .from("order_items")
-  .select(
-    `
+            .from("order_items")
+            .select(
+              `
     quantity,
     line_total,
     products!inner (
@@ -169,10 +166,10 @@ const [categoryData, setCategoryData] = useState<
       created_at
     )
   `
-  )
-  .eq("orders.status", "delivered")
-  .gte("orders.created_at", revenueStart.toISOString())
-  .lt("orders.created_at", revenueEnd.toISOString()),
+            )
+            .eq("orders.status", "delivered")
+            .gte("orders.created_at", revenueStart.toISOString())
+            .lt("orders.created_at", revenueEnd.toISOString()),
         ])
 
         if (activeOrdersResult.error) {
@@ -203,16 +200,16 @@ const [categoryData, setCategoryData] = useState<
         }
 
         const sixMonthSales = (revenueTrendResult.data ?? []).reduce(
-  (total, order) => total + Number(order.total_amount ?? 0),
-  0
-)
+          (total, order) => total + Number(order.total_amount ?? 0),
+          0
+        )
 
         const pendingDeliveries =
           (deliveriesResult.count ?? 0) + (returnDeliveriesResult.count ?? 0)
-// Build the last 6 months of revenue data
-const revenueByMonth = new Map<string, number>()
+        // Build the last 6 months of revenue data
+        const revenueByMonth = new Map<string, number>()
 
-for (let i = 5; i >= 0; i--) {
+        for (let i = 5; i >= 0; i--) {
           const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
 
           const key = `${date.getFullYear()}-${String(
@@ -258,22 +255,22 @@ for (let i = 5; i >= 0; i--) {
         const categoryQuantity = new Map<string, number>()
 
         for (const item of categoryDistributionResult.data ?? []) {
-  const product = Array.isArray(item.products)
-    ? item.products[0]
-    : item.products
+          const product = Array.isArray(item.products)
+            ? item.products[0]
+            : item.products
 
-  const category = product?.category?.trim() || "Uncategorized"
+          const category = product?.category?.trim() || "Uncategorized"
 
-  categoryRevenue.set(
-    category,
-    (categoryRevenue.get(category) ?? 0) + Number(item.line_total ?? 0)
-  )
+          categoryRevenue.set(
+            category,
+            (categoryRevenue.get(category) ?? 0) + Number(item.line_total ?? 0)
+          )
 
-  categoryQuantity.set(
-    category,
-    (categoryQuantity.get(category) ?? 0) + Number(item.quantity ?? 0)
-  )
-}
+          categoryQuantity.set(
+            category,
+            (categoryQuantity.get(category) ?? 0) + Number(item.quantity ?? 0)
+          )
+        }
 
         const totalCategoryRevenue = Array.from(
           categoryRevenue.values()
@@ -289,16 +286,16 @@ for (let i = 5; i >= 0; i--) {
         ]
 
         const formattedCategoryData = Array.from(categoryRevenue.entries())
-  .sort((a, b) => b[1] - a[1])
-  .map(([name, revenue], index) => ({
-    name,
-    value:
-      totalCategoryRevenue > 0
-        ? Number(((revenue / totalCategoryRevenue) * 100).toFixed(1))
-        : 0,
-    quantity: categoryQuantity.get(name) ?? 0,
-    color: categoryColors[index % categoryColors.length],
-  }))
+          .sort((a, b) => b[1] - a[1])
+          .map(([name, revenue], index) => ({
+            name,
+            value:
+              totalCategoryRevenue > 0
+                ? Number(((revenue / totalCategoryRevenue) * 100).toFixed(1))
+                : 0,
+            quantity: categoryQuantity.get(name) ?? 0,
+            color: categoryColors[index % categoryColors.length],
+          }))
         setRevenueData(formattedRevenueData)
         setCategoryData(formattedCategoryData)
 
@@ -671,33 +668,39 @@ for (let i = 5; i >= 0; i--) {
     */
   }
 
-  return (
-    <div className="space-y-6">
-      {/* HEADER */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+  if (loading) {
+    return <AdminDashboardSkeleton />
+  }
 
-        <p className="text-muted-foreground">
+  return (
+    <div className="mx-auto w-full max-w-[1600px] space-y-4 px-1 pt-2 pb-12 sm:px-4 sm:pt-3 lg:px-6">
+      {/* HEADER */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/70 pb-3">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Dashboard
+        </h1>
+
+        <p className="text-sm leading-5 text-muted-foreground">
           Welcome back{profile.first_name ? `, ${profile.first_name}` : ""}!
         </p>
       </div>
 
       {/* KPI CARDS */}
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <DashboardCard
-  title="Total Sales"
-  value={
-    loading
-      ? "..."
-      : `₱${stats.sixMonthSales.toLocaleString("en-PH", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })}`
-  }
-  description="Delivered sales in the past 6 months"
-  icon={TrendingUp}
-  color="text-green-500"
-/>
+          title="Total Sales"
+          value={
+            loading
+              ? "..."
+              : `\u20B1${stats.sixMonthSales.toLocaleString("en-PH", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}`
+          }
+          description="Delivered sales in the past 6 months"
+          icon={TrendingUp}
+          color="text-emerald-600 dark:text-emerald-400"
+        />
 
         <DashboardCard
           title="Active Orders"
@@ -706,7 +709,7 @@ for (let i = 5; i >= 0; i--) {
             loading ? "Loading..." : `${stats.productionOrders} in production`
           }
           icon={ClipboardList}
-          color="text-blue-500"
+          color="text-blue-600 dark:text-blue-400"
         />
 
         <DashboardCard
@@ -714,7 +717,7 @@ for (let i = 5; i >= 0; i--) {
           value={loading ? "..." : String(stats.lowStockItems)}
           description="Reorder required"
           icon={AlertTriangle}
-          color="text-orange-500"
+          color="text-amber-600 dark:text-amber-400"
         />
 
         <DashboardCard
@@ -722,73 +725,103 @@ for (let i = 5; i >= 0; i--) {
           value={loading ? "..." : String(stats.pendingDeliveries)}
           description="Deliveries still pending"
           icon={Truck}
-          color="text-purple-500"
+          color="text-primary"
         />
       </div>
 
       {/* CHARTS */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Revenue Analytics</CardTitle>
-            <CardDescription>Monthly revenue trend (₱)</CardDescription>
+      <div className="grid items-stretch gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">
+        <Card className="h-[360px] min-w-0 gap-0 overflow-hidden rounded-xl border border-border/80 py-0 shadow-none ring-0">
+          <CardHeader className="min-h-[88px] shrink-0 gap-1 border-b border-border/60 px-5 py-5 sm:px-6">
+            <CardTitle className="text-lg font-semibold tracking-tight">
+              Revenue Analytics
+            </CardTitle>
+            <CardDescription className="text-sm leading-5">
+              Monthly revenue trend (&#8369;)
+            </CardDescription>
           </CardHeader>
 
-          <CardContent>
-            <ResponsiveContainer width="100%" height={350}>
-              <LineChart data={revenueData}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis dataKey="month" />
+          <CardContent className="flex min-h-0 flex-1 flex-col px-4 py-4 sm:px-6">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={revenueData}
+                margin={{ top: 15, right: 12, left: 12, bottom: 8 }}
+              >
+                <CartesianGrid
+                  vertical={false}
+                  stroke="var(--border)"
+                  strokeDasharray="4 4"
+                  opacity={0.6}
+                />
+                <XAxis
+                  dataKey="month"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+                  tickMargin={12}
+                  minTickGap={20}
+                />
                 <YAxis
+                  width={85}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
                   tickFormatter={(value) =>
-                    `₱${Number(value).toLocaleString("en-PH")}`
+                    `\u20B1${Number(value).toLocaleString("en-PH")}`
                   }
                 />
 
                 <Tooltip
                   formatter={(value) =>
-                    `₱${Number(value).toLocaleString("en-PH", {
+                    `\u20B1${Number(value).toLocaleString("en-PH", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}`
                   }
                   contentStyle={{
-                    backgroundColor: "#fff",
-                    border: "1px solid #ddd",
-                    borderRadius: "4px",
+                    backgroundColor: "var(--popover)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "12px",
                   }}
                   labelStyle={{
-                    color: "#000",
+                    color: "var(--popover-foreground)",
                     fontWeight: "500",
                   }}
                 />
                 <Line
                   type="monotone"
                   dataKey="revenue"
-                  stroke="#3b82f6"
+                  stroke="var(--primary)"
                   strokeWidth={3}
+                  dot={{ r: 4, fill: "var(--card)", strokeWidth: 2 }}
+                  activeDot={{ r: 6 }}
                 />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Product Category Distribution</CardTitle>
+        <Card className="h-[360px] min-w-0 gap-0 overflow-hidden rounded-xl border border-border/80 py-0 shadow-none ring-0">
+          <CardHeader className="min-h-[88px] shrink-0 gap-1 border-b border-border/60 px-5 py-5 sm:px-6">
+            <CardTitle className="text-lg font-semibold tracking-tight">
+              Product Category Distribution
+            </CardTitle>
 
-            <CardDescription>Sales by category (%)</CardDescription>
+            <CardDescription className="text-sm leading-5">
+              Sales by category (%)
+            </CardDescription>
           </CardHeader>
 
-          <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
+          <CardContent className="flex min-h-0 flex-1 flex-col px-4 py-4 sm:px-6">
+            <ResponsiveContainer width="100%" height={160}>
               <PieChart>
                 <Pie
                   data={categoryData}
                   dataKey="value"
-                  innerRadius={60}
-                  outerRadius={90}
+                  innerRadius={48}
+                  outerRadius={68}
                   paddingAngle={3}
+                  cornerRadius={5}
                 >
                   {categoryData.map((entry, index) => (
                     <Cell key={index} fill={entry.color} />
@@ -798,20 +831,24 @@ for (let i = 5; i >= 0; i--) {
               </PieChart>
             </ResponsiveContainer>
 
-            <div className="mt-6 space-y-2">
+            <div className="mt-2 min-h-0 flex-1 space-y-1 overflow-y-auto">
               {categoryData.map((item) => (
                 <div
                   key={item.name}
-                  className="flex items-center gap-2 text-sm"
+                  className="flex items-center gap-2 rounded-md px-2 py-2 text-sm"
                 >
                   <div
-                    className="h-3 w-3 rounded-full"
+                    className="size-2.5 shrink-0 rounded-full"
                     style={{ backgroundColor: item.color }}
                   />
 
-                  <span className="font-medium">{item.name}</span>
+                  <span className="min-w-0 flex-1 font-medium wrap-break-word">
+                    {item.name}
+                  </span>
 
-                  <span className="text-muted-foreground">({item.value}%)</span>
+                  <span className="font-medium text-muted-foreground tabular-nums">
+                    {item.value}%
+                  </span>
                 </div>
               ))}
             </div>
@@ -820,35 +857,45 @@ for (let i = 5; i >= 0; i--) {
       </div>
 
       {/* RECENT ACTIVITY */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activities</CardTitle>
+      <Card className="min-w-0 gap-0 overflow-hidden rounded-xl border border-border/80 py-0 shadow-none ring-0">
+        <CardHeader className="gap-1 border-b border-border/60 px-5 py-5 sm:px-6">
+          <CardTitle className="text-lg font-semibold tracking-tight">
+            Recent Activities
+          </CardTitle>
 
-          <CardDescription>
+          <CardDescription className="text-sm leading-5">
             Latest actions performed in the system
           </CardDescription>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="px-4 py-5 sm:px-6">
           <div className="space-y-4">
-            <div className="flex justify-between border-b pb-3">
+            <div className="flex flex-col gap-1 border-b border-border/60 pb-3 text-sm sm:flex-row sm:items-center sm:justify-between">
               <span>Admin added new aluminum profile</span>
-              <span className="text-muted-foreground">10 mins ago</span>
+              <span className="shrink-0 text-sm text-muted-foreground">
+                10 mins ago
+              </span>
             </div>
 
-            <div className="flex justify-between border-b pb-3">
+            <div className="flex flex-col gap-1 border-b border-border/60 pb-3 text-sm sm:flex-row sm:items-center sm:justify-between">
               <span>Staff updated inventory stock</span>
-              <span className="text-muted-foreground">35 mins ago</span>
+              <span className="shrink-0 text-sm text-muted-foreground">
+                35 mins ago
+              </span>
             </div>
 
-            <div className="flex justify-between border-b pb-3">
+            <div className="flex flex-col gap-1 border-b border-border/60 pb-3 text-sm sm:flex-row sm:items-center sm:justify-between">
               <span>New custom order approved</span>
-              <span className="text-muted-foreground">1 hour ago</span>
+              <span className="shrink-0 text-sm text-muted-foreground">
+                1 hour ago
+              </span>
             </div>
 
-            <div className="flex justify-between">
+            <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
               <span>Delivery marked as completed</span>
-              <span className="text-muted-foreground">3 hours ago</span>
+              <span className="shrink-0 text-sm text-muted-foreground">
+                3 hours ago
+              </span>
             </div>
           </div>
         </CardContent>
@@ -856,4 +903,3 @@ for (let i = 5; i >= 0; i--) {
     </div>
   )
 }
-

@@ -44,8 +44,7 @@ export default function ResolutionDialog({
   const [resolutionType, setResolutionType] =
     useState<ReturnResolutionType>("replacement")
 
-  const [resolutionNotes, setResolutionNotes] =
-    useState("")
+  const [resolutionNotes, setResolutionNotes] = useState("")
 
   const [error, setError] = useState<string | null>(null)
 
@@ -69,9 +68,7 @@ export default function ResolutionDialog({
     setError(null)
 
     if (resolutionNotes.trim().length < 10) {
-      setError(
-        "Resolution notes must be at least 10 characters."
-      )
+      setError("Resolution notes must be at least 10 characters.")
       return
     }
 
@@ -96,34 +93,25 @@ export default function ResolutionDialog({
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={handleOpenChange}
-    >
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle>
-            Set Return Resolution
-          </DialogTitle>
+          <DialogTitle>Set Return Resolution</DialogTitle>
 
           <DialogDescription>
-            Select what should happen after the physical
-            inspection has been completed.
+            Select what should happen after the physical inspection has been
+            completed.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5 py-2">
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Resolution
-            </label>
+            <label className="text-sm font-medium">Resolution</label>
 
             <Select
               value={resolutionType}
               onValueChange={(value) =>
-                setResolutionType(
-                  value as ReturnResolutionType
-                )
+                setResolutionType(value as ReturnResolutionType)
               }
               disabled={saving}
             >
@@ -132,39 +120,28 @@ export default function ResolutionDialog({
               </SelectTrigger>
 
               <SelectContent>
-                <SelectItem value="replacement">
-                  Replacement
-                </SelectItem>
+                <SelectItem value="replacement">Replacement</SelectItem>
 
-                <SelectItem value="repair">
-                  Repair
-                </SelectItem>
+                <SelectItem value="repair">Repair</SelectItem>
 
-                <SelectItem value="no_action">
-                  No Action
-                </SelectItem>
+                <SelectItem value="no_action">No Action</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Resolution Notes
-            </label>
+            <label className="text-sm font-medium">Resolution Notes</label>
 
             <Textarea
               value={resolutionNotes}
-              onChange={(event) =>
-                setResolutionNotes(event.target.value)
-              }
+              onChange={(event) => setResolutionNotes(event.target.value)}
               placeholder="Explain the resolution and the work required..."
               rows={5}
               disabled={saving}
             />
 
             <p className="text-xs text-muted-foreground">
-              Provide enough detail for the next stage of
-              the return process.
+              Provide enough detail for the next stage of the return process.
             </p>
           </div>
 
@@ -185,11 +162,7 @@ export default function ResolutionDialog({
             Cancel
           </Button>
 
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={saving}
-          >
+          <Button type="button" onClick={handleSubmit} disabled={saving}>
             {saving ? "Saving..." : "Continue"}
           </Button>
         </DialogFooter>

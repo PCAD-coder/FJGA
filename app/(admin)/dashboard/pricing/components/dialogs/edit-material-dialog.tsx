@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { useEffect, useMemo, useState } from "react"
 
 import {
@@ -38,21 +40,21 @@ export default function EditMaterialDialog({
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-  if (!material) return
+    if (!material) return
 
-  setUnitCost(material.unit_cost ?? 0)
-  setMarkup(material.markup_percentage ?? 0)
-}, [material])
+    setUnitCost(material.unit_cost ?? 0)
+    setMarkup(material.markup_percentage ?? 0)
+  }, [material])
 
-// ✅ Hook stays before any return
-const sellingPrice = useMemo(() => {
-  return unitCost * (1 + markup / 100)
-}, [unitCost, markup])
+  // âœ… Hook stays before any return
+  const sellingPrice = useMemo(() => {
+    return unitCost * (1 + markup / 100)
+  }, [unitCost, markup])
 
-// ✅ Conditional return after all hooks
-if (!material) return null
+  // âœ… Conditional return after all hooks
+  if (!material) return null
 
-const selectedMaterial = material
+  const selectedMaterial = material
 
   async function handleSave() {
     try {
@@ -63,10 +65,16 @@ const selectedMaterial = material
         markup_percentage: markup,
       })
 
+      toast.success("Material pricing updated successfully.")
       await refresh()
 
       onOpenChange(false)
     } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to save pricing changes."
+      )
       console.error("Update Material Pricing:", error)
     } finally {
       setSaving(false)
@@ -126,7 +134,7 @@ const selectedMaterial = material
               Selling Price
             </label>
 
-            <Input value={`₱${sellingPrice.toFixed(2)}`} disabled />
+            <Input value={`\u20B1${sellingPrice.toFixed(2)}`} disabled />
           </div>
         </div>
 

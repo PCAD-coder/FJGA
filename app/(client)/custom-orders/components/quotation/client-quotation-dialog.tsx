@@ -1,4 +1,6 @@
 "use client"
+
+import { toast } from "sonner"
 import { useState, useEffect } from "react"
 import QuotationDocument from "@/components/quotations/quotation-document"
 import {
@@ -65,7 +67,7 @@ function formatCurrency(value: number): string {
 }
 
 function formatDate(value: string | null): string {
-  if (!value) return "—"
+  if (!value) return "â€”"
 
   return new Intl.DateTimeFormat("en-PH", {
     year: "numeric",
@@ -90,10 +92,10 @@ function formatDimensions(item: ClientQuotationItem): string {
   }
 
   if (values.length === 0) {
-    return "—"
+    return "â€”"
   }
 
-  return `${values.join(" × ")} ${item.dimensionUnit ?? ""}`.trim()
+  return `${values.join(" Ã— ")} ${item.dimensionUnit ?? ""}`.trim()
 }
 
 function getStatusVariant(
@@ -247,6 +249,7 @@ export default function ClientQuotationDialog({
       setDeclineError(null)
 
       await declineQuotation(quotation.id)
+      toast.success("Quotation declined.")
 
       setDeclineDialogOpen(false)
       onOpenChange(false)
@@ -254,6 +257,9 @@ export default function ClientQuotationDialog({
       await onQuotationChanged?.()
     } catch (error) {
       console.error("Failed to decline quotation:", error)
+      toast.error(
+        error instanceof Error ? error.message : "Unable to decline quotation."
+      )
 
       setDeclineError(
         error instanceof Error ? error.message : "Failed to decline quotation."
@@ -274,6 +280,7 @@ export default function ClientQuotationDialog({
 
       const result = await acceptQuotation(quotation.id)
 
+      toast.success("Quotation accepted. You can find your order in My Orders.")
       console.log("Quotation accepted:", result)
 
       setAcceptDialogOpen(false)
@@ -282,6 +289,9 @@ export default function ClientQuotationDialog({
       await onQuotationChanged?.()
     } catch (error) {
       console.error("Failed to accept quotation:", error)
+      toast.error(
+        error instanceof Error ? error.message : "Unable to accept quotation."
+      )
 
       setAcceptError(
         error instanceof Error ? error.message : "Failed to accept quotation."

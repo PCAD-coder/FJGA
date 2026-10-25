@@ -1,4 +1,6 @@
-"use client";
+"use client"
+
+import { toast } from "sonner"
 
 import {
   Dialog,
@@ -6,22 +8,22 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dialog"
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 
-import { archiveLaborService } from "../../services/pricing-service";
+import { archiveLaborService } from "../../services/pricing-service"
 
-import { LaborPricing } from "../../types/pricing";
+import { LaborPricing } from "../../types/pricing"
 
 interface Props {
-  open: boolean;
+  open: boolean
 
-  onOpenChange: (open: boolean) => void;
+  onOpenChange: (open: boolean) => void
 
-  service: LaborPricing | null;
+  service: LaborPricing | null
 
-  refresh: () => Promise<void>;
+  refresh: () => Promise<void>
 }
 
 export default function ArchiveServiceDialog({
@@ -30,34 +32,32 @@ export default function ArchiveServiceDialog({
   service,
   refresh,
 }: Props) {
-  if (!service) return null;
-  const selectedService = service;
+  if (!service) return null
+  const selectedService = service
 
   async function handleArchive() {
     try {
-      await archiveLaborService(selectedService.id);
+      await archiveLaborService(selectedService.id)
 
-      await refresh();
+      toast.success("Labor service archived successfully.")
+      await refresh()
 
-      onOpenChange(false);
+      onOpenChange(false)
     } catch (error) {
-      console.error(error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to save pricing changes."
+      )
+      console.error(error)
     }
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-
         <DialogHeader>
-
-          <DialogTitle>
-            Archive Labor Service
-          </DialogTitle>
-
+          <DialogTitle>Archive Labor Service</DialogTitle>
         </DialogHeader>
 
         <p className="text-sm text-muted-foreground">
@@ -66,24 +66,15 @@ export default function ArchiveServiceDialog({
         </p>
 
         <DialogFooter>
-
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
 
-          <Button
-            variant="destructive"
-            onClick={handleArchive}
-          >
+          <Button variant="destructive" onClick={handleArchive}>
             Archive
           </Button>
-
         </DialogFooter>
-
       </DialogContent>
     </Dialog>
-  );
+  )
 }

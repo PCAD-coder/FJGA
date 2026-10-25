@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -35,7 +37,7 @@ interface RecordPaymentDialogProps {
 }
 
 function formatCurrency(value: number) {
-  return `₱${value.toLocaleString(undefined, {
+  return `â‚±${value.toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`
@@ -142,10 +144,14 @@ export function RecordPaymentDialog({
         notes,
       })
 
+      toast.success("Payment recorded successfully.")
       onOpenChange(false)
       onPaymentRecorded()
     } catch (err) {
       console.error("Failed to record payment:", err)
+      toast.error(
+        err instanceof Error ? err.message : "Failed to record payment."
+      )
 
       setError(err instanceof Error ? err.message : "Failed to record payment.")
     } finally {

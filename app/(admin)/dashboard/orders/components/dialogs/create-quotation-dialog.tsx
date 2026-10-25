@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { useEffect, useMemo, useState } from "react"
 import { FileText, Loader2, Plus, Trash2 } from "lucide-react"
 
@@ -25,7 +27,7 @@ import {
 } from "@/components/ui/select"
 
 import {
-  getDeliveryFeeForCity,
+  getDeliveryFeeForAddress,
   type DeliveryZoneResult,
 } from "@/app/services/delivery/delivery-zone-service"
 
@@ -160,10 +162,13 @@ export default function CreateQuotationDialog({
 
     async function loadDeliveryFee() {
       const cityPsgcCode = order?.deliveryAddress?.cityPsgcCode
+      const barangayPsgcCode = order?.deliveryAddress?.barangayPsgcCode
 
-      if (!cityPsgcCode) {
+      if (!cityPsgcCode || !barangayPsgcCode) {
         setDeliveryZone(null)
-        setDeliveryError("This request does not have a valid delivery city.")
+        setDeliveryError(
+          "This request does not have a valid delivery city and barangay."
+        )
         return
       }
 
@@ -171,13 +176,18 @@ export default function CreateQuotationDialog({
         setLoadingDelivery(true)
         setDeliveryError(null)
 
-        const result = await getDeliveryFeeForCity(cityPsgcCode)
+        const result = await getDeliveryFeeForAddress(
+          cityPsgcCode,
+          barangayPsgcCode
+        )
 
         if (cancelled) return
 
         if (!result) {
           setDeliveryZone(null)
-          setDeliveryError("Delivery is not currently available for this city.")
+          setDeliveryError(
+            "Delivery is not currently available for this barangay."
+          )
           return
         }
 
@@ -307,10 +317,14 @@ export default function CreateQuotationDialog({
         notes,
       })
 
+      toast.success("Quotation sent successfully.")
       await onSent?.(result.quotationNumber, result.totalAmount)
 
       onOpenChange(false)
     } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to send quotation."
+      )
       setSendError(
         error instanceof Error ? error.message : "Failed to send quotation."
       )
@@ -435,8 +449,8 @@ export default function CreateQuotationDialog({
 
                         {selected && (
                           <p className="text-xs text-muted-foreground">
-                            {selected.unit} · Stock: {selected.stockQuantity} ·{" "}
-                            {formatMoney(selected.unitCost)} cost ·{" "}
+                            {selected.unit} Â· Stock: {selected.stockQuantity}{" "}
+                            Â· {formatMoney(selected.unitCost)} cost Â·{" "}
                             {selected.markupPercentage}% markup
                           </p>
                         )}
@@ -471,7 +485,7 @@ export default function CreateQuotationDialog({
                                   item.quantity *
                                   (1 + selected.markupPercentage / 100)
                               )
-                            : "—"}
+                            : "â€”"}
                         </div>
                       </div>
 
@@ -560,8 +574,8 @@ export default function CreateQuotationDialog({
 
                         {selected && (
                           <p className="text-xs text-muted-foreground">
-                            {selected.unit} · {formatMoney(selected.laborCost)}{" "}
-                            cost · {selected.markupPercentage}% markup
+                            {selected.unit} Â· {formatMoney(selected.laborCost)}{" "}
+                            cost Â· {selected.markupPercentage}% markup
                           </p>
                         )}
                       </div>
@@ -595,7 +609,7 @@ export default function CreateQuotationDialog({
                                   item.quantity *
                                   (1 + selected.markupPercentage / 100)
                               )
-                            : "—"}
+                            : "â€”"}
                         </div>
                       </div>
 
@@ -723,7 +737,7 @@ export default function CreateQuotationDialog({
                       ? "Loading..."
                       : deliveryZone
                         ? formatMoney(deliveryFee)
-                        : "—"
+                        : "â€”"
                   }
                 />
 

@@ -77,7 +77,7 @@ export default function ViewReturnDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-4xl flex flex-col">
+      <DialogContent className="flex max-h-[90vh] max-w-4xl flex-col">
         <DialogHeader>
           <DialogTitle>Return Request Details</DialogTitle>
         </DialogHeader>
@@ -103,9 +103,7 @@ export default function ViewReturnDialog({
             {/* DETAILS */}
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-lg border p-4">
-                <p className="text-sm text-muted-foreground">
-                  Return Title
-                </p>
+                <p className="text-sm text-muted-foreground">Return Title</p>
                 <p className="font-semibold">{request.title}</p>
               </div>
 
@@ -115,30 +113,22 @@ export default function ViewReturnDialog({
               </div>
 
               <div className="rounded-lg border p-4">
-                <p className="text-sm text-muted-foreground">
-                  Original Order
-                </p>
+                <p className="text-sm text-muted-foreground">Original Order</p>
                 <p className="font-semibold">{request.orderNumber}</p>
               </div>
 
               <div className="rounded-lg border p-4">
-                <p className="text-sm text-muted-foreground">
-                  Product Type
-                </p>
+                <p className="text-sm text-muted-foreground">Product Type</p>
                 <p className="font-semibold">{request.productType}</p>
               </div>
 
               <div className="rounded-lg border p-4">
-                <p className="text-sm text-muted-foreground">
-                  Reported Date
-                </p>
+                <p className="text-sm text-muted-foreground">Reported Date</p>
                 <p className="font-semibold">{request.reportedDate}</p>
               </div>
 
               <div className="rounded-lg border p-4">
-                <p className="text-sm text-muted-foreground">
-                  Original Amount
-                </p>
+                <p className="text-sm text-muted-foreground">Original Amount</p>
                 <p className="text-lg font-semibold">
                   ₱{request.originalAmount.toLocaleString()}
                 </p>
@@ -160,9 +150,7 @@ export default function ViewReturnDialog({
 
               <Badge
                 className={
-                  statusStyles[
-                    request.status as keyof typeof statusStyles
-                  ]
+                  statusStyles[request.status as keyof typeof statusStyles]
                 }
               >
                 {request.status}
@@ -230,8 +218,7 @@ export default function ViewReturnDialog({
                       </p>
 
                       <p className="font-semibold">
-                        {inspection.inspectionResult ===
-                        "damage_confirmed"
+                        {inspection.inspectionResult === "damage_confirmed"
                           ? "Damage Confirmed"
                           : inspection.inspectionResult === "no_issue"
                             ? "No Issue"
@@ -256,9 +243,7 @@ export default function ViewReturnDialog({
 
                 {inspection.inspectionNotes && (
                   <div>
-                    <p className="mb-2 font-medium">
-                      Inspection Notes
-                    </p>
+                    <p className="mb-2 font-medium">Inspection Notes</p>
 
                     <div className="rounded-lg border bg-muted p-4">
                       {inspection.inspectionNotes}
@@ -268,9 +253,7 @@ export default function ViewReturnDialog({
 
                 {inspection.damageDescription && (
                   <div>
-                    <p className="mb-2 font-medium">
-                      Damage Description
-                    </p>
+                    <p className="mb-2 font-medium">Damage Description</p>
 
                     <div className="rounded-lg border bg-muted p-4">
                       {inspection.damageDescription}
@@ -286,10 +269,7 @@ export default function ViewReturnDialog({
                       </p>
 
                       <p className="font-semibold capitalize">
-                        {inspection.resolutionType.replace(
-                          "_",
-                          " "
-                        )}
+                        {inspection.resolutionType.replace("_", " ")}
                       </p>
                     </div>
 
@@ -330,8 +310,7 @@ export default function ViewReturnDialog({
                   </h3>
 
                   <p className="text-sm text-muted-foreground">
-                    Materials and labor recorded for the approved
-                    resolution.
+                    Materials and labor recorded for the approved resolution.
                   </p>
                 </div>
 
@@ -352,17 +331,12 @@ export default function ViewReturnDialog({
                     </p>
 
                     <p className="font-semibold capitalize">
-                      {resolution.resolutionStatus.replace(
-                        "_",
-                        " "
-                      )}
+                      {resolution.resolutionStatus.replace("_", " ")}
                     </p>
                   </div>
 
                   <div className="rounded-lg border p-4">
-                    <p className="text-sm text-muted-foreground">
-                      Created
-                    </p>
+                    <p className="text-sm text-muted-foreground">Created</p>
 
                     <p className="font-semibold">
                       {formatDateTime(resolution.createdAt)}
@@ -370,9 +344,7 @@ export default function ViewReturnDialog({
                   </div>
 
                   <div className="rounded-lg border p-4">
-                    <p className="text-sm text-muted-foreground">
-                      Completed
-                    </p>
+                    <p className="text-sm text-muted-foreground">Completed</p>
 
                     <p className="font-semibold">
                       {formatDateTime(resolution.completedAt)}
@@ -382,9 +354,7 @@ export default function ViewReturnDialog({
 
                 {resolution.resolutionNotes && (
                   <div>
-                    <p className="mb-2 font-medium">
-                      Resolution Notes
-                    </p>
+                    <p className="mb-2 font-medium">Resolution Notes</p>
 
                     <div className="rounded-lg border bg-muted p-4">
                       {resolution.resolutionNotes}
@@ -396,30 +366,22 @@ export default function ViewReturnDialog({
                 {resolution.items.length > 0 && (
                   <div className="space-y-3">
                     <div>
-                      <p className="font-medium">
-                        Resolution Items
-                      </p>
+                      <p className="font-medium">Resolution Items</p>
 
                       <p className="text-sm text-muted-foreground">
-                        Materials and labor assigned to this
-                        resolution.
+                        Materials and labor assigned to this resolution.
                       </p>
                     </div>
 
                     <div className="space-y-3">
                       {resolution.items.map((item) => (
-                        <div
-                          key={item.id}
-                          className="rounded-lg border p-4"
-                        >
+                        <div key={item.id} className="rounded-lg border p-4">
                           <div className="mb-4 flex items-center justify-between gap-3">
                             <div>
                               <p className="font-semibold">
                                 {item.itemType === "material"
-                                  ? item.materialName ||
-                                    "Material"
-                                  : item.laborServiceName ||
-                                    "Labor Service"}
+                                  ? item.materialName || "Material"
+                                  : item.laborServiceName || "Labor Service"}
                               </p>
 
                               <p className="text-sm text-muted-foreground">
@@ -441,10 +403,8 @@ export default function ViewReturnDialog({
                               </p>
 
                               <p className="font-medium">
-                                {item.width ?? "—"} ×{" "}
-                                {item.height ?? "—"} ×{" "}
-                                {item.depth ?? "—"}{" "}
-                                {item.dimensionUnit || ""}
+                                {item.width ?? "—"} × {item.height ?? "—"} ×{" "}
+                                {item.depth ?? "—"} {item.dimensionUnit || ""}
                               </p>
                             </div>
 

@@ -3,7 +3,9 @@ export interface DeliveryZoneCity {
   cityPsgcCode: string
   cityName: string
   localityType: string
+  provincePsgcCode: string | null
   provinceName: string | null
+  regionPsgcCode: string
   regionName: string
 }
 
@@ -13,23 +15,26 @@ export interface DeliveryZone {
   description: string | null
   deliveryFee: number
   isActive: boolean
+  regionPsgcCode: string
+  regionName: string
+  provincePsgcCode: string | null
+  provinceName: string | null
   createdAt: string
   updatedAt: string
   cities: DeliveryZoneCity[]
 }
 
 export interface CreateDeliveryZoneInput {
-  zoneName: string
+  regionPsgcCode: string
+  provincePsgcCode: string | null
   description: string | null
   deliveryFee: number
-  cityPsgcCodes: string[]
+  cityPsgcCode: string
 }
 
 export interface UpdateDeliveryZoneInput {
-  zoneName: string
   description: string | null
   deliveryFee: number
-  cityPsgcCodes: string[]
 }
 
 export interface DeliveryZoneCityOption {
@@ -40,4 +45,10 @@ export interface DeliveryZoneCityOption {
   regionName: string
   assignedZoneId: string | null
   assignedZoneName: string | null
+}
+
+export interface DeliveryZoneBarangay {
+  psgcCode: string
+  barangayName: string
+  isAvailable: boolean
 }

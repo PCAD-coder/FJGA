@@ -49,12 +49,12 @@ export const clientMenu = [
     title: "Delivery Tracking",
     url: "#",
     icon: Truck,
-  },*/
+  },
   {
     title: "Notifications",
     url: "#",
     icon: Bell,
-  },
+  },*/
   {
     title: "Feedback",
     url: "/feedback",
@@ -63,11 +63,6 @@ export const clientMenu = [
   {
     title: "Returns",
     url: "/returns",
-    icon: RotateCcw,
-  },
-  {
-    title: "Test",
-    url: "/securitytest",
     icon: RotateCcw,
   },
 ];

@@ -18,7 +18,11 @@ import { Input } from "@/components/ui/input"
 
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
-import { Search, Star } from "lucide-react"
+import { DashboardCard } from "@/components/dashboard_cards"
+import FeedbackSkeleton from "./feedback-skeleton"
+import { toast } from "sonner"
+
+import { Search, Star, MessageSquare, Clock3, Award } from "lucide-react"
 
 import {
   approveFeedback,
@@ -88,13 +92,14 @@ export default function FeedbackPage() {
     })
   }, [feedbacks, search, statusFilter])
 
-  const perPage = 4
+  const perPage = 10
 
-  const totalPages = Math.ceil(filteredFeedbacks.length / perPage)
+  const totalPages = Math.max(1, Math.ceil(filteredFeedbacks.length / perPage))
+  const page = Math.min(currentPage, totalPages)
 
   const paginatedFeedbacks = filteredFeedbacks.slice(
-    (currentPage - 1) * perPage,
-    currentPage * perPage
+    (page - 1) * perPage,
+    page * perPage
   )
 
   const averageRating =
@@ -118,6 +123,7 @@ export default function FeedbackPage() {
 
     try {
       await approveFeedback(selectedFeedback.id)
+      toast.success("Feedback approved and published.")
 
       setFeedbacks((prev) =>
         prev.map((feedback) =>
@@ -133,6 +139,9 @@ export default function FeedbackPage() {
       setApproveOpen(false)
     } catch (error) {
       console.error("Failed to approve feedback:", error)
+      toast.error(
+        error instanceof Error ? error.message : "Unable to update feedback."
+      )
     }
   }
 
@@ -141,6 +150,7 @@ export default function FeedbackPage() {
 
     try {
       await archiveFeedback(selectedFeedback.id)
+      toast.success("Feedback archived.")
 
       setFeedbacks((prev) =>
         prev.map((feedback) =>
@@ -157,6 +167,9 @@ export default function FeedbackPage() {
       setArchiveOpen(false)
     } catch (error) {
       console.error("Failed to archive feedback:", error)
+      toast.error(
+        error instanceof Error ? error.message : "Unable to update feedback."
+      )
     }
   }
 
@@ -169,6 +182,7 @@ export default function FeedbackPage() {
       const newFeaturedState = !feedback.featured
 
       await updateFeedbackFeatured(id, newFeaturedState)
+      toast.success("Featured feedback updated.")
 
       setFeedbacks((prev) =>
         prev.map((item) =>
@@ -182,66 +196,69 @@ export default function FeedbackPage() {
       )
     } catch (error) {
       console.error("Failed to update featured status:", error)
+      toast.error(
+        error instanceof Error ? error.message : "Unable to update feedback."
+      )
     }
   }
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Client Feedback</h1>
+  if (loading) {
+    return <FeedbackSkeleton />
+  }
 
-        <p className="text-muted-foreground">
+  return (
+    <div className="mx-auto w-full max-w-[1600px] min-w-0 space-y-4 px-1 pt-2 pb-12 sm:px-4 sm:pt-3 lg:px-6">
+      <div className="border-b border-border/70 pb-4">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Client Feedback
+        </h1>
+
+        <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
           Moderate testimonials and reviews.
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <p className="text-sm text-muted-foreground">Total Reviews</p>
-
-            <h2 className="text-3xl font-bold">{feedbacks.length}</h2>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <p className="text-sm text-muted-foreground">Average Rating</p>
-
-            <h2 className="flex items-center justify-center gap-1 text-3xl font-bold">
-              {averageRating}
-              <Star className="h-6 w-6 fill-yellow-400 text-yellow-400" />
-            </h2>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <p className="text-sm text-muted-foreground">Pending Review</p>
-
-            <h2 className="text-3xl font-bold text-orange-600">
-              {pendingReviews}
-            </h2>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <p className="text-sm text-muted-foreground">5-Star Reviews</p>
-
-            <h2 className="text-3xl font-bold text-green-600">
-              {fiveStarReviews}
-            </h2>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-3">
+        <DashboardCard
+          title="Total Reviews"
+          value={String(feedbacks.length)}
+          description="All customer feedback"
+          icon={MessageSquare}
+          color="text-blue-600 dark:text-blue-400"
+        />
+        <DashboardCard
+          title="Average Rating"
+          value={averageRating}
+          description="Average across all reviews"
+          icon={Star}
+          color="text-amber-600 dark:text-amber-400"
+        />
+        <DashboardCard
+          title="Pending Review"
+          value={String(pendingReviews)}
+          description="Reviews awaiting moderation"
+          icon={Clock3}
+          color="text-primary"
+        />
+        <DashboardCard
+          title="5-Star Reviews"
+          value={String(fiveStarReviews)}
+          description="Reviews with the highest rating"
+          icon={Award}
+          color="text-emerald-600 dark:text-emerald-400"
+        />
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3 rounded-xl border border-border/80 bg-card p-4">
         <ToggleGroup
+          className="h-auto max-w-full flex-wrap justify-start gap-1"
           type="single"
           value={statusFilter}
           onValueChange={(value) => {
-            if (value) setStatusFilter(value)
+            if (value) {
+              setStatusFilter(value)
+              setCurrentPage(1)
+            }
           }}
         >
           <ToggleGroupItem value="all">All</ToggleGroupItem>
@@ -254,18 +271,22 @@ export default function FeedbackPage() {
         </ToggleGroup>
 
         <div className="relative max-w-md">
-          <Search className="absolute top-3 left-3 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 
           <Input
-            className="pl-9"
+            aria-label="Search feedback"
+            className="h-9 rounded-lg bg-background/50 pl-9 shadow-none"
             placeholder="Search feedback..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              setCurrentPage(1)
+            }}
           />
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {loading ? (
           <div className="py-10 text-center text-muted-foreground">
             Loading feedback...
@@ -305,11 +326,20 @@ export default function FeedbackPage() {
         )}
       </div>
 
-      <FeedbackPagination
-        currentPage={currentPage}
-        totalPages={totalPages || 1}
-        onPageChange={setCurrentPage}
-      />
+      {!error && filteredFeedbacks.length > 0 && (
+        <div className="flex flex-col gap-3 rounded-xl border bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p aria-live="polite" className="text-sm text-muted-foreground">
+            Showing {(page - 1) * perPage + 1} to{" "}
+            {Math.min(page * perPage, filteredFeedbacks.length)} of{" "}
+            {filteredFeedbacks.length} reviews
+          </p>
+          <FeedbackPagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      )}
 
       <ViewFeedbackDialog
         open={viewOpen}
@@ -332,6 +362,7 @@ export default function FeedbackPage() {
 
           try {
             await replyToFeedback(selectedFeedback.id, message)
+            toast.success("Reply sent successfully.")
 
             setFeedbacks((prev) =>
               prev.map((feedback) =>
@@ -348,6 +379,11 @@ export default function FeedbackPage() {
             setReplyOpen(false)
           } catch (error) {
             console.error("Failed to reply to feedback:", error)
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Unable to update feedback."
+            )
           }
         }}
         clientName={selectedFeedback?.clientName}

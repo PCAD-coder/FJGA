@@ -1,5 +1,9 @@
 "use client"
 
+import { toast } from "sonner"
+
+import ModuleLoading from "../loading"
+
 import { useEffect, useMemo, useState } from "react"
 
 import {
@@ -14,11 +18,15 @@ import OrderFilterTabs from "./order-filter-tabs"
 import OrderToolbar, { type OrderSort } from "./order-toolbar"
 import OrderCard from "./order-card"
 import EmptyOrders from "./empty-orders"
+import { Button } from "@/components/ui/button"
 
 import type { Order } from "../types/order"
 import { getMyOrders } from "../services/my-orders-service"
 
+const PAGE_SIZE = 10
+
 export default function MyOrders() {
+  const [page, setPage] = useState(1)
   const [tab, setTab] = useState("All")
   const [search, setSearch] = useState("")
   const [sort, setSort] = useState<OrderSort>("newest")
@@ -81,6 +89,29 @@ export default function MyOrders() {
     })
   }, [orders, search, tab, sort])
 
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const startIndex = (currentPage - 1) * PAGE_SIZE
+  const paginatedOrders = filteredOrders.slice(
+    startIndex,
+    startIndex + PAGE_SIZE
+  )
+
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    if (url.searchParams.get("orderCreated") === "1") {
+      toast.success("Your order has been placed successfully.", {
+        id: "catalog-order-created",
+      })
+      url.searchParams.delete("orderCreated")
+      window.history.replaceState(
+        window.history.state,
+        "",
+        url.pathname + url.search + url.hash
+      )
+    }
+  }, [])
+
   useEffect(() => {
     async function loadOrders() {
       try {
@@ -109,11 +140,7 @@ export default function MyOrders() {
   }, [])
 
   if (loading) {
-    return (
-      <div className="flex min-h-[300px] items-center justify-center">
-        <p className="text-muted-foreground">Loading your orders...</p>
-      </div>
-    )
+    return <ModuleLoading />
   }
 
   if (error) {
@@ -127,87 +154,137 @@ export default function MyOrders() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">My Orders</h1>
+    <div className="mx-auto w-full max-w-[1440px] space-y-5 px-1 pt-4 pb-10 sm:px-4 lg:px-6">
+      <div className="border-b border-border/70 pb-5">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Your space, taking shape.
+        </h1>
 
-        <p className="text-muted-foreground">
-          Manage and monitor all of your furniture orders.
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          Follow your orders from confirmation to delivery, all in one place.
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-  <OrderSummaryCard
-    title="Total Orders"
-    value={orders.length}
-    description="All of your orders"
-    icon={ClipboardList}
-  />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <OrderSummaryCard
+          title="Total Orders"
+          value={orders.length}
+          description="All of your orders"
+          icon={ClipboardList}
+        />
 
-  <OrderSummaryCard
-    title="Active Orders"
-    value={activeOrders.length}
-    description="Currently in progress"
-    icon={Package}
-  />
+        <OrderSummaryCard
+          title="Active Orders"
+          value={activeOrders.length}
+          description="Currently in progress"
+          icon={Package}
+        />
 
-  <OrderSummaryCard
-    title="Completed"
-    value={completedOrders.length}
-    description="Successfully delivered"
-    icon={CheckCircle2}
-  />
+        <OrderSummaryCard
+          title="Completed"
+          value={completedOrders.length}
+          description="Successfully delivered"
+          icon={CheckCircle2}
+        />
 
-  <OrderSummaryCard
-    title="Total Order Value"
-    value={`₱${orders
-      .reduce((sum, order) => sum + order.total, 0)
-      .toLocaleString("en-PH", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })}`}
-    description="Combined value of all orders"
-    icon={PhilippinePeso}
-  />
-</div>
+        <OrderSummaryCard
+          title="Total Order Value"
+          value={`\u20B1${orders
+            .reduce((sum, order) => sum + order.total, 0)
+            .toLocaleString("en-PH", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`}
+          description="Combined value of all orders"
+          icon={PhilippinePeso}
+        />
+      </div>
 
-      <OrderFilterTabs
-        activeTab={tab}
-        onChange={setTab}
-        counts={{
-          All: orders.length,
+      <div className="space-y-3 rounded-xl border border-border/80 bg-card p-3 sm:p-4">
+        <OrderFilterTabs
+          activeTab={tab}
+          onChange={(value) => {
+            setTab(value)
+            setPage(1)
+          }}
+          counts={{
+            All: orders.length,
 
-          Active: activeOrders.length,
+            Active: activeOrders.length,
 
-          Completed: completedOrders.length,
+            Completed: completedOrders.length,
 
-          Approved: orders.filter((order) => order.status === "Approved")
-            .length,
+            Approved: orders.filter((order) => order.status === "Approved")
+              .length,
 
-          Declined: orders.filter((order) => order.status === "Declined")
-            .length,
+            Declined: orders.filter((order) => order.status === "Declined")
+              .length,
 
-          Cancelled: orders.filter((order) => order.status === "Cancelled")
-            .length,
-        }}
-      />
+            Cancelled: orders.filter((order) => order.status === "Cancelled")
+              .length,
+          }}
+        />
 
-      <OrderToolbar
-        search={search}
-        onSearch={setSearch}
-        sort={sort}
-        onSortChange={setSort}
-      />
+        <OrderToolbar
+          search={search}
+          onSearch={(value) => {
+            setSearch(value)
+            setPage(1)
+          }}
+          sort={sort}
+          onSortChange={(value) => {
+            setSort(value)
+            setPage(1)
+          }}
+        />
+      </div>
 
-      <div className="space-y-5">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-4">
         {filteredOrders.length === 0 ? (
-          <EmptyOrders />
+          <div className="col-span-full">
+            <EmptyOrders />
+          </div>
         ) : (
-          filteredOrders.map((order) => (
+          paginatedOrders.map((order) => (
             <OrderCard key={order.id} order={order} />
           ))
         )}
       </div>
+      {filteredOrders.length > 0 && (
+        <nav
+          aria-label="Orders pagination"
+          className="flex flex-col gap-3 rounded-xl border bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p aria-live="polite" className="text-sm text-muted-foreground">
+            Showing {startIndex + 1} to{" "}
+            {Math.min(startIndex + PAGE_SIZE, filteredOrders.length)} of{" "}
+            {filteredOrders.length} orders
+          </p>
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={currentPage === 1}
+              onClick={() => setPage(currentPage - 1)}
+            >
+              Previous
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={currentPage === totalPages}
+              onClick={() => setPage(currentPage + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </nav>
+      )}
     </div>
   )
 }

@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { useState } from "react"
 import { Layers, Archive } from "lucide-react"
 
@@ -36,7 +38,7 @@ interface ManageSpecificationsDialogProps {
   trigger?: React.ReactNode
 }
 
-export function ManageSpecificationsDialog( {
+export function ManageSpecificationsDialog({
   trigger,
 }: ManageSpecificationsDialogProps) {
   const [open, setOpen] = useState(false)
@@ -61,11 +63,15 @@ export function ManageSpecificationsDialog( {
       setSaving(true)
 
       await createSpecification(category, newSpecification.trim())
+      toast.success("Specification added successfully.")
 
       setNewSpecification("")
 
       await loadSpecifications()
     } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save specification."
+      )
       console.error(error)
     } finally {
       setSaving(false)
@@ -75,9 +81,13 @@ export function ManageSpecificationsDialog( {
   async function handleArchive(id: string) {
     try {
       await archiveSpecification(id)
+      toast.success("Specification archived successfully.")
 
       await loadSpecifications()
     } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save specification."
+      )
       console.error(error)
     }
   }
@@ -95,10 +105,10 @@ export function ManageSpecificationsDialog( {
     >
       <DialogTrigger asChild>
         {trigger ?? (
-        <Button variant="outline">
-          <Layers className="mr-2 h-4 w-4" />
-          {/*Manage Variants*/}
-        </Button>
+          <Button variant="outline">
+            <Layers className="mr-2 h-4 w-4" />
+            {/*Manage Variants*/}
+          </Button>
         )}
       </DialogTrigger>
 

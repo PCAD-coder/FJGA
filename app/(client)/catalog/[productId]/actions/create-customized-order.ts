@@ -7,18 +7,14 @@ import { createOrderServer } from "@/app/(admin)/dashboard/orders/actions/create
 import type { OrderAddressFormInput } from "../../types/address"
 import type { PaymentMethod } from "@/app/(admin)/dashboard/orders/types/order"
 
-function mapAddressToCreateOrderAddress(
-  address: OrderAddressFormInput
-) {
+function mapAddressToCreateOrderAddress(address: OrderAddressFormInput) {
   return {
     house_building_number: address.houseBuildingNumber,
     street: address.street,
 
-    building_subdivision:
-      address.buildingSubdivision.trim() || null,
+    building_subdivision: address.buildingSubdivision.trim() || null,
 
-    unit_floor:
-      address.unitFloor.trim() || null,
+    unit_floor: address.unitFloor.trim() || null,
 
     region_psgc_code: address.regionPsgcCode,
     region_name: address.regionName,
@@ -32,11 +28,9 @@ function mapAddressToCreateOrderAddress(
     barangay_psgc_code: address.barangayPsgcCode,
     barangay_name: address.barangayName,
 
-    postal_code:
-      address.postalCode.trim() || null,
+    postal_code: address.postalCode.trim() || null,
 
-    landmark:
-      address.landmark.trim() || null,
+    landmark: address.landmark.trim() || null,
   }
 }
 
@@ -47,12 +41,11 @@ export async function createCustomizedOrder(input: {
   depth: number
   quantity: number
   notes?: string
-  address:OrderAddressFormInput
+  address: OrderAddressFormInput
   customerContactNumber: string
   paymentMethod: PaymentMethod
   aluminumVariantId?: string | null
   glassVariantId?: string | null
-
 }) {
   const supabase = await createClient()
 
@@ -73,7 +66,6 @@ export async function createCustomizedOrder(input: {
   if (profileError || !profile) {
     throw new Error("Profile not found")
   }
-
   const result = await createOrderServer({
     customer_id: profile.id,
     customer_contact_number: input.customerContactNumber.trim(),
@@ -99,5 +91,5 @@ export async function createCustomizedOrder(input: {
     throw new Error(result.error)
   }
 
-  redirect("/my-orders")
+  redirect("/my-orders?orderCreated=1")
 }

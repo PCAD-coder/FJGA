@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -45,8 +47,8 @@ export default function DeliveryFinalPaymentDialog({
   const [paymentDate, setPaymentDate] = useState("")
   const [referenceNumber, setReferenceNumber] = useState("")
   const [receivedByEmployee, setReceivedByEmployee] = useState("")
-const [proofFile, setProofFile] = useState<File | null>(null)
-const [notes, setNotes] = useState("")
+  const [proofFile, setProofFile] = useState<File | null>(null)
+  const [notes, setNotes] = useState("")
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -69,10 +71,10 @@ const [notes, setNotes] = useState("")
     setPaymentMethod("cash_on_delivery")
     setPaymentDate(new Date().toISOString().split("T")[0])
     setReferenceNumber("")
-setReceivedByEmployee("")
-setProofFile(null)
-setNotes("")
-setError(null)
+    setReceivedByEmployee("")
+    setProofFile(null)
+    setNotes("")
+    setError(null)
   }, [open, delivery])
 
   if (!delivery) {
@@ -99,7 +101,7 @@ setError(null)
 
     if (paymentCentavos !== remainingCentavos) {
       setError(
-        `The final payment must be exactly ₱${(
+        `The final payment must be exactly \u20B1${(
           remainingCentavos / 100
         ).toLocaleString("en-PH", {
           minimumFractionDigits: 2,
@@ -121,11 +123,9 @@ setError(null)
       return
     }
     if (paymentMethod === "cash_on_delivery" && !proofFile) {
-  setError(
-    "Please upload a payment proof or receipt for the cash payment."
-  )
-  return
-}
+      setError("Please upload a payment proof or receipt for the cash payment.")
+      return
+    }
 
     try {
       setSaving(true)
@@ -138,28 +138,31 @@ setError(null)
         await import("../services/delivery-payment-actions")
 
       await completeDeliveryWithPayment({
-  deliveryId: delivery.id,
-  amount: paymentCentavos / 100,
-  paymentMethod,
-  paymentDate,
-  referenceNumber:
-    paymentMethod === "cash_on_delivery"
-      ? null
-      : referenceNumber.trim() || null,
-  receivedByEmployee:
-    paymentMethod === "cash_on_delivery"
-      ? receivedByEmployee.trim()
-      : null,
-  notes: notes.trim() || null,
-  proofFile:
-    paymentMethod === "cash_on_delivery"
-      ? proofFile
-      : null,
-})
+        deliveryId: delivery.id,
+        amount: paymentCentavos / 100,
+        paymentMethod,
+        paymentDate,
+        referenceNumber:
+          paymentMethod === "cash_on_delivery"
+            ? null
+            : referenceNumber.trim() || null,
+        receivedByEmployee:
+          paymentMethod === "cash_on_delivery"
+            ? receivedByEmployee.trim()
+            : null,
+        notes: notes.trim() || null,
+        proofFile: paymentMethod === "cash_on_delivery" ? proofFile : null,
+      })
 
+      toast.success(
+        "Final payment recorded and delivery completed successfully."
+      )
       onOpenChange(false)
       onCompleted()
     } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Unable to save delivery changes."
+      )
       console.error("Failed to complete delivery payment:", err)
 
       setError(
@@ -190,7 +193,7 @@ setError(null)
               <p className="text-xs text-muted-foreground">Order Total</p>
 
               <p className="font-semibold">
-                ₱
+                &#8369;
                 {delivery.totalAmount.toLocaleString("en-PH", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
@@ -202,7 +205,7 @@ setError(null)
               <p className="text-xs text-muted-foreground">Amount Paid</p>
 
               <p className="font-semibold">
-                ₱
+                &#8369;
                 {delivery.amountPaid.toLocaleString("en-PH", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
@@ -214,7 +217,7 @@ setError(null)
               <p className="text-xs text-muted-foreground">Remaining Balance</p>
 
               <p className="text-lg font-bold">
-                ₱
+                &#8369;
                 {delivery.remainingBalance.toLocaleString("en-PH", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
@@ -240,23 +243,23 @@ setError(null)
             <label className="text-sm font-medium">Payment Method</label>
 
             <Select
-  value={paymentMethod}
-  onValueChange={(value) => {
-    const nextMethod = value as PaymentMethod
+              value={paymentMethod}
+              onValueChange={(value) => {
+                const nextMethod = value as PaymentMethod
 
-    setPaymentMethod(nextMethod)
-    setError(null)
+                setPaymentMethod(nextMethod)
+                setError(null)
 
-    if (nextMethod !== "cash_on_delivery") {
-      setReceivedByEmployee("")
-      setProofFile(null)
-    }
+                if (nextMethod !== "cash_on_delivery") {
+                  setReceivedByEmployee("")
+                  setProofFile(null)
+                }
 
-    if (nextMethod === "cash_on_delivery") {
-      setReferenceNumber("")
-    }
-  }}
->
+                if (nextMethod === "cash_on_delivery") {
+                  setReferenceNumber("")
+                }
+              }}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -301,64 +304,64 @@ setError(null)
           )}
 
           {requiresEmployee && (
-  <div className="space-y-4">
-    <div className="space-y-2">
-      <label className="text-sm font-medium">
-        Received By
-        <span className="ml-1 text-destructive">*</span>
-      </label>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Received By
+                  <span className="ml-1 text-destructive">*</span>
+                </label>
 
-      <Input
-        value={receivedByEmployee}
-        onChange={(event) =>
-          setReceivedByEmployee(event.target.value)
-        }
-        placeholder="Employee who received the cash"
-      />
+                <Input
+                  value={receivedByEmployee}
+                  onChange={(event) =>
+                    setReceivedByEmployee(event.target.value)
+                  }
+                  placeholder="Employee who received the cash"
+                />
 
-      <p className="text-xs text-muted-foreground">
-        Enter the name of the FJGA employee who received the cash
-        payment.
-      </p>
-    </div>
+                <p className="text-xs text-muted-foreground">
+                  Enter the name of the FJGA employee who received the cash
+                  payment.
+                </p>
+              </div>
 
-    <div className="space-y-2">
-      <label className="text-sm font-medium">
-        Payment Proof / Receipt
-        <span className="ml-1 text-destructive">*</span>
-      </label>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Payment Proof / Receipt
+                  <span className="ml-1 text-destructive">*</span>
+                </label>
 
-      <Input
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        disabled={saving}
-        onChange={(event) => {
-          const file = event.target.files?.[0] ?? null
+                <Input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  disabled={saving}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0] ?? null
 
-          setProofFile(file)
-          setError(null)
-        }}
-      />
+                    setProofFile(file)
+                    setError(null)
+                  }}
+                />
 
-      <p className="text-xs text-muted-foreground">
-        Upload a JPG, PNG, or WebP image of the receipt or other proof
-        that the cash payment was received. Maximum file size: 5 MB.
-      </p>
+                <p className="text-xs text-muted-foreground">
+                  Upload a JPG, PNG, or WebP image of the receipt or other proof
+                  that the cash payment was received. Maximum file size: 5 MB.
+                </p>
 
-      {proofFile && (
-        <div className="rounded-md border bg-muted/30 px-3 py-2">
-          <p className="truncate text-sm font-medium">
-            {proofFile.name}
-          </p>
+                {proofFile && (
+                  <div className="rounded-md border bg-muted/30 px-3 py-2">
+                    <p className="truncate text-sm font-medium">
+                      {proofFile.name}
+                    </p>
 
-          <p className="text-xs text-muted-foreground">
-            {(proofFile.size / 1024 / 1024).toFixed(2)} MB
-          </p>
-        </div>
-      )}
-    </div>
-  </div>
-)}
+                    <p className="text-xs text-muted-foreground">
+                      {(proofFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Notes</label>
@@ -389,18 +392,18 @@ setError(null)
           </Button>
 
           <Button
-  type="button"
-  disabled={
-    saving ||
-    !amount ||
-    Number(amount) <= 0 ||
-    (paymentMethod === "cash_on_delivery" &&
-      (!receivedByEmployee.trim() || !proofFile))
-  }
-  onClick={handleSubmit}
->
-  {saving ? "Completing..." : "Record Payment & Deliver"}
-</Button>
+            type="button"
+            disabled={
+              saving ||
+              !amount ||
+              Number(amount) <= 0 ||
+              (paymentMethod === "cash_on_delivery" &&
+                (!receivedByEmployee.trim() || !proofFile))
+            }
+            onClick={handleSubmit}
+          >
+            {saving ? "Completing..." : "Record Payment & Deliver"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

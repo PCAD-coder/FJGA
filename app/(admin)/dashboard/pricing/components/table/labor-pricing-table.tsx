@@ -24,12 +24,12 @@ interface LaborPricingTableProps {
 export default function LaborPricingTable({
   services,
   onEdit,
-  onArchive
+  onArchive,
 }: LaborPricingTableProps) {
   return (
-    <div className="rounded-lg border">
-      <Table>
-        <TableHeader>
+    <div className="min-w-0 overflow-hidden rounded-xl border border-border/80 bg-card [&_td]:px-4 [&_td]:py-3 [&_th]:px-4">
+      <Table className="min-w-[700px]">
+        <TableHeader className="bg-muted/50">
           <TableRow>
             <TableHead>Service Name</TableHead>
 
@@ -52,36 +52,32 @@ export default function LaborPricingTable({
 
               <TableCell>{service.unit}</TableCell>
 
-              <TableCell>₱{service.labor_cost.toFixed(2)}</TableCell>
+              <TableCell>&#8369;{service.labor_cost.toFixed(2)}</TableCell>
 
               <TableCell>{service.markup_percentage.toFixed(2)}%</TableCell>
 
-              <TableCell className="font-semibold text-green-600">
-                ₱{service.selling_price.toFixed(2)}
+              <TableCell className="font-semibold text-primary tabular-nums">
+                &#8369;{service.selling_price.toFixed(2)}
               </TableCell>
-<TableCell>
+              <TableCell>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onEdit(service)}
+                  >
+                    Edit
+                  </Button>
 
-  <div className="flex gap-2">
-
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => onEdit(service)}
-    >
-      Edit
-    </Button>
-
-    <Button
-      variant="destructive"
-      size="sm"
-      onClick={() => onArchive(service)}
-    >
-      Archive
-    </Button>
-
-  </div>
-
-</TableCell>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => onArchive(service)}
+                  >
+                    Archive
+                  </Button>
+                </div>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

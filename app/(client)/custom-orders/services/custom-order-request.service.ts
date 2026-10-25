@@ -10,7 +10,7 @@ import type {
   CustomOrderRequestStatus,
 } from "../types/custom-order-request"
 import type { DesignReferenceData } from "../components/request-form/design-reference-step"
-
+import { createCustomOrderRequestServer } from "../actions/create-custom-order-request"
 const supabase = createClient()
 
 export interface CreateCustomOrderRequestInput {
@@ -21,36 +21,6 @@ export interface CreateCustomOrderRequestInput {
   deliveryAddress: DeliveryAddressInput
 }
 
-async function getCurrentCustomerProfileId(): Promise<string> {
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
-
-  if (authError) {
-    throw new Error(authError.message)
-  }
-
-  if (!user) {
-    throw new Error("Authentication required")
-  }
-
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("auth_user_id", user.id)
-    .single()
-
-  if (profileError) {
-    throw new Error(profileError.message)
-  }
-
-  if (!profile) {
-    throw new Error("Customer profile not found")
-  }
-
-  return profile.id
-}
 const CUSTOM_ORDER_BUCKET = "custom-order-references"
 
 function sanitizeFileName(fileName: string): string {
@@ -118,10 +88,16 @@ export async function createCustomOrderRequest(
     throw new Error("Authentication required")
   }
 
-  const customerId = await getCurrentCustomerProfileId()
+const {
+  projectDetails,
+  designReference,
+  specifications,
+  deliveryAddress,
+} = input
 
-  const { projectDetails, designReference, specifications, deliveryAddress } =
-    input
+  // ==========================================================
+  // Basic client-side delivery address validation
+  // ==========================================================
 
   if (!deliveryAddress.houseBuildingNumber.trim()) {
     throw new Error("House or building number is required.")
@@ -143,111 +119,50 @@ export async function createCustomOrderRequest(
     throw new Error("Barangay is required.")
   }
 
-  const width = Number(specifications.width)
-  const height = Number(specifications.height)
+  // ==========================================================
+  // Create the core custom request + delivery address
+  // atomically through the trusted server action.
+  //
+  // The server action:
+  // - authenticates the user again
+  // - resolves the client profile
+  // - validates delivery coverage authoritatively
+  // - calls the service-role-only transaction RPC
+  // ==========================================================
 
-  const depth =
-    specifications.depth.trim() === "" ? null : Number(specifications.depth)
+  const requestId = await createCustomOrderRequestServer({
+    projectDetails,
+    specifications,
+    contactNumber: input.contactNumber,
+    deliveryAddress,
+    referenceNotes: designReference.notes,
+  })
 
-  const { data: request, error: requestError } = await supabase
-    .from("custom_order_requests")
-    .insert({
-      customer_id: customerId,
-
-      project_name: projectDetails.projectName,
-      product_category: projectDetails.category,
-      quantity: projectDetails.quantity,
-      description: projectDetails.description,
-
-      width,
-      height,
-      depth,
-      dimension_unit: specifications.dimensionUnit,
-      measurements_approximate: specifications.measurementsApproximate,
-
-      specifications: specifications.specifications,
-
-      preferred_frame: specifications.letFjgaRecommend
-        ? null
-        : specifications.preferredFrame || null,
-
-      preferred_glass: specifications.letFjgaRecommend
-        ? null
-        : specifications.preferredGlass || null,
-
-      preferred_finish: specifications.letFjgaRecommend
-        ? null
-        : specifications.preferredFinish || null,
-
-      let_fjga_recommend: specifications.letFjgaRecommend,
-
-      other_preferences: specifications.otherPreferences.trim() || null,
-
-      reference_notes: designReference.notes.trim() || null,
-
-      status: "pending",
-      contact_number: input.contactNumber.trim(),
-    })
-    .select("*")
-    .single()
-
-  if (requestError) {
-    throw new Error(requestError.message)
-  }
-
+  // Storage uploads cannot participate in the PostgreSQL
+  // transaction, so keep track of uploaded paths so they can
+  // be removed if a later step fails.
   const uploadedPaths: string[] = []
 
   try {
-    const { error: addressError } = await supabase
-      .from("custom_order_request_addresses")
-      .insert({
-        request_id: request.id,
-
-        house_building_number: deliveryAddress.houseBuildingNumber.trim(),
-
-        street: deliveryAddress.street.trim(),
-
-        building_subdivision:
-          deliveryAddress.buildingSubdivision.trim() || null,
-
-        unit_floor: deliveryAddress.unitFloor.trim() || null,
-
-        region_psgc_code: deliveryAddress.regionPsgcCode,
-
-        region_name: deliveryAddress.regionName,
-
-        province_psgc_code: deliveryAddress.provincePsgcCode,
-
-        province_name: deliveryAddress.provinceName,
-
-        city_psgc_code: deliveryAddress.cityPsgcCode,
-
-        city_name: deliveryAddress.cityName,
-
-        barangay_psgc_code: deliveryAddress.barangayPsgcCode,
-
-        barangay_name: deliveryAddress.barangayName,
-
-        postal_code: deliveryAddress.postalCode.trim() || null,
-
-        landmark: deliveryAddress.landmark.trim() || null,
-      })
-
-    if (addressError) {
-      throw new Error(addressError.message)
-    }
+    // ========================================================
+    // Upload reference images
+    // ========================================================
 
     const paths = await uploadReferenceImages(
       user.id,
-      request.id,
+      requestId,
       designReference
     )
 
     uploadedPaths.push(...paths)
 
+    // ========================================================
+    // Save uploaded image records
+    // ========================================================
+
     if (paths.length > 0) {
       const imageRows = paths.map((path, index) => ({
-        request_id: request.id,
+        request_id: requestId,
         image_url: path,
         display_order: index,
       }))
@@ -261,10 +176,14 @@ export async function createCustomOrderRequest(
       }
     }
 
+    // ========================================================
+    // Notify admin about the submitted custom request
+    // ========================================================
+
     const { error: notificationError } = await supabase.rpc(
       "notify_custom_request_submitted",
       {
-        p_request_id: request.id,
+        p_request_id: requestId,
       }
     )
 
@@ -272,9 +191,30 @@ export async function createCustomOrderRequest(
       throw new Error(notificationError.message)
     }
 
-    return request as CustomOrderRequest
-    
+    // ========================================================
+    // Load the successfully created request
+    // ========================================================
+
+    const { data: createdRequest, error: createdRequestError } =
+      await supabase
+        .from("custom_order_requests")
+        .select("*")
+        .eq("id", requestId)
+        .single()
+
+    if (createdRequestError || !createdRequest) {
+      throw new Error(
+        createdRequestError?.message ||
+          "Failed to load created custom order request."
+      )
+    }
+
+    return createdRequest as CustomOrderRequest
   } catch (error) {
+    // ========================================================
+    // Clean up uploaded Storage files
+    // ========================================================
+
     if (uploadedPaths.length > 0) {
       const { error: storageCleanupError } = await supabase.storage
         .from(CUSTOM_ORDER_BUCKET)
@@ -288,10 +228,17 @@ export async function createCustomOrderRequest(
       }
     }
 
+    // ========================================================
+    // Clean up the pending request
+    //
+    // custom_order_request_addresses uses ON DELETE CASCADE,
+    // so deleting the request also removes its address.
+    // ========================================================
+
     const { error: requestCleanupError } = await supabase.rpc(
       "delete_own_pending_custom_order_request",
       {
-        p_request_id: request.id,
+        p_request_id: requestId,
       }
     )
 
@@ -304,7 +251,7 @@ export async function createCustomOrderRequest(
 
     throw error
   }
-}
+} 
 export async function getCustomOrderRequests(): Promise<
   CustomOrderRequestListItem[]
 > {

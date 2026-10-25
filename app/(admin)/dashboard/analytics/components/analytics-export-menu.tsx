@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { Download, FileSpreadsheet, Printer } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -82,6 +84,7 @@ function downloadCsv(csv: string, filename: string) {
   document.body.removeChild(link)
 
   URL.revokeObjectURL(url)
+  toast.success("Analytics CSV download started.")
 }
 
 export default function AnalyticsExportMenu({
@@ -132,26 +135,18 @@ export default function AnalyticsExportMenu({
       ]),
     ]
 
-    const csv = rows
-      .map((row) => row.map(escapeCsv).join(","))
-      .join("\n")
+    const csv = rows.map((row) => row.map(escapeCsv).join(",")).join("\n")
 
     const date = new Date().toISOString().slice(0, 10)
 
-    downloadCsv(
-      csv,
-      `fjga-analytics-${period}-${date}.csv`
-    )
+    downloadCsv(csv, `fjga-analytics-${period}-${date}.csv`)
   }
 
   function handlePrintReport() {
-    const printWindow = window.open(
-      "",
-      "_blank",
-      "width=1200,height=800"
-    )
+    const printWindow = window.open("", "_blank", "width=1200,height=800")
 
     if (!printWindow) {
+      toast.error("The print window was blocked. Allow pop-ups and try again.")
       return
     }
 
@@ -463,6 +458,7 @@ export default function AnalyticsExportMenu({
     setTimeout(() => {
       printWindow.focus()
       printWindow.print()
+      toast.info("Print dialog opened. Choose a printer or save as PDF.")
     }, 250)
   }
 
@@ -476,12 +472,30 @@ export default function AnalyticsExportMenu({
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={handleExportCsv}>
+        <DropdownMenuItem
+          onClick={() => {
+            try {
+              handleExportCsv()
+            } catch {
+              toast.error("Unable to export analytics. Please try again.")
+            }
+          }}
+        >
           <FileSpreadsheet className="mr-2 h-4 w-4" />
           Export CSV
         </DropdownMenuItem>
 
-        <DropdownMenuItem onClick={handlePrintReport}>
+        <DropdownMenuItem
+          onClick={() => {
+            try {
+              handlePrintReport()
+            } catch {
+              toast.error(
+                "Unable to prepare the analytics report. Please try again."
+              )
+            }
+          }}
+        >
           <Printer className="mr-2 h-4 w-4" />
           Print Report
         </DropdownMenuItem>

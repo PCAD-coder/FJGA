@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { useState } from "react"
 import { Layers3, Archive } from "lucide-react"
 
@@ -23,9 +25,7 @@ interface ManageSeriesDialogProps {
   trigger?: React.ReactNode
 }
 
-export function ManageSeriesDialog( {
-  trigger,
-}: ManageSeriesDialogProps) {
+export function ManageSeriesDialog({ trigger }: ManageSeriesDialogProps) {
   const [open, setOpen] = useState(false)
   const [newSeries, setNewSeries] = useState("")
   const [saving, setSaving] = useState(false)
@@ -39,11 +39,15 @@ export function ManageSeriesDialog( {
       setSaving(true)
 
       await createSeries(newSeries.trim())
+      toast.success("Series added successfully.")
 
       setNewSeries("")
 
       await refresh()
     } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save series."
+      )
       console.error(error)
     } finally {
       setSaving(false)
@@ -53,24 +57,28 @@ export function ManageSeriesDialog( {
   async function handleArchive(id: string) {
     try {
       await archiveSeries(id)
+      toast.success("Series archived successfully.")
 
       await refresh()
     } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save series."
+      )
       console.error(error)
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild> 
+      <DialogTrigger asChild>
         {trigger ?? (
-        <Button variant="outline">   
-          <Layers3 className="mr-2 h-4 w-4" />
-          Manage Series
-        </Button>
+          <Button variant="outline">
+            <Layers3 className="mr-2 h-4 w-4" />
+            Manage Series
+          </Button>
         )}
       </DialogTrigger>
-      
+
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Manage Aluminum Series</DialogTitle>

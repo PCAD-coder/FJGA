@@ -5,6 +5,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { toast } from "sonner"
 
 import { getCustomizedPrice } from "../actions/get-customized-price"
 
@@ -12,7 +13,11 @@ import { createCustomizedOrder } from "../actions/create-customized-order"
 
 import type { ProductVariants } from "../services/material-variants"
 
-import { getDeliveryFeeForCity } from "../services/delivery-service"
+import {
+  getDeliveryFeeForAddress,
+  getDeliveryLocationCoverage,
+  type DeliveryLocationCoverage,
+} from "../services/delivery-service"
 
 import {
   Select,
@@ -88,6 +93,10 @@ export default function ProductOrderPage({
   const [deliveryZoneName, setDeliveryZoneName] = useState("")
   const [loadingDeliveryFee, setLoadingDeliveryFee] = useState(false)
   const [deliveryUnavailable, setDeliveryUnavailable] = useState(false)
+  const [locationCoverage, setLocationCoverage] =
+    useState<DeliveryLocationCoverage | null>(null)
+
+  const [loadingLocationCoverage, setLoadingLocationCoverage] = useState(false)
 
   const [estimatedPrice, setEstimatedPrice] = useState(initialPrice)
 
@@ -127,7 +136,49 @@ export default function ProductOrderPage({
     product.id,
   ])
   useEffect(() => {
-    if (!address.cityPsgcCode) {
+    if (!address.regionPsgcCode) {
+      setLocationCoverage(null)
+      setLoadingLocationCoverage(false)
+      return
+    }
+
+    let cancelled = false
+
+    async function loadLocationCoverage() {
+      try {
+        setLoadingLocationCoverage(true)
+
+        const result = await getDeliveryLocationCoverage(
+          address.regionPsgcCode,
+          address.provincePsgcCode,
+          address.cityPsgcCode || null
+        )
+
+        if (!cancelled) {
+          setLocationCoverage(result)
+        }
+      } catch (error) {
+        console.error("Failed to load delivery coverage:", error)
+
+        if (!cancelled) {
+          setLocationCoverage(null)
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingLocationCoverage(false)
+        }
+      }
+    }
+
+    void loadLocationCoverage()
+
+    return () => {
+      cancelled = true
+    }
+  }, [address.regionPsgcCode, address.provincePsgcCode, address.cityPsgcCode])
+
+  useEffect(() => {
+    if (!address.cityPsgcCode || !address.barangayPsgcCode) {
       setDeliveryFee(0)
       setDeliveryZoneName("")
       setDeliveryUnavailable(false)
@@ -144,7 +195,10 @@ export default function ProductOrderPage({
         setDeliveryFee(0)
         setDeliveryZoneName("")
 
-        const result = await getDeliveryFeeForCity(address.cityPsgcCode)
+        const result = await getDeliveryFeeForAddress(
+          address.cityPsgcCode,
+          address.barangayPsgcCode
+        )
 
         if (cancelled) {
           return
@@ -178,47 +232,59 @@ export default function ProductOrderPage({
     return () => {
       cancelled = true
     }
-  }, [address.cityPsgcCode])
+  }, [address.cityPsgcCode, address.barangayPsgcCode])
 
   const [placingOrder, setPlacingOrder] = useState(false)
 
   const handlePlaceOrder = async () => {
     try {
       if (!customerContactNumber.trim()) {
-        alert("Please enter your contact number.")
+        toast.error("Please enter your contact number.")
         return
       }
       if (!address.houseBuildingNumber.trim()) {
-        alert("Please enter your house or building number.")
+        toast.error("Please enter your house or building number.")
         return
       }
 
       if (!address.street.trim()) {
-        alert("Please enter your street.")
+        toast.error("Please enter your street.")
         return
       }
 
       if (!address.regionPsgcCode) {
-        alert("Please select your region.")
+        toast.error("Please select your region.")
         return
       }
 
       if (!address.cityPsgcCode) {
-        alert("Please select your city or municipality.")
+        toast.error("Please select your city or municipality.")
         return
       }
 
       if (!address.barangayPsgcCode) {
-        alert("Please select your barangay.")
+        toast.error("Please select your barangay.")
+        return
+      }
+
+      if (loadingLocationCoverage) {
+        toast.error("Please wait while we check delivery coverage.")
+        return
+      }
+
+      if (locationCoverage && !locationCoverage.isAvailable) {
+        toast.error(
+          "Delivery is currently unavailable for this location. Please select another delivery location."
+        )
         return
       }
       if (loadingDeliveryFee) {
-        alert("Please wait while we check delivery availability.")
+        toast.error("Please wait while we check delivery availability.")
         return
       }
 
       if (deliveryUnavailable) {
-        alert(
+        toast.error(
           "Delivery is currently unavailable for this location. Please contact FJGA for assistance."
         )
         return
@@ -241,6 +307,11 @@ export default function ProductOrderPage({
       })
     } catch (error) {
       console.error("Failed to place customized order:", error)
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to place your order. Please try again."
+      )
       setPlacingOrder(false)
     }
   }
@@ -257,26 +328,65 @@ export default function ProductOrderPage({
       (productTotal + vatAmount + deliveryFee + Number.EPSILON) * 100
     ) / 100
 
+  const deliveryCoverageUnavailable =
+    locationCoverage !== null && !locationCoverage.isAvailable
+
+  const deliverySelectionIncomplete =
+    !address.regionPsgcCode ||
+    !address.cityPsgcCode ||
+    !address.barangayPsgcCode
+
+  const cannotPlaceOrder =
+    placingOrder ||
+    loadingLocationCoverage ||
+    loadingDeliveryFee ||
+    deliveryCoverageUnavailable ||
+    deliveryUnavailable ||
+    deliverySelectionIncomplete
+
   return (
-    <div className="mx-auto max-w-5xl p-8">
-      <div className="grid gap-8 md:grid-cols-2">
-        <div>
-          <img
-            src={product.image}
-            alt={product.name}
-            className="w-full rounded-lg border object-cover"
-          />
+    <div className="mx-auto w-full max-w-7xl px-1 pt-4 pb-16 sm:px-4 lg:px-6">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-8 xl:gap-12">
+        <div className="overflow-hidden rounded-2xl border bg-card lg:sticky lg:top-6">
+          <div className="flex aspect-square items-center justify-center bg-white p-4 sm:p-10">
+            <img
+              src={product.image}
+              alt={product.name}
+              className="h-full w-full object-contain"
+            />
+          </div>
+          <div className="border-t px-5 py-4">
+            <p className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
+              Product dimensions
+            </p>
+            <p className="mt-2 text-sm">
+              {product.width} &times; {product.height}
+              {product.depth > 0 ? ` \u00d7 ${product.depth}` : ""} cm
+            </p>
+          </div>
         </div>
 
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold">{product.name}</h1>
-
-            <p className="mt-2 text-muted-foreground">{product.description}</p>
+        <div className="min-w-0 rounded-2xl border bg-card p-5 sm:p-7">
+          <div className="pb-6">
+            <h1 className="text-3xl leading-tight font-semibold tracking-tight sm:text-4xl">
+              {product.name}
+            </h1>
+            <p className="mt-3 text-sm leading-7 text-muted-foreground">
+              {product.description}
+            </p>
+            <div className="mt-4">
+              <p className="text-xs text-muted-foreground">Unit price</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight">
+                &#8369;
+                {estimatedPrice.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </p>
+            </div>
           </div>
-
-          <div className="rounded-lg border p-4">
-            <h2 className="mb-4 font-semibold">Customize Product</h2>
+          <div className="border-t py-6">
+            <h2 className="mb-4 font-semibold">Product options</h2>
 
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
@@ -317,7 +427,7 @@ export default function ProductOrderPage({
                   value={selectedAluminumVariant}
                   onValueChange={setSelectedAluminumVariant}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full bg-background">
                     <SelectValue placeholder="Select aluminum variant" />
                   </SelectTrigger>
 
@@ -338,7 +448,7 @@ export default function ProductOrderPage({
                   value={selectedGlassVariant}
                   onValueChange={setSelectedGlassVariant}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full bg-background">
                     <SelectValue placeholder="Select glass variant" />
                   </SelectTrigger>
 
@@ -346,7 +456,7 @@ export default function ProductOrderPage({
                     {variants.glass.map((variant) => (
                       <SelectItem key={variant.id} value={variant.id}>
                         {variant.color ?? variant.material_name}
-                        {variant.thickness ? ` — ${variant.thickness}` : ""}
+                        {variant.thickness ? ` â€” ${variant.thickness}` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -355,114 +465,10 @@ export default function ProductOrderPage({
             </div>
           </div>
 
-          <div>
-            <p className="text-sm text-muted-foreground">Estimated Total</p>
-
-            <p className="text-3xl font-bold text-primary">
-              ₱
-              {totalPrice.toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </p>
-
-            <p className="mt-1 text-sm text-muted-foreground">
-              Unit price: ₱
-              {estimatedPrice.toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </p>
-
-            <p className="text-xs text-muted-foreground">
-              {quantity} piece{quantity > 1 ? "s" : ""} selected
-            </p>
-
-            <p className="mt-2 text-xs text-muted-foreground">
-              Final price will be calculated on the server before the order is
-              created.
-            </p>
-          </div>
-          <div className="rounded-lg border p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">
-                Product Total
-              </span>
-
-              <span className="font-medium">
-                ₱
-                {productTotal.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </span>
-            </div>
-
-            <div className="mt-2 flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">
-                VAT ({vatRate}%)
-              </span>
-
-              <span className="font-medium">
-                ₱
-                {vatAmount.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </span>
-            </div>
-
-            <div className="mt-2 flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">
-                Delivery Fee
-              </span>
-
-              <span className="font-medium">
-                {loadingDeliveryFee ? (
-                  "Calculating..."
-                ) : deliveryUnavailable ? (
-                  "Unavailable"
-                ) : (
-                  <>
-                    ₱
-                    {deliveryFee.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </>
-                )}
-              </span>
-            </div>
-
-            {deliveryZoneName && !deliveryUnavailable && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                Delivery zone: {deliveryZoneName}
-              </p>
-            )}
-
-            {deliveryUnavailable && (
-              <p className="mt-2 text-sm text-destructive">
-                Delivery is currently unavailable for this location. Please
-                contact FJGA for assistance.
-              </p>
-            )}
-
-            <div className="mt-4 border-t pt-4">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold">Grand Total</span>
-
-                <span className="text-xl font-bold">
-                  ₱
-                  {totalPrice.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
+          <section
+            aria-label="Quantity and order notes"
+            className="grid gap-4 border-t py-6 sm:grid-cols-[120px_minmax(0,1fr)]"
+          >
             <div className="space-y-2">
               <label className="text-sm font-medium">Quantity</label>
               <Input
@@ -481,89 +487,302 @@ export default function ProductOrderPage({
                 placeholder="Any additional instructions..."
               />
             </div>
-            {/* CONTACT NUMBER */}
+          </section>
+          {/* CONTACT NUMBER */}
 
-            <div className="rounded-lg border p-4">
+          <div className="border-t py-6">
+            <h2 className="mb-5 text-base font-semibold">
+              Contact &amp; payment
+            </h2>
+            <div className="space-y-2">
+              <label
+                htmlFor="customer-contact-number"
+                className="text-sm font-medium"
+              >
+                Contact Number
+              </label>
+
+              <Input
+                id="customer-contact-number"
+                type="tel"
+                value={customerContactNumber}
+                onChange={(e) => setCustomerContactNumber(e.target.value)}
+                placeholder="e.g. 09123456789"
+                inputMode="tel"
+              />
+
+              <p className="text-xs text-muted-foreground">
+                This number will be used to contact you regarding this order.
+                Changing it here will not change your saved profile contact
+                number.
+              </p>
+            </div>
+            {/* PAYMENT METHOD */}
+
+            <div className="mt-5 border-t pt-5">
               <div className="space-y-2">
-                <label
-                  htmlFor="customer-contact-number"
-                  className="text-sm font-medium"
+                <label className="text-sm font-medium">Payment Method</label>
+
+                <Select
+                  value={paymentMethod}
+                  onValueChange={(value) =>
+                    setPaymentMethod(value as PaymentMethod)
+                  }
                 >
-                  Contact Number
-                </label>
+                  <SelectTrigger className="w-full bg-background">
+                    <SelectValue placeholder="Select payment method" />
+                  </SelectTrigger>
 
-                <Input
-                  id="customer-contact-number"
-                  type="tel"
-                  value={customerContactNumber}
-                  onChange={(e) => setCustomerContactNumber(e.target.value)}
-                  placeholder="e.g. 09123456789"
-                  inputMode="tel"
-                />
-
-                <p className="text-xs text-muted-foreground">
-                  This number will be used to contact you regarding this order.
-                  Changing it here will not change your saved profile contact
-                  number.
-                </p>
-              </div>
-              {/* PAYMENT METHOD */}
-
-              <div className="rounded-lg border p-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Payment Method</label>
-
-                  <Select
-                    value={paymentMethod}
-                    onValueChange={(value) =>
-                      setPaymentMethod(value as PaymentMethod)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select payment method" />
-                    </SelectTrigger>
-
-                    <SelectContent>
-                      <SelectItem value="cash_on_delivery">
-                        Cash on Delivery
-                      </SelectItem>
-                      {/*<SelectItem value="card">
+                  <SelectContent>
+                    <SelectItem value="cash_on_delivery">
+                      Cash on Delivery
+                    </SelectItem>
+                    {/*<SelectItem value="card">
           Card
         </SelectItem>
         <SelectItem value="gcash">
           Gcash
         </SelectItem>*/}
-                    </SelectContent>
-                  </Select>
+                  </SelectContent>
+                </Select>
 
-                  <p className="text-xs text-muted-foreground">
-                    Select how you would like to pay for this order.
-                  </p>
+                <p className="text-xs text-muted-foreground">
+                  Select how you would like to pay for this order.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Address */}
+
+          <div className="border-t py-6">
+            <OrderAddressForm
+              value={address}
+              onChange={setAddress}
+              locationCoverage={locationCoverage}
+              loadingLocationCoverage={loadingLocationCoverage}
+            />
+
+            {address.regionPsgcCode && (
+              <div className="mt-4 border-t pt-4">
+                {loadingLocationCoverage || loadingDeliveryFee ? (
+                  <div className="rounded-lg border bg-muted/30 p-3">
+                    <p className="text-sm font-medium">
+                      Checking delivery coverage...
+                    </p>
+
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Please wait while we check your selected location.
+                    </p>
+                  </div>
+                ) : address.barangayPsgcCode && deliveryUnavailable ? (
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                    <p className="text-sm font-semibold text-destructive">
+                      Delivery Unavailable
+                    </p>
+
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      FJGA currently does not deliver to this barangay. Please
+                      select another delivery location or contact FJGA for
+                      assistance.
+                    </p>
+                  </div>
+                ) : address.barangayPsgcCode &&
+                  !deliveryUnavailable &&
+                  deliveryZoneName ? (
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+                    <p className="text-sm font-semibold">Delivery Available</p>
+
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      FJGA currently delivers to your selected location.
+                    </p>
+
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      <div>
+                        <p className="text-xs text-muted-foreground">
+                          Delivery Zone
+                        </p>
+
+                        <p className="text-sm font-medium">
+                          {deliveryZoneName}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-muted-foreground">
+                          Estimated Delivery Fee
+                        </p>
+
+                        <p className="text-sm font-medium">
+                          {new Intl.NumberFormat("en-PH", {
+                            style: "currency",
+                            currency: "PHP",
+                          }).format(deliveryFee)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : locationCoverage && !locationCoverage.isAvailable ? (
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                    <p className="text-sm font-semibold text-destructive">
+                      Delivery Coverage Unavailable
+                    </p>
+
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      {locationCoverage.coverageLevel === "region"
+                        ? "FJGA currently does not have delivery coverage within this region. Please select another region."
+                        : locationCoverage.coverageLevel === "province"
+                          ? "FJGA currently does not have delivery coverage within this province. Please select another province."
+                          : "FJGA currently does not deliver to this city or municipality. Please select another city or municipality."}
+                    </p>
+                  </div>
+                ) : locationCoverage?.isAvailable ? (
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+                    <p className="text-sm font-semibold">
+                      Delivery Coverage Available
+                    </p>
+
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      {locationCoverage.coverageLevel === "region"
+                        ? "FJGA has delivery coverage within this region. Continue selecting your delivery location."
+                        : locationCoverage.coverageLevel === "province"
+                          ? "FJGA has delivery coverage within this province. Select your city or municipality to continue."
+                          : "FJGA delivers to this city or municipality. Select your barangay to confirm final delivery availability."}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
+          <aside
+            aria-label="Order summary"
+            className="rounded-xl border border-primary/15 bg-muted/40 p-5 sm:p-6"
+          >
+            <h2 className="mb-5 border-b pb-4 text-lg font-semibold">
+              Order summary
+            </h2>
+            <div>
+              <p className="text-sm text-muted-foreground">Estimated total</p>
+
+              <p className="text-3xl font-semibold tracking-tight tabular-nums">
+                â‚±
+                {totalPrice.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </p>
+
+              <p className="mt-1 text-sm text-muted-foreground">
+                Unit price: â‚±
+                {estimatedPrice.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </p>
+
+              <p className="text-xs text-muted-foreground">
+                {quantity} piece{quantity > 1 ? "s" : ""} selected
+              </p>
+
+              <p className="mt-2 text-xs text-muted-foreground">
+                Your final price is confirmed before the order is placed.
+              </p>
+            </div>
+            <div className="mt-5 border-t pt-5">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">
+                  Product Total
+                </span>
+
+                <span className="font-medium">
+                  â‚±
+                  {productTotal.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              </div>
+
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">
+                  VAT ({vatRate}%)
+                </span>
+
+                <span className="font-medium">
+                  â‚±
+                  {vatAmount.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              </div>
+
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">
+                  Delivery Fee
+                </span>
+
+                <span className="font-medium">
+                  {loadingDeliveryFee ? (
+                    "Calculating..."
+                  ) : deliveryUnavailable ? (
+                    "Unavailable"
+                  ) : (
+                    <>
+                      â‚±
+                      {deliveryFee.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </>
+                  )}
+                </span>
+              </div>
+
+              {deliveryZoneName && !deliveryUnavailable && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Delivery zone: {deliveryZoneName}
+                </p>
+              )}
+
+              {deliveryUnavailable && (
+                <p className="mt-2 text-sm text-destructive">
+                  Delivery is currently unavailable for this location. Please
+                  contact FJGA for assistance.
+                </p>
+              )}
+
+              <div className="mt-4 border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold">Grand Total</span>
+
+                  <span className="text-xl font-bold">
+                    â‚±
+                    {totalPrice.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Address */}
-
-            <div className="rounded-lg border p-4">
-              <OrderAddressForm value={address} onChange={setAddress} />
-            </div>
             <Button
-              className="w-full"
+              className="mt-6 h-12 w-full rounded-lg text-sm font-semibold"
               onClick={handlePlaceOrder}
-              disabled={
-                placingOrder || loadingDeliveryFee || deliveryUnavailable
-              }
+              disabled={cannotPlaceOrder}
             >
               {placingOrder
                 ? "Placing Order..."
-                : loadingDeliveryFee
+                : loadingLocationCoverage || loadingDeliveryFee
                   ? "Checking Delivery..."
-                  : deliveryUnavailable
+                  : deliveryCoverageUnavailable || deliveryUnavailable
                     ? "Delivery Unavailable"
-                    : "Place Customized Order"}
+                    : deliverySelectionIncomplete
+                      ? "Complete Delivery Address"
+                      : "Place Customized Order"}
             </Button>
-          </div>
+          </aside>
         </div>
       </div>
     </div>

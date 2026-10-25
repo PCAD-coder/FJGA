@@ -16,10 +16,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
 import { AddMaterialDialog } from "./dialogs/add-material-dialog"
 
-import type {
-  InventoryInsert,
-  InventoryMaterial,
-} from "../types/inventory"
+import type { InventoryInsert, InventoryMaterial } from "../types/inventory"
 
 import { InventoryExportMenu } from "./inventory-export-menu"
 
@@ -84,7 +81,7 @@ export function InventoryToolbar({
   materials,
 }: InventoryToolbarProps) {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-w-0 flex-col gap-3 rounded-xl border border-border/80 bg-card p-4">
       <ToggleGroup
         type="single"
         value={categoryFilter}
@@ -93,7 +90,7 @@ export function InventoryToolbar({
             setCategoryFilter(value)
           }
         }}
-        className="justify-start"
+        className="h-auto max-w-full flex-wrap justify-start gap-1"
       >
         <ToggleGroupItem value="all">All</ToggleGroupItem>
 
@@ -108,14 +105,15 @@ export function InventoryToolbar({
         </ToggleGroupItem>
       </ToggleGroup>
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center">
-          <div className="relative">
-            <Search className="absolute top-2 left-3 h-4 w-4 text-muted-foreground" />
+      <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-[1_1_550px] flex-wrap items-center gap-3">
+          <div className="relative min-w-0 flex-[1_1_220px]">
+            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 
             <Input
               placeholder="Search materials..."
-              className="w-full pl-9 md:w-[300px]"
+              aria-label="Search materials"
+              className="h-9 w-full rounded-lg bg-background/50 pl-9 shadow-none"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -129,7 +127,10 @@ export function InventoryToolbar({
               )
             }
           >
-            <SelectTrigger className="w-full md:w-[170px]">
+            <SelectTrigger
+              aria-label="Filter stock status"
+              className="h-9 w-full min-w-0 flex-[1_1_150px] rounded-lg bg-background/50"
+            >
               <SelectValue placeholder="Stock status" />
             </SelectTrigger>
 
@@ -149,7 +150,10 @@ export function InventoryToolbar({
               )
             }
           >
-            <SelectTrigger className="w-full md:w-[190px]">
+            <SelectTrigger
+              aria-label="Filter expiration status"
+              className="h-9 w-full min-w-0 flex-[1_1_170px] rounded-lg bg-background/50"
+            >
               <SelectValue placeholder="Expiration status" />
             </SelectTrigger>
 
@@ -162,14 +166,14 @@ export function InventoryToolbar({
           </Select>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex max-w-full flex-wrap gap-2 [&>button]:min-w-0">
           <InventoryExportMenu
-  materials={materials}
-  categoryFilter={categoryFilter}
-  stockStatusFilter={stockStatusFilter}
-  expirationStatusFilter={expirationStatusFilter}
-  search={search}
-/>
+            materials={materials}
+            categoryFilter={categoryFilter}
+            stockStatusFilter={stockStatusFilter}
+            expirationStatusFilter={expirationStatusFilter}
+            search={search}
+          />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

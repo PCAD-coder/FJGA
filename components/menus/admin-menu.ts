@@ -89,9 +89,10 @@ export const adminMenu = [
     url: "/dashboard/activity-logs",
     icon: ClipboardClock,
   },
+  /*
   {
     title: "Backup and Restore",
     url: "/dashboard/backup-and-restore",
     icon: CloudBackup,
-  },
+  },*/
 ];

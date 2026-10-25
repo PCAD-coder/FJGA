@@ -12,22 +12,16 @@ import {
 
 import { Button } from "@/components/ui/button"
 
-import {
-  Textarea,
-} from "@/components/ui/textarea"
+import { Textarea } from "@/components/ui/textarea"
 
 interface Props {
   open: boolean
 
-  onOpenChange: (
-    open: boolean
-  ) => void
+  onOpenChange: (open: boolean) => void
 
   title?: string
 
-  onConfirm: (
-    reason: string
-  ) => void
+  onConfirm: (reason: string) => void
 }
 
 export default function DeclineReturnDialog({
@@ -36,8 +30,7 @@ export default function DeclineReturnDialog({
   title,
   onConfirm,
 }: Props) {
-  const [reason, setReason] =
-    useState("")
+  const [reason, setReason] = useState("")
 
   const handleConfirm = () => {
     if (!reason.trim()) return
@@ -59,25 +52,17 @@ export default function DeclineReturnDialog({
       }}
     >
       <DialogContent>
-
         <DialogHeader>
-
-          <DialogTitle>
-            Decline Return Request
-          </DialogTitle>
-
+          <DialogTitle>Decline Return Request</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-
           <p className="text-sm text-muted-foreground">
             Please provide a reason for declining
             {title && (
               <>
                 {" "}
-                <span className="font-medium text-foreground">
-                  {title}
-                </span>
+                <span className="font-medium text-foreground">{title}</span>
               </>
             )}
             .
@@ -86,39 +71,24 @@ export default function DeclineReturnDialog({
           <Textarea
             placeholder="Example: Damage appears to be caused by improper handling after installation."
             value={reason}
-            onChange={(e) =>
-              setReason(
-                e.target.value
-              )
-            }
+            onChange={(e) => setReason(e.target.value)}
             rows={5}
           />
-
         </div>
 
         <DialogFooter>
-
-          <Button
-            variant="outline"
-            onClick={() =>
-              onOpenChange(false)
-            }
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
 
           <Button
             variant="destructive"
             onClick={handleConfirm}
-            disabled={
-              !reason.trim()
-            }
+            disabled={!reason.trim()}
           >
             Decline Request
           </Button>
-
         </DialogFooter>
-
       </DialogContent>
     </Dialog>
   )

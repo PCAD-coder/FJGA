@@ -1,5 +1,9 @@
 "use client"
 
+import { DashboardCard } from "@/components/dashboard_cards"
+import ActivityLogsSkeleton from "./activity-logs-skeleton"
+import { toast } from "sonner"
+
 import { useEffect, useMemo, useState } from "react"
 
 import { ActivityLog } from "../types/activity-log"
@@ -28,6 +32,8 @@ import {
   Activity,
   Info,
   Eye,
+  Users,
+  CalendarDays,
 } from "lucide-react"
 
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
@@ -85,11 +91,12 @@ export default function ActivityLogs() {
         setLogs(data)
       } catch (err) {
         console.error("Failed to load activity logs:", err)
+        toast.error("Unable to load activity logs. Please try again.", {
+          id: "activity-logs-load",
+        })
 
         setError(
-          err instanceof Error
-            ? err.message
-            : "Failed to load activity logs."
+          err instanceof Error ? err.message : "Failed to load activity logs."
         )
       } finally {
         setLoading(false)
@@ -115,12 +122,11 @@ export default function ActivityLogs() {
     })
   }, [logs, search, moduleFilter])
 
-  const perPage = 5
+  const perPage = 10
 
   const totalPages = Math.ceil(filteredLogs.length / perPage)
 
-  const safeCurrentPage =
-    totalPages > 0 ? Math.min(currentPage, totalPages) : 1
+  const safeCurrentPage = totalPages > 0 ? Math.min(currentPage, totalPages) : 1
 
   const paginatedLogs = filteredLogs.slice(
     (safeCurrentPage - 1) * perPage,
@@ -178,84 +184,71 @@ export default function ActivityLogs() {
     setCurrentPage(page)
   }
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Activity Logs</h1>
+  if (loading) return <ActivityLogsSkeleton />
 
-        <p className="text-muted-foreground">
+  return (
+    <div className="mx-auto w-full max-w-[1600px] min-w-0 space-y-4 px-1 pt-2 pb-12 sm:px-4 sm:pt-3 lg:px-6">
+      <div className="border-b border-border/70 pb-4">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Activity Logs
+        </h1>
+
+        <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
           Track system changes and administrative actions.
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <Activity className="mx-auto mb-2 h-6 w-6 text-blue-600" />
-
-            <p className="text-sm text-muted-foreground">Total Logs</p>
-
-            <h2 className="text-3xl font-bold">{totalLogs}</h2>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <Activity className="mx-auto mb-2 h-6 w-6 text-green-600" />
-
-            <p className="text-sm text-muted-foreground">
-              Today's Activities
-            </p>
-
-            <h2 className="text-3xl font-bold">{todayActivities}</h2>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <ShieldAlert className="mx-auto mb-2 h-6 w-6 text-red-600" />
-
-            <p className="text-sm text-muted-foreground">
-              Critical Actions
-            </p>
-
-            <h2 className="text-3xl font-bold">{criticalActions}</h2>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <AlertTriangle className="mx-auto mb-2 h-6 w-6 text-orange-600" />
-
-            <p className="text-sm text-muted-foreground">Active Users</p>
-
-            <h2 className="text-3xl font-bold">{activeUsers}</h2>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-3">
+        <DashboardCard
+          title="Total Logs"
+          value={String(totalLogs)}
+          description="Recorded system activities"
+          icon={Activity}
+          color="text-blue-600 dark:text-blue-400"
+        />
+        <DashboardCard
+          title="Today's Activities"
+          value={String(todayActivities)}
+          description="Activities recorded today"
+          icon={CalendarDays}
+          color="text-emerald-600 dark:text-emerald-400"
+        />
+        <DashboardCard
+          title="Critical Actions"
+          value={String(criticalActions)}
+          description="Logs with critical severity"
+          icon={ShieldAlert}
+          color="text-red-600 dark:text-red-400"
+        />
+        <DashboardCard
+          title="Active Users"
+          value={String(activeUsers)}
+          description="Distinct users in the loaded logs"
+          icon={Users}
+          color="text-primary"
+        />
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3 rounded-xl border border-border/80 bg-card p-4">
         <ToggleGroup
           type="single"
           value={moduleFilter}
           onValueChange={handleModuleChange}
-          className="flex flex-wrap justify-start"
+          className="flex h-auto max-w-full flex-wrap justify-start gap-1"
         >
           {MODULE_FILTERS.map((module) => (
-            <ToggleGroupItem
-              key={module}
-              value={module}
-            >
+            <ToggleGroupItem key={module} value={module}>
               {module === "all" ? "All" : module}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
 
         <div className="relative max-w-md">
-          <Search className="absolute top-3 left-3 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 
           <Input
-            className="pl-9"
+            aria-label="Search activity logs"
+            className="h-9 rounded-lg bg-background/50 pl-9 shadow-none"
             placeholder="Search activity logs..."
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
@@ -263,11 +256,11 @@ export default function ActivityLogs() {
         </div>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
+      <Card className="min-w-0 gap-0 overflow-hidden rounded-xl border border-border/80 py-0 shadow-none ring-0">
+        <CardContent className="p-0 [&_td]:px-4 [&_td]:py-3 [&_th]:h-12 [&_th]:px-4 [&_th]:text-xs">
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
+            <Table className="min-w-[800px]">
+              <TableHeader className="bg-muted/50">
                 <TableRow>
                   <TableHead>User</TableHead>
 
@@ -279,19 +272,14 @@ export default function ActivityLogs() {
 
                   <TableHead>Timestamp</TableHead>
 
-                  <TableHead className="text-right">
-                    Action
-                  </TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
 
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="h-24 text-center"
-                    >
+                    <TableCell colSpan={6} className="h-24 text-center">
                       Loading activity logs...
                     </TableCell>
                   </TableRow>
@@ -318,9 +306,7 @@ export default function ActivityLogs() {
                     <TableRow key={log.id}>
                       <TableCell>
                         <div>
-                          <p className="font-medium">
-                            {log.userName}
-                          </p>
+                          <p className="font-medium">{log.userName}</p>
 
                           <p className="text-xs text-muted-foreground">
                             {log.role}
@@ -332,15 +318,11 @@ export default function ActivityLogs() {
                         {log.action}
                       </TableCell>
 
-                      <TableCell>
-                        {log.module}
-                      </TableCell>
+                      <TableCell>{log.module}</TableCell>
 
                       <TableCell>
                         <Badge
-                          className={
-                            severityStyles[log.severity]
-                          }
+                          className={`rounded-full px-2.5 py-1 text-[11px] capitalize ${severityStyles[log.severity]}`}
                         >
                           <span className="mr-1">
                             {severityIcons[log.severity]}
@@ -376,11 +358,20 @@ export default function ActivityLogs() {
         </CardContent>
       </Card>
 
-      <LogsPagination
-        currentPage={safeCurrentPage}
-        totalPages={totalPages || 1}
-        onPageChange={handlePageChange}
-      />
+      {!error && filteredLogs.length > 0 && (
+        <div className="flex flex-col gap-3 rounded-xl border bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p aria-live="polite" className="text-sm text-muted-foreground">
+            Showing {(safeCurrentPage - 1) * perPage + 1} to{" "}
+            {Math.min(safeCurrentPage * perPage, filteredLogs.length)} of{" "}
+            {filteredLogs.length} logs
+          </p>
+          <LogsPagination
+            currentPage={safeCurrentPage}
+            totalPages={totalPages || 1}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      )}
 
       <ViewLogDialog
         open={viewOpen}

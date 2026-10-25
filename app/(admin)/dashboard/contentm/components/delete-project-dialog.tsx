@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { useState } from "react"
 import { AlertTriangle } from "lucide-react"
 
@@ -13,10 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-import {
-  deleteContentImage,
-  deleteContentProject,
-} from "../services/content"
+import { deleteContentImage, deleteContentProject } from "../services/content"
 
 import type { ContentProject } from "../types/content"
 
@@ -33,11 +32,9 @@ export default function DeleteProjectDialog({
   project,
   onDeleted,
 }: Props) {
-  const [error, setError] =
-    useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  const [isDeleting, setIsDeleting] =
-    useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   async function handleDelete() {
     if (!project) {
@@ -54,6 +51,7 @@ export default function DeleteProjectDialog({
        */
       await deleteContentProject(project.id)
 
+      toast.success("Project deleted successfully.")
       onDeleted(project.id)
       onOpenChange(false)
 
@@ -71,15 +69,13 @@ export default function DeleteProjectDialog({
         )
       }
     } catch (error) {
-      console.error(
-        "Failed to delete content project:",
-        error
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save content."
       )
+      console.error("Failed to delete content project:", error)
 
       setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to delete project."
+        error instanceof Error ? error.message : "Failed to delete project."
       )
     } finally {
       setIsDeleting(false)
@@ -106,25 +102,16 @@ export default function DeleteProjectDialog({
             <AlertTriangle className="size-5 text-destructive" />
           </div>
 
-          <DialogTitle>
-            Delete Project?
-          </DialogTitle>
+          <DialogTitle>Delete Project?</DialogTitle>
 
           <DialogDescription>
             This will permanently delete{" "}
-            <span className="font-medium text-foreground">
-              {project.title}
-            </span>{" "}
-            and remove its project image. This action cannot
-            be undone.
+            <span className="font-medium text-foreground">{project.title}</span>{" "}
+            and remove its project image. This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
 
-        {error && (
-          <p className="text-sm text-destructive">
-            {error}
-          </p>
-        )}
+        {error && <p className="text-sm text-destructive">{error}</p>}
 
         <DialogFooter>
           <Button
@@ -142,9 +129,7 @@ export default function DeleteProjectDialog({
             disabled={isDeleting}
             onClick={handleDelete}
           >
-            {isDeleting
-              ? "Deleting..."
-              : "Delete Project"}
+            {isDeleting ? "Deleting..." : "Delete Project"}
           </Button>
         </DialogFooter>
       </DialogContent>

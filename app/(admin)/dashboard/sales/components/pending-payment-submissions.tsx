@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { useState } from "react"
 
 import { Check, Eye, X } from "lucide-react"
@@ -32,7 +34,7 @@ interface PendingPaymentSubmissionsProps {
 }
 
 function formatCurrency(value: number) {
-  return `₱${value.toLocaleString(undefined, {
+  return `â‚±${value.toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`
@@ -40,7 +42,7 @@ function formatCurrency(value: number) {
 
 function formatDate(value: string | null) {
   if (!value) {
-    return "—"
+    return "â€”"
   }
 
   return new Date(value).toLocaleDateString()
@@ -64,7 +66,7 @@ function getPaymentMethodLabel(method: PaymentSubmission["paymentMethod"]) {
       return "Cash on Delivery"
 
     default:
-      return "—"
+      return "â€”"
   }
 }
 
@@ -85,18 +87,17 @@ export default function PendingPaymentSubmissions({
         throw new Error("No payment proof is available for this submission.")
       }
 
-      const url = await getPaymentProofUrl(
-        submission.proofImagePath
-      )
+      const url = await getPaymentProofUrl(submission.proofImagePath)
 
       window.open(url, "_blank", "noopener,noreferrer")
     } catch (error) {
       console.error("PAYMENT PROOF ERROR:", error)
+      toast.error(
+        error instanceof Error ? error.message : "Unable to open payment proof."
+      )
 
       setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to open payment proof."
+        error instanceof Error ? error.message : "Failed to open payment proof."
       )
     }
   }
@@ -107,15 +108,17 @@ export default function PendingPaymentSubmissions({
       setError(null)
 
       await approvePaymentSubmission(submission.id)
+      toast.success("Payment submission approved successfully.")
 
       onUpdated()
     } catch (error) {
       console.error("PAYMENT APPROVAL ERROR:", error)
+      toast.error(
+        error instanceof Error ? error.message : "Unable to approve payment."
+      )
 
       setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to approve payment."
+        error instanceof Error ? error.message : "Failed to approve payment."
       )
     } finally {
       setProcessingId(null)
@@ -132,22 +135,21 @@ export default function PendingPaymentSubmissions({
         return
       }
 
-      await rejectPaymentSubmission(
-        submission.id,
-        rejectionReason
-      )
+      await rejectPaymentSubmission(submission.id, rejectionReason)
 
+      toast.success("Payment submission rejected.")
       setRejectingId(null)
       setRejectionReason("")
 
       onUpdated()
     } catch (error) {
       console.error("PAYMENT REJECTION ERROR:", error)
+      toast.error(
+        error instanceof Error ? error.message : "Unable to reject payment."
+      )
 
       setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to reject payment."
+        error instanceof Error ? error.message : "Failed to reject payment."
       )
     } finally {
       setProcessingId(null)
@@ -167,9 +169,7 @@ export default function PendingPaymentSubmissions({
             </p>
           </div>
 
-          <Badge variant="secondary">
-            {submissions.length} pending
-          </Badge>
+          <Badge variant="secondary">{submissions.length} pending</Badge>
         </div>
       </CardHeader>
 
@@ -205,9 +205,7 @@ export default function PendingPaymentSubmissions({
 
                   <TableHead>Submitted</TableHead>
 
-                  <TableHead className="text-right">
-                    Actions
-                  </TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
 
@@ -220,9 +218,7 @@ export default function PendingPaymentSubmissions({
 
                     <TableCell>
                       <div>
-                        <p className="font-medium">
-                          {submission.customerName}
-                        </p>
+                        <p className="font-medium">{submission.customerName}</p>
 
                         {submission.contactNumber && (
                           <p className="text-xs text-muted-foreground">
@@ -237,31 +233,21 @@ export default function PendingPaymentSubmissions({
                     </TableCell>
 
                     <TableCell>
-                      {getPaymentMethodLabel(
-                        submission.paymentMethod
-                      )}
+                      {getPaymentMethodLabel(submission.paymentMethod)}
                     </TableCell>
 
-                    <TableCell>
-                      {formatDate(submission.paymentDate)}
-                    </TableCell>
+                    <TableCell>{formatDate(submission.paymentDate)}</TableCell>
 
-                    <TableCell>
-                      {submission.referenceNumber ?? "—"}
-                    </TableCell>
+                    <TableCell>{submission.referenceNumber ?? "â€”"}</TableCell>
 
-                    <TableCell>
-                      {formatDate(submission.submittedAt)}
-                    </TableCell>
+                    <TableCell>{formatDate(submission.submittedAt)}</TableCell>
 
                     <TableCell>
                       <div className="flex justify-end gap-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() =>
-                            handleViewProof(submission)
-                          }
+                          onClick={() => handleViewProof(submission)}
                           disabled={!submission.proofImagePath}
                         >
                           <Eye className="mr-2 h-4 w-4" />
@@ -270,12 +256,8 @@ export default function PendingPaymentSubmissions({
 
                         <Button
                           size="sm"
-                          onClick={() =>
-                            handleApprove(submission)
-                          }
-                          disabled={
-                            processingId === submission.id
-                          }
+                          onClick={() => handleApprove(submission)}
+                          disabled={processingId === submission.id}
                         >
                           <Check className="mr-2 h-4 w-4" />
 
@@ -292,9 +274,7 @@ export default function PendingPaymentSubmissions({
                             setRejectingId(submission.id)
                             setRejectionReason("")
                           }}
-                          disabled={
-                            processingId === submission.id
-                          }
+                          disabled={processingId === submission.id}
                         >
                           <X className="mr-2 h-4 w-4" />
                           Reject
@@ -310,9 +290,7 @@ export default function PendingPaymentSubmissions({
 
         {rejectingId && (
           <div className="mt-6 rounded-lg border p-4">
-            <h3 className="font-semibold">
-              Reject Payment Submission
-            </h3>
+            <h3 className="font-semibold">Reject Payment Submission</h3>
 
             <p className="mt-1 text-sm text-muted-foreground">
               Please provide a reason for rejecting this payment.
@@ -320,9 +298,7 @@ export default function PendingPaymentSubmissions({
 
             <Textarea
               value={rejectionReason}
-              onChange={(event) =>
-                setRejectionReason(event.target.value)
-              }
+              onChange={(event) => setRejectionReason(event.target.value)}
               placeholder="Enter rejection reason..."
               className="mt-4"
             />

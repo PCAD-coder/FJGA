@@ -13,6 +13,7 @@ const roleLabels: Record<UserRole, string> = {
 export default function RoleBadge({ role }: Props) {
   return (
     <Badge
+      className="rounded-full px-2.5 py-1 text-xs font-medium"
       variant={role === "admin" ? "default" : "secondary"}
     >
       {roleLabels[role]}

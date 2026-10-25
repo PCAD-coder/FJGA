@@ -1,4 +1,8 @@
 "use client"
+
+import { toast } from "sonner"
+
+import ModuleLoading from "../loading"
 import { useEffect, useMemo, useState } from "react"
 import { CustomOrderWizard } from "./request-form/custom-order-wizard"
 import ClientQuotationDialog from "./quotation/client-quotation-dialog"
@@ -100,6 +104,7 @@ function CustomOrderCard({
       setSelectedQuotation(detail)
     } catch (error) {
       console.error("Failed to load quotation:", error)
+      toast.error("Unable to load quotation. Please try again.")
 
       setQuotationError(
         error instanceof Error ? error.message : "Failed to load quotation."
@@ -148,7 +153,7 @@ function CustomOrderCard({
 
                 <p className="text-sm text-muted-foreground">
                   {formatCategory(request.product_category)}
-                  <span className="mx-2">•</span>
+                  <span className="mx-2">â€¢</span>
                   Quantity: {request.quantity}
                 </p>
               </div>
@@ -166,32 +171,27 @@ function CustomOrderCard({
 
             {/* Right Action */}
             <div className="flex shrink-0 flex-col items-start gap-3 sm:items-end">
-              {request.status === "quoted" ||
-request.status === "approved" ? (
-  <Button
-    type="button"
-    onClick={() =>
-      void handleViewQuotation(request.id)
-    }
-  >
-    {request.status === "approved"
-      ? "View Accepted Quotation"
-      : "View Quotation"}
+              {request.status === "quoted" || request.status === "approved" ? (
+                <Button
+                  type="button"
+                  onClick={() => void handleViewQuotation(request.id)}
+                >
+                  {request.status === "approved"
+                    ? "View Accepted Quotation"
+                    : "View Quotation"}
 
-    <ArrowRight className="ml-2 h-4 w-4" />
-  </Button>
-) : (
-  <Button
-    type="button"
-    variant="ghost"
-    onClick={() =>
-      onViewDetails(request.id)
-    }
-  >
-    View Details
-    <ArrowRight className="ml-2 h-4 w-4" />
-  </Button>
-)}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => onViewDetails(request.id)}
+                >
+                  View Details
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              )}
             </div>
           </div>
         </CardContent>
@@ -257,7 +257,10 @@ function RequestList({
   )
 }
 
+const PAGE_SIZE = 10
+
 export default function CustomOrder() {
+  const [page, setPage] = useState(1)
   const [isCreatingRequest, setIsCreatingRequest] = useState(false)
   const [requests, setRequests] = useState<CustomOrderRequestListItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -280,6 +283,7 @@ export default function CustomOrder() {
       setSelectedRequest(request)
     } catch (error) {
       console.error("Failed to load custom order details:", error)
+      toast.error("Unable to load custom order details. Please try again.")
 
       setIsDetailsOpen(false)
     } finally {
@@ -315,6 +319,14 @@ export default function CustomOrder() {
       return matchesTab && matchesSearch
     })
   }, [requests, activeTab, searchTerm])
+
+  const totalPages = Math.max(1, Math.ceil(filteredRequests.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const startIndex = (currentPage - 1) * PAGE_SIZE
+  const paginatedRequests = filteredRequests.slice(
+    startIndex,
+    startIndex + PAGE_SIZE
+  )
 
   async function loadRequests() {
     try {
@@ -352,15 +364,22 @@ export default function CustomOrder() {
     )
   }
 
+  if (isLoading) {
+    return <ModuleLoading />
+  }
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 border-b border-border/70 pb-5 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Custom Orders</h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Your vision, made to fit.
+          </h1>
 
-          <p className="mt-1 text-muted-foreground">
-            Create and track your made-to-order projects with FJGA.
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Bring your glass and aluminum ideas to life and follow every request
+            in one place.
           </p>
         </div>
 
@@ -416,7 +435,10 @@ export default function CustomOrder() {
       {/* Requests */}
       <Tabs
         value={activeTab}
-        onValueChange={setActiveTab}
+        onValueChange={(value) => {
+          setActiveTab(value)
+          setPage(1)
+        }}
         className="space-y-4"
       >
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -437,7 +459,10 @@ export default function CustomOrder() {
 
             <Input
               value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
+              onChange={(event) => {
+                setSearchTerm(event.target.value)
+                setPage(1)
+              }}
               placeholder="Search custom requests..."
               className="pl-9"
             />
@@ -473,7 +498,7 @@ export default function CustomOrder() {
             </Card>
           ) : (
             <RequestList
-              requests={filteredRequests}
+              requests={paginatedRequests}
               onViewDetails={(requestId) => {
                 void handleViewDetails(requestId)
               }}
@@ -484,6 +509,42 @@ export default function CustomOrder() {
           )}
         </TabsContent>
       </Tabs>
+
+      {!loadError && filteredRequests.length > 0 && (
+        <nav
+          aria-label="Custom orders pagination"
+          className="flex flex-col gap-3 border-t pt-4 pb-6 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p aria-live="polite" className="text-sm text-muted-foreground">
+            Showing {startIndex + 1}â€“
+            {Math.min(startIndex + PAGE_SIZE, filteredRequests.length)} of{" "}
+            {filteredRequests.length} requests
+          </p>
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={currentPage === 1}
+              onClick={() => setPage(currentPage - 1)}
+            >
+              Previous
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={currentPage === totalPages}
+              onClick={() => setPage(currentPage + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </nav>
+      )}
 
       <CustomOrderDetailsDialog
         open={isDetailsOpen}
@@ -525,8 +586,8 @@ function formatDimensions(request: CustomOrderRequestListItem) {
   const unit = dimension_unit ?? ""
 
   if (depth != null) {
-    return `${width} × ${height} × ${depth} ${unit}`
+    return `${width} Ã— ${height} Ã— ${depth} ${unit}`
   }
 
-  return `${width} × ${height} ${unit}`
+  return `${width} Ã— ${height} ${unit}`
 }

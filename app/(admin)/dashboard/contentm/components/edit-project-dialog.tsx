@@ -1,10 +1,8 @@
 "use client"
 
-import {
-  ChangeEvent,
-  useEffect,
-  useState,
-} from "react"
+import { toast } from "sonner"
+
+import { ChangeEvent, useEffect, useState } from "react"
 import { ImageIcon, Upload, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -46,14 +44,11 @@ export default function EditProjectDialog({
   const [description, setDescription] = useState("")
   const [displayOrder, setDisplayOrder] = useState("0")
 
-  const [selectedImage, setSelectedImage] =
-    useState<File | null>(null)
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
 
-  const [previewUrl, setPreviewUrl] =
-    useState<string | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
-  const [error, setError] =
-    useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const [isSaving, setIsSaving] = useState(false)
 
@@ -79,9 +74,7 @@ export default function EditProjectDialog({
     }
   }, [previewUrl])
 
-  function handleImageChange(
-    event: ChangeEvent<HTMLInputElement>
-  ) {
+  function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
 
     if (!file) {
@@ -99,13 +92,12 @@ export default function EditProjectDialog({
       setPreviewUrl(URL.createObjectURL(file))
       setError(null)
     } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save content."
+      )
       event.target.value = ""
 
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Invalid image."
-      )
+      setError(error instanceof Error ? error.message : "Invalid image.")
     }
   }
 
@@ -130,13 +122,8 @@ export default function EditProjectDialog({
 
     const parsedDisplayOrder = Number(displayOrder)
 
-    if (
-      !Number.isInteger(parsedDisplayOrder) ||
-      parsedDisplayOrder < 0
-    ) {
-      setError(
-        "Display order must be a whole number of 0 or greater."
-      )
+    if (!Number.isInteger(parsedDisplayOrder) || parsedDisplayOrder < 0) {
+      setError("Display order must be a whole number of 0 or greater.")
       return
     }
 
@@ -147,26 +134,22 @@ export default function EditProjectDialog({
       setError(null)
 
       if (selectedImage) {
-        newImageUrl =
-          await uploadProjectImage(selectedImage)
+        newImageUrl = await uploadProjectImage(selectedImage)
       }
 
-      const updatedProject =
-        await updateContentProject(project.id, {
-          title,
-          category,
-          description,
-          displayOrder: parsedDisplayOrder,
-          imageUrl: newImageUrl ?? project.imageUrl,
-        })
+      const updatedProject = await updateContentProject(project.id, {
+        title,
+        category,
+        description,
+        displayOrder: parsedDisplayOrder,
+        imageUrl: newImageUrl ?? project.imageUrl,
+      })
 
+      toast.success("Project updated successfully.")
       onUpdated(updatedProject)
       onOpenChange(false)
 
-      if (
-        newImageUrl &&
-        project.imageUrl !== newImageUrl
-      ) {
+      if (newImageUrl && project.imageUrl !== newImageUrl) {
         try {
           await deleteContentImage(project.imageUrl)
         } catch (cleanupError) {
@@ -177,10 +160,10 @@ export default function EditProjectDialog({
         }
       }
     } catch (error) {
-      console.error(
-        "Failed to update content project:",
-        error
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save content."
       )
+      console.error("Failed to update content project:", error)
 
       /*
        * If we successfully uploaded a replacement image but
@@ -199,9 +182,7 @@ export default function EditProjectDialog({
       }
 
       setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to update project."
+        error instanceof Error ? error.message : "Failed to update project."
       )
     } finally {
       setIsSaving(false)
@@ -223,62 +204,46 @@ export default function EditProjectDialog({
     >
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            Edit Project
-          </DialogTitle>
+          <DialogTitle>Edit Project</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="edit-project-title">
-              Project Title
-            </Label>
+            <Label htmlFor="edit-project-title">Project Title</Label>
 
             <Input
               id="edit-project-title"
               value={title}
               disabled={isSaving}
-              onChange={(event) =>
-                setTitle(event.target.value)
-              }
+              onChange={(event) => setTitle(event.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-project-category">
-              Category
-            </Label>
+            <Label htmlFor="edit-project-category">Category</Label>
 
             <Input
               id="edit-project-category"
               value={category}
               disabled={isSaving}
-              onChange={(event) =>
-                setCategory(event.target.value)
-              }
+              onChange={(event) => setCategory(event.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-project-description">
-              Description
-            </Label>
+            <Label htmlFor="edit-project-description">Description</Label>
 
             <Textarea
               id="edit-project-description"
               rows={4}
               value={description}
               disabled={isSaving}
-              onChange={(event) =>
-                setDescription(event.target.value)
-              }
+              onChange={(event) => setDescription(event.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-project-display-order">
-              Display Order
-            </Label>
+            <Label htmlFor="edit-project-display-order">Display Order</Label>
 
             <Input
               id="edit-project-display-order"
@@ -287,9 +252,7 @@ export default function EditProjectDialog({
               step="1"
               value={displayOrder}
               disabled={isSaving}
-              onChange={(event) =>
-                setDisplayOrder(event.target.value)
-              }
+              onChange={(event) => setDisplayOrder(event.target.value)}
             />
 
             <p className="text-xs text-muted-foreground">
@@ -312,15 +275,13 @@ export default function EditProjectDialog({
                   type="button"
                   variant="secondary"
                   size="icon"
-                  className="absolute right-3 top-3"
+                  className="absolute top-3 right-3"
                   disabled={isSaving}
                   onClick={removeSelectedImage}
                 >
                   <X className="size-4" />
 
-                  <span className="sr-only">
-                    Remove replacement image
-                  </span>
+                  <span className="sr-only">Remove replacement image</span>
                 </Button>
               )}
 
@@ -341,32 +302,20 @@ export default function EditProjectDialog({
               onChange={handleImageChange}
             />
 
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isSaving}
-              asChild
-            >
-              <label
-                htmlFor="edit-project-image"
-                className="cursor-pointer"
-              >
+            <Button type="button" variant="outline" disabled={isSaving} asChild>
+              <label htmlFor="edit-project-image" className="cursor-pointer">
                 <Upload className="mr-2 size-4" />
                 Replace Image
               </label>
             </Button>
 
             <p className="text-xs text-muted-foreground">
-              Leave the image unchanged if you only want to edit
-              the project information.
+              Leave the image unchanged if you only want to edit the project
+              information.
             </p>
           </div>
 
-          {error && (
-            <p className="text-sm text-destructive">
-              {error}
-            </p>
-          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
 
         <DialogFooter>
@@ -379,14 +328,8 @@ export default function EditProjectDialog({
             Cancel
           </Button>
 
-          <Button
-            type="button"
-            disabled={isSaving}
-            onClick={handleSave}
-          >
-            {isSaving
-              ? "Saving..."
-              : "Save Changes"}
+          <Button type="button" disabled={isSaving} onClick={handleSave}>
+            {isSaving ? "Saving..." : "Save Changes"}
           </Button>
         </DialogFooter>
       </DialogContent>

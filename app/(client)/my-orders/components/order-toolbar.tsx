@@ -12,11 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-export type OrderSort =
-  | "newest"
-  | "oldest"
-  | "highest"
-  | "lowest"
+export type OrderSort = "newest" | "oldest" | "highest" | "lowest"
 
 interface Props {
   search: string
@@ -36,24 +32,26 @@ export default function OrderToolbar({
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
       {/* Search */}
       <div className="relative flex-1">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 
         <Input
           value={search}
           onChange={(event) => onSearch(event.target.value)}
           placeholder="Search by product or order number..."
-          className="h-10 pl-9"
+          aria-label="Search orders"
+          className="h-9 bg-background/60 pl-9 text-sm"
         />
       </div>
 
       {/* Sort */}
       <Select
         value={sort}
-        onValueChange={(value) =>
-          onSortChange(value as OrderSort)
-        }
+        onValueChange={(value) => onSortChange(value as OrderSort)}
       >
-        <SelectTrigger className="h-10 w-full sm:w-[190px]">
+        <SelectTrigger
+          aria-label="Sort orders"
+          className="h-9 w-full bg-background/60 sm:w-[180px]"
+        >
           <div className="flex items-center gap-2">
             <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
 
@@ -62,21 +60,13 @@ export default function OrderToolbar({
         </SelectTrigger>
 
         <SelectContent>
-          <SelectItem value="newest">
-            Newest first
-          </SelectItem>
+          <SelectItem value="newest">Newest first</SelectItem>
 
-          <SelectItem value="oldest">
-            Oldest first
-          </SelectItem>
+          <SelectItem value="oldest">Oldest first</SelectItem>
 
-          <SelectItem value="highest">
-            Highest total
-          </SelectItem>
+          <SelectItem value="highest">Highest total</SelectItem>
 
-          <SelectItem value="lowest">
-            Lowest total
-          </SelectItem>
+          <SelectItem value="lowest">Lowest total</SelectItem>
         </SelectContent>
       </Select>
     </div>

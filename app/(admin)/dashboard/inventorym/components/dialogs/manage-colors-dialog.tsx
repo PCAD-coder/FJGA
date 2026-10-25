@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { useState } from "react"
 import { Palette, Archive } from "lucide-react"
 
@@ -36,16 +38,14 @@ interface ManageColorsDialogProps {
   trigger?: React.ReactNode
 }
 
-export function ManageColorsDialog( {
-    trigger,
-}: ManageColorsDialogProps) {
+export function ManageColorsDialog({ trigger }: ManageColorsDialogProps) {
   const [open, setOpen] = useState(false)
   const [category, setCategory] = useState("")
   const [newColor, setNewColor] = useState("")
   const [saving, setSaving] = useState(false)
   const [colors, setColors] = useState<MaterialColor[]>([])
 
- const { colorCategories } =useCategories()
+  const { colorCategories } = useCategories()
 
   async function loadColors() {
     const data = await getAllColors()
@@ -59,11 +59,15 @@ export function ManageColorsDialog( {
       setSaving(true)
 
       await createColor(category, newColor.trim())
+      toast.success("Color added successfully.")
 
       setNewColor("")
 
       await loadColors()
     } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save color."
+      )
       console.error(error)
     } finally {
       setSaving(false)
@@ -73,9 +77,13 @@ export function ManageColorsDialog( {
   async function handleArchive(id: string) {
     try {
       await archiveColor(id)
+      toast.success("Color archived successfully.")
 
       await loadColors()
     } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save color."
+      )
       console.error(error)
     }
   }
@@ -93,10 +101,10 @@ export function ManageColorsDialog( {
     >
       <DialogTrigger asChild>
         {trigger ?? (
-        <Button variant="outline">
-          <Palette className="mr-2 h-4 w-4" />
-          Manage Colors
-        </Button>
+          <Button variant="outline">
+            <Palette className="mr-2 h-4 w-4" />
+            Manage Colors
+          </Button>
         )}
       </DialogTrigger>
 

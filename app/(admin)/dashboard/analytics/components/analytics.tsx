@@ -4,7 +4,9 @@ import { useEffect, useState } from "react"
 
 import { DollarSign, ShoppingCart, RotateCcw, Star } from "lucide-react"
 
-import AnalyticsSummaryCard from "./analytics-summary-card"
+import { DashboardCard } from "@/components/dashboard_cards"
+import AnalyticsSkeleton from "./analytics-skeleton"
+import { toast } from "sonner"
 import AnalyticsFilter from "./analytics-filter"
 
 import RevenueChart from "./revenue-chart"
@@ -72,6 +74,9 @@ export default function Analytics() {
         setMaterialsUsage(materialsUsageData)
       } catch (error) {
         console.error("Failed to load analytics:", error)
+        toast.error("Unable to load analytics. Please try again.", {
+          id: "analytics-load-error",
+        })
       } finally {
         setLoading(false)
       }
@@ -80,46 +85,50 @@ export default function Analytics() {
     loadAnalytics()
   }, [period])
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
+  if (loading) return <AnalyticsSkeleton />
 
-          <p className="text-muted-foreground">
+  return (
+    <div className="mx-auto w-full max-w-[1600px] min-w-0 space-y-4 px-1 pt-2 pb-12 sm:px-4 sm:pt-3 lg:px-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 pb-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Analytics Dashboard
+          </h1>
+
+          <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
             Monitor company performance, sales trends, and business insights.
           </p>
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-  <AnalyticsFilter
-    value={period}
-    onChange={(value) => {
-      if (
-        value === "monthly" ||
-        value === "quarterly" ||
-        value === "yearly"
-      ) {
-        setPeriod(value)
-      }
-    }}
-  />
+        <div className="flex flex-wrap items-center gap-2">
+          <AnalyticsFilter
+            value={period}
+            onChange={(value) => {
+              if (
+                value === "monthly" ||
+                value === "quarterly" ||
+                value === "yearly"
+              ) {
+                setPeriod(value)
+              }
+            }}
+          />
 
-  <AnalyticsExportMenu
-    period={period}
-    summary={summary}
-    revenueData={revenueData}
-    ordersData={ordersData}
-    topProducts={topProducts}
-    materialsUsage={materialsUsage}
-  />
-</div>
+          <AnalyticsExportMenu
+            period={period}
+            summary={summary}
+            revenueData={revenueData}
+            ordersData={ordersData}
+            topProducts={topProducts}
+            materialsUsage={materialsUsage}
+          />
+        </div>
       </div>
 
       {/* SUMMARY CARDS */}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <AnalyticsSummaryCard
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-3">
+        <DashboardCard
           title="Total Revenue"
           value={
             loading
@@ -130,28 +139,32 @@ export default function Analytics() {
                 })}`
           }
           description="Revenue from delivered orders"
-          icon={<DollarSign className="h-8 w-8 text-green-600" />}
+          icon={DollarSign}
+          color="text-emerald-600 dark:text-emerald-400"
         />
 
-        <AnalyticsSummaryCard
+        <DashboardCard
           title="Completed Orders"
           value={loading ? "Loading..." : summary.completedOrders.toString()}
           description="Orders with delivered status"
-          icon={<ShoppingCart className="h-8 w-8 text-blue-600" />}
+          icon={ShoppingCart}
+          color="text-blue-600 dark:text-blue-400"
         />
 
-        <AnalyticsSummaryCard
+        <DashboardCard
           title="Return Requests"
           value={loading ? "Loading..." : summary.returnRequests.toString()}
           description="Requests submitted during the selected period"
-          icon={<RotateCcw className="h-8 w-8 text-orange-600" />}
+          icon={RotateCcw}
+          color="text-orange-600 dark:text-orange-400"
         />
 
-        <AnalyticsSummaryCard
+        <DashboardCard
           title="Customer Satisfaction"
-           value={loading ? "Loading..." : `${summary.customerSatisfaction} / 5`}
+          value={loading ? "Loading..." : `${summary.customerSatisfaction} / 5`}
           description="Based on client feedback"
-          icon={<Star className="h-8 w-8 text-yellow-500" />}
+          icon={Star}
+          color="text-yellow-600 dark:text-yellow-400"
         />
       </div>
 
@@ -166,39 +179,44 @@ export default function Analytics() {
       {/* TABLES */}
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <TopProductsTable products={topProducts} />
+        <TopProductsTable key={`products-${period}`} products={topProducts} />
 
-        <MaterialsUsageTable materials={materialsUsage} />
+        <MaterialsUsageTable
+          key={`materials-${period}`}
+          materials={materialsUsage}
+        />
       </div>
 
       {/* INSIGHTS */}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Business Insights</CardTitle>
+      <Card className="min-w-0 gap-0 overflow-hidden rounded-xl border border-border/80 py-0 shadow-none ring-0">
+        <CardHeader className="border-b px-5 py-4">
+          <CardTitle className="text-base font-semibold">
+            Business Insights
+          </CardTitle>
         </CardHeader>
 
-        <CardContent>
-          <ul className="space-y-3 text-sm">
+        <CardContent className="p-5">
+          <ul className="list-disc space-y-3 pl-5 text-sm leading-6 marker:text-primary">
             <li>
-              📈 Revenue increased by <strong>18%</strong> compared to the
-              previous month.
+              Revenue increased by <strong>18%</strong> compared to the previous
+              month.
             </li>
 
             <li>
-              🏆 <strong>Tempered Glass Door</strong> remains the
-              highest-selling product.
+              <strong>Tempered Glass Door</strong> remains the highest-selling
+              product.
             </li>
 
-            <li>📦 Order volume grew steadily over the last 6 months.</li>
+            <li>Order volume grew steadily over the last 6 months.</li>
 
             <li>
-              🔧 Return requests decreased by <strong>10%</strong>, indicating
+              Return requests decreased by <strong>10%</strong>, indicating
               improved product quality.
             </li>
 
             <li>
-              ⭐ Customer satisfaction remains high at <strong>4.8 / 5</strong>.
+              Customer satisfaction remains high at <strong>4.8 / 5</strong>.
             </li>
           </ul>
         </CardContent>

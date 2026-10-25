@@ -87,7 +87,7 @@ export default async function ProductsSection() {
                   {product.sellingPrice > 0 && (
                     <div className="mt-4 border-t pt-4">
                       <p className="text-xs text-muted-foreground">
-                        Starting at
+                        Starts at
                       </p>
 
                       <p className="mt-1 text-lg font-semibold">

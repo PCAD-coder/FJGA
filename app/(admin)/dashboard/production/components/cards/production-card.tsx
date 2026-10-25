@@ -38,101 +38,80 @@ export default function ProductionCard({
   const currentIndex = stages.indexOf(project.stage)
 
   return (
-    <Card>
-      <CardContent className="p-6">
-        {/* Header */}
-
-        <div className="mb-5 flex items-start justify-between">
+    <Card className="min-w-0 gap-0 overflow-hidden rounded-xl border border-border/80 py-0 shadow-none ring-0">
+      <CardContent className="p-4 sm:p-5">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h3 className="text-lg font-semibold">{project.projectName}</h3>
-
+            <h3 className="text-base font-semibold tracking-tight wrap-break-word">
+              {project.projectName}
+            </h3>
             <p className="text-sm text-muted-foreground">
               Client: {project.clientName}
             </p>
-
             <p className="text-xs text-muted-foreground">
               Order: {project.orderNumber}
             </p>
           </div>
-
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 [&_[data-slot=badge]]:rounded-full [&_[data-slot=badge]]:text-[10px]">
             {project.projectType === "return" && (
               <Badge variant="outline">
                 <RotateCcw className="mr-1 h-3 w-3" />
                 Return
               </Badge>
             )}
-
             <Badge>{project.stage}</Badge>
           </div>
         </div>
-
-        {/* Main Content */}
-
-        <div className="grid gap-5 md:grid-cols-[300px_1fr]">
-          {/* Image */}
-
+        <div className="grid min-w-0 gap-4 lg:grid-cols-[180px_minmax(0,1fr)]">
           <div>
-            <div className="relative h-[220px] overflow-hidden rounded-lg border">
+            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border bg-muted lg:h-[150px]">
               <Image
                 src={project.imageUrl ?? "/placeholder.jpg"}
                 alt={project.projectName}
                 fill
+                sizes="(max-width: 1024px) 100vw, 180px"
                 className="object-cover"
               />
             </div>
-
             <p className="mt-2 text-xs text-muted-foreground">
               Production Reference
             </p>
           </div>
-
-          {/* Details */}
-
-          <div className="space-y-4">
-            <div className="grid gap-3 md:grid-cols-3">
-              <div className="rounded-md bg-muted p-3">
+          <div className="min-w-0 space-y-4">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,140px),1fr))] gap-3">
+              <div className="rounded-lg border border-border/50 bg-muted/40 p-3">
                 <p className="text-xs text-muted-foreground">Dimensions</p>
-
-                <p className="font-medium">
+                <p className="mt-1 text-sm font-medium wrap-break-word">
                   {project.dimensions ?? "Not specified"}
                 </p>
               </div>
-
-              <div className="rounded-md bg-muted p-3">
+              <div className="rounded-lg border border-border/50 bg-muted/40 p-3">
                 <p className="text-xs text-muted-foreground">Est. Completion</p>
-
-                <p className="font-medium">{project.estimatedCompletion}</p>
+                <p className="mt-1 text-sm font-medium wrap-break-word">
+                  {project.estimatedCompletion}
+                </p>
               </div>
-
-              <div className="rounded-md bg-muted p-3">
+              <div className="rounded-lg border border-border/50 bg-muted/40 p-3">
                 <p className="text-xs text-muted-foreground">Assigned Staff</p>
-
-                <p className="font-medium">
+                <p className="mt-1 text-sm font-medium wrap-break-word">
                   {project.assignedStaff || "Unassigned"}
                 </p>
               </div>
             </div>
-
-            {/* Stages */}
-
             <div>
               <h4 className="mb-3 text-sm font-medium">Production Stages</h4>
-
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5 [&_[data-slot=badge]]:rounded-full [&_[data-slot=badge]]:px-2 [&_[data-slot=badge]]:text-[10px]">
                 {stages.map((stage, index) => {
                   const completed = index < currentIndex
-
                   const active = index === currentIndex
-
                   return (
                     <Badge
                       key={stage}
                       className={
                         active
-                          ? "bg-orange-500 hover:bg-orange-500"
+                          ? "bg-primary text-primary-foreground hover:bg-primary"
                           : completed
-                            ? "bg-green-600 hover:bg-green-600"
+                            ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-400"
                             : "bg-muted text-muted-foreground"
                       }
                     >
@@ -142,28 +121,26 @@ export default function ProductionCard({
                 })}
               </div>
             </div>
-
-            {/* Progress */}
-
             <div>
               <div className="mb-2 flex justify-between text-sm">
                 <span>Progress</span>
-
                 <span>{project.progress}%</span>
               </div>
-
-              <Progress value={project.progress} />
+              <Progress value={project.progress} className="h-2" />
             </div>
-
-            {/* Actions */}
-
-            <div className="flex gap-3 pt-2">
-              <Button onClick={onUpdateStage}>
+            <div className="flex flex-wrap gap-2 border-t border-border/60 pt-3">
+              <Button
+                onClick={onUpdateStage}
+                className="h-9 rounded-lg text-xs shadow-none"
+              >
                 <Settings2 className="mr-2 h-4 w-4" />
                 Update Stage
               </Button>
-
-              <Button variant="outline" onClick={onView}>
+              <Button
+                variant="outline"
+                onClick={onView}
+                className="h-9 rounded-lg text-xs shadow-none"
+              >
                 <Eye className="mr-2 h-4 w-4" />
                 View Details
               </Button>

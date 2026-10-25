@@ -34,17 +34,17 @@ export function useInventory() {
 
   type StockStatusFilter = "all" | "in-stock" | "low-stock" | "out-of-stock"
 
-type ExpirationStatusFilter =
-  | "all"
-  | "not-expiring"
-  | "expiring-soon"
-  | "expired"
+  type ExpirationStatusFilter =
+    | "all"
+    | "not-expiring"
+    | "expiring-soon"
+    | "expired"
 
-const [stockStatusFilter, setStockStatusFilter] =
-  useState<StockStatusFilter>("all")
+  const [stockStatusFilter, setStockStatusFilter] =
+    useState<StockStatusFilter>("all")
 
-const [expirationStatusFilter, setExpirationStatusFilter] =
-  useState<ExpirationStatusFilter>("all")
+  const [expirationStatusFilter, setExpirationStatusFilter] =
+    useState<ExpirationStatusFilter>("all")
 
   async function loadMaterials() {
     try {
@@ -63,94 +63,129 @@ const [expirationStatusFilter, setExpirationStatusFilter] =
   }, [])
 
   async function addMaterial(material: InventoryInsert) {
-    await createMaterial(material)
+    try {
+      await createMaterial(material)
 
-    await loadMaterials()
+      await loadMaterials()
+      toast.success("Material added successfully.")
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to save the inventory change."
+      )
+      throw error
+    }
   }
 
   async function editMaterial(id: string, material: InventoryUpdate) {
-    await updateMaterial(id, material)
+    try {
+      await updateMaterial(id, material)
 
-    await loadMaterials()
+      await loadMaterials()
+      toast.success("Material updated successfully.")
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to save the inventory change."
+      )
+      throw error
+    }
   }
   async function archiveInventoryMaterial(id: string) {
-    await archiveMaterial(id)
+    try {
+      await archiveMaterial(id)
 
-    await loadMaterials()
+      await loadMaterials()
+      toast.success("Material archived successfully.")
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to save the inventory change."
+      )
+      throw error
+    }
   }
   async function restockInventoryMaterial(input: {
-  materialId: string
-  quantity: number
-  notes?: string
-  batchNumber?: string
-  receivedAt?: string
-  expirationDate?: string
-}) {
-  try {
-    setLoading(true)
+    materialId: string
+    quantity: number
+    notes?: string
+    batchNumber?: string
+    receivedAt?: string
+    expirationDate?: string
+  }) {
+    try {
+      setLoading(true)
 
-    const result = await restockMaterial(input)
+      const result = await restockMaterial(input)
 
-    await loadMaterials()
+      await loadMaterials()
 
-    return result
-  } finally {
-    setLoading(false)
+      toast.success("Material restocked successfully.")
+      return result
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to restock material."
+      )
+      throw error
+    } finally {
+      setLoading(false)
+    }
   }
-}
 
-const filteredMaterials = useMemo(() => {
-  const searchValue = search.trim().toLowerCase()
+  const filteredMaterials = useMemo(() => {
+    const searchValue = search.trim().toLowerCase()
 
-  return materials.filter((material) => {
-    const matchesSearch =
-      !searchValue ||
-      material.material_name.toLowerCase().includes(searchValue)
+    return materials.filter((material) => {
+      const matchesSearch =
+        !searchValue ||
+        material.material_name.toLowerCase().includes(searchValue)
 
-    const matchesCategory =
-      categoryFilter === "all"
-        ? true
-        : categoryFilter === "low-stock"
-          ? material.stock_quantity <= material.minimum_stock
-          : material.category === categoryFilter
+      const matchesCategory =
+        categoryFilter === "all"
+          ? true
+          : categoryFilter === "low-stock"
+            ? material.stock_quantity <= material.minimum_stock
+            : material.category === categoryFilter
 
-    const matchesStockStatus =
-      stockStatusFilter === "all"
-        ? true
-        : stockStatusFilter === "out-of-stock"
-          ? material.stock_quantity === 0
-          : stockStatusFilter === "low-stock"
-            ? material.stock_quantity > 0 &&
-              material.stock_quantity <= material.minimum_stock
-            : material.stock_quantity > material.minimum_stock
+      const matchesStockStatus =
+        stockStatusFilter === "all"
+          ? true
+          : stockStatusFilter === "out-of-stock"
+            ? material.stock_quantity === 0
+            : stockStatusFilter === "low-stock"
+              ? material.stock_quantity > 0 &&
+                material.stock_quantity <= material.minimum_stock
+              : material.stock_quantity > material.minimum_stock
 
-    const matchesExpirationStatus =
-      expirationStatusFilter === "all"
-        ? true
-        : expirationStatusFilter === "not-expiring"
-          ? !material.tracks_expiration ||
-            (material.expired_quantity <= 0 &&
-              material.expiring_soon_quantity <= 0)
-          : expirationStatusFilter === "expiring-soon"
-            ? material.tracks_expiration &&
-              material.expiring_soon_quantity > 0
-            : material.tracks_expiration &&
-              material.expired_quantity > 0
+      const matchesExpirationStatus =
+        expirationStatusFilter === "all"
+          ? true
+          : expirationStatusFilter === "not-expiring"
+            ? !material.tracks_expiration ||
+              (material.expired_quantity <= 0 &&
+                material.expiring_soon_quantity <= 0)
+            : expirationStatusFilter === "expiring-soon"
+              ? material.tracks_expiration &&
+                material.expiring_soon_quantity > 0
+              : material.tracks_expiration && material.expired_quantity > 0
 
-    return (
-      matchesSearch &&
-      matchesCategory &&
-      matchesStockStatus &&
-      matchesExpirationStatus
-    )
-  })
-}, [
-  materials,
-  search,
-  categoryFilter,
-  stockStatusFilter,
-  expirationStatusFilter,
-])
+      return (
+        matchesSearch &&
+        matchesCategory &&
+        matchesStockStatus &&
+        matchesExpirationStatus
+      )
+    })
+  }, [
+    materials,
+    search,
+    categoryFilter,
+    stockStatusFilter,
+    expirationStatusFilter,
+  ])
 
   const totalMaterials = materials.length
 
@@ -165,99 +200,98 @@ const filteredMaterials = useMemo(() => {
   ).length
 
   const expiringSoonItems = materials.filter(
-  (material) =>
-    material.tracks_expiration &&
-    material.expiring_soon_quantity > 0
-).length
+    (material) =>
+      material.tracks_expiration && material.expiring_soon_quantity > 0
+  ).length
 
   const initializeMaterialExpirationStock = async (
-  input: InitializeExpirationStockInput
-) => {
-  try {
-    const result = await initializeExpirationStock(input)
+    input: InitializeExpirationStockInput
+  ) => {
+    try {
+      const result = await initializeExpirationStock(input)
 
-    await loadMaterials()
+      await loadMaterials()
 
-    toast.success(
-      `${result.initialized_quantity} existing units were initialized for expiration tracking.`
-    )
-
-    return result
-  } catch (error) {
-    console.error("Failed to initialize expiration stock:", error)
-
-    toast.error(
-      error instanceof Error
-        ? error.message
-        : "Failed to initialize expiration stock."
-    )
-
-    throw error
-  }
-}
-
-const enableMaterialExpirationTracking = async (
-  input: EnableExpirationTrackingInput
-) => {
-  try {
-    setLoading(true)
-
-    const result = await enableExpirationTracking(input)
-
-    await loadMaterials()
-
-    if (result.initialized_quantity > 0) {
       toast.success(
-        `Expiration tracking enabled. ${result.initialized_quantity} existing units were initialized into an expiration batch.`
+        `${result.initialized_quantity} existing units were initialized for expiration tracking.`
       )
-    } else {
-      toast.success("Expiration tracking enabled.")
+
+      return result
+    } catch (error) {
+      console.error("Failed to initialize expiration stock:", error)
+
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to initialize expiration stock."
+      )
+
+      throw error
     }
-
-    return result
-  } catch (error) {
-    console.error("Failed to enable expiration tracking:", error)
-
-    toast.error(
-      error instanceof Error
-        ? error.message
-        : "Failed to enable expiration tracking."
-    )
-
-    throw error
-  } finally {
-    setLoading(false)
   }
-}
-const disposeExpiredInventoryBatch = async (
-  input: DisposeExpiredBatchInput
-) => {
-  try {
-    setLoading(true)
 
-    const result = await disposeExpiredBatch(input)
+  const enableMaterialExpirationTracking = async (
+    input: EnableExpirationTrackingInput
+  ) => {
+    try {
+      setLoading(true)
 
-    await loadMaterials()
+      const result = await enableExpirationTracking(input)
 
-    toast.success(
-      `${result.quantity_disposed} expired units were disposed. Stock changed from ${result.stock_before} to ${result.stock_after}.`
-    )
+      await loadMaterials()
 
-    return result
-  } catch (error) {
-    console.error("Failed to dispose expired inventory:", error)
+      if (result.initialized_quantity > 0) {
+        toast.success(
+          `Expiration tracking enabled. ${result.initialized_quantity} existing units were initialized into an expiration batch.`
+        )
+      } else {
+        toast.success("Expiration tracking enabled.")
+      }
 
-    toast.error(
-      error instanceof Error
-        ? error.message
-        : "Failed to dispose expired inventory."
-    )
+      return result
+    } catch (error) {
+      console.error("Failed to enable expiration tracking:", error)
 
-    throw error
-  } finally {
-    setLoading(false)
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to enable expiration tracking."
+      )
+
+      throw error
+    } finally {
+      setLoading(false)
+    }
   }
-}
+  const disposeExpiredInventoryBatch = async (
+    input: DisposeExpiredBatchInput
+  ) => {
+    try {
+      setLoading(true)
+
+      const result = await disposeExpiredBatch(input)
+
+      await loadMaterials()
+
+      toast.success(
+        `${result.quantity_disposed} expired units were disposed. Stock changed from ${result.stock_before} to ${result.stock_after}.`
+      )
+
+      return result
+    } catch (error) {
+      console.error("Failed to dispose expired inventory:", error)
+
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to dispose expired inventory."
+      )
+
+      throw error
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return {
     loading,
@@ -276,11 +310,11 @@ const disposeExpiredInventoryBatch = async (
 
     stockStatusFilter,
 
-setStockStatusFilter,
+    setStockStatusFilter,
 
-expirationStatusFilter,
+    expirationStatusFilter,
 
-setExpirationStatusFilter,
+    setExpirationStatusFilter,
 
     totalMaterials,
 

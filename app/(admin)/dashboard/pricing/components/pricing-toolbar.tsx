@@ -1,36 +1,29 @@
-"use client";
+"use client"
 
-import { Search, Wrench } from "lucide-react";
+import { Search, Wrench } from "lucide-react"
 
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 
-import type {
-  LaborPricing,
-  MaterialPricing,
-} from "../types/pricing"
+import type { LaborPricing, MaterialPricing } from "../types/pricing"
 
 import PricingExportMenu from "./pricing-export-menu"
 
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface PricingToolbarProps {
-  activeTab: "materials" | "labor";
+  activeTab: "materials" | "labor"
 
-  onTabChange: (tab: "materials" | "labor") => void;
+  onTabChange: (tab: "materials" | "labor") => void
 
-  search: string;
+  search: string
 
-  onSearchChange: (value: string) => void;
+  onSearchChange: (value: string) => void
 
-  onAddService: () => void;
-  materials: MaterialPricing[];
+  onAddService: () => void
+  materials: MaterialPricing[]
 
-laborServices: LaborPricing[];
+  laborServices: LaborPricing[]
 }
 
 export default function PricingToolbar({
@@ -39,34 +32,29 @@ export default function PricingToolbar({
   search,
   onSearchChange,
   onAddService,
-    materials,
-  laborServices
+  materials,
+  laborServices,
 }: PricingToolbarProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 rounded-xl border border-border/80 bg-card p-4">
       <Tabs
         value={activeTab}
-        onValueChange={(value) =>
-          onTabChange(value as "materials" | "labor")
-        }
+        onValueChange={(value) => onTabChange(value as "materials" | "labor")}
       >
-        <TabsList>
-          <TabsTrigger value="materials">
-            Materials
-          </TabsTrigger>
+        <TabsList className="h-auto max-w-full flex-wrap rounded-lg bg-muted/60">
+          <TabsTrigger value="materials">Materials</TabsTrigger>
 
-          <TabsTrigger value="labor">
-            Labor Services
-          </TabsTrigger>
+          <TabsTrigger value="labor">Labor Services</TabsTrigger>
         </TabsList>
       </Tabs>
 
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="relative w-full md:max-w-md">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 
           <Input
-            className="pl-9"
+            aria-label="Search pricing records"
+            className="h-9 rounded-lg bg-background/50 pl-9 shadow-none"
             placeholder={
               activeTab === "materials"
                 ? "Search materials..."
@@ -77,22 +65,25 @@ export default function PricingToolbar({
           />
         </div>
 
-        <div className="flex gap-2">
-  <PricingExportMenu
-    activeTab={activeTab}
-    materials={materials}
-    laborServices={laborServices}
-    search={search}
-  />
+        <div className="flex flex-wrap gap-2">
+          <PricingExportMenu
+            activeTab={activeTab}
+            materials={materials}
+            laborServices={laborServices}
+            search={search}
+          />
 
-  {activeTab === "labor" && (
-    <Button onClick={onAddService}>
-      <Wrench className="mr-2 h-4 w-4" />
-      Add Service
-    </Button>
-  )}
-</div>
+          {activeTab === "labor" && (
+            <Button
+              onClick={onAddService}
+              className="h-9 rounded-lg text-sm shadow-none"
+            >
+              <Wrench className="mr-2 h-4 w-4" />
+              Add Service
+            </Button>
+          )}
+        </div>
       </div>
     </div>
-  );
+  )
 }

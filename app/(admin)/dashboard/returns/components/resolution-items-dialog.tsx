@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { useEffect, useState } from "react"
 
 import {
@@ -269,10 +271,16 @@ export default function ResolutionItemsDialog({
         throw new Error(result.error)
       }
 
+      toast.success("Resolution items saved successfully.")
       await onComplete()
 
       onOpenChange(false)
     } catch (saveError) {
+      toast.error(
+        saveError instanceof Error
+          ? saveError.message
+          : "Failed to save resolution items."
+      )
       setError(
         saveError instanceof Error
           ? saveError.message

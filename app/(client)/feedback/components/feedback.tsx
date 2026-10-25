@@ -1,5 +1,7 @@
 "use client"
 
+import ModuleLoading from "../loading"
+
 import { useState } from "react"
 
 import { MessageSquare, Star } from "lucide-react"
@@ -35,43 +37,58 @@ export default function Feedback() {
     (feedback) => feedback.status === "published"
   ).length
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Feedback</h1>
+  if (loading) {
+    return <ModuleLoading />
+  }
 
-        <p className="text-muted-foreground">
-          Share your experience and view your submitted feedback.
+  return (
+    <div className="mx-auto w-full max-w-[1440px] space-y-6 px-1 pt-4 pb-12 sm:px-4 sm:pt-6 lg:px-6">
+      <header className="border-b border-border/70 pb-5">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Your experience, your voice.
+        </h1>
+
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          Tell us about your finished pieces and revisit the feedback you have
+          shared.
         </p>
-      </div>
+      </header>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <p className="text-sm text-muted-foreground">Your Reviews</p>
+        <Card className="gap-0 rounded-xl border border-border/80 py-0 shadow-none ring-0">
+          <CardContent className="p-5">
+            <p className="text-xs leading-5 text-muted-foreground">
+              Your Reviews
+            </p>
 
-            <h2 className="text-3xl font-bold">{feedbacks.length}</h2>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <p className="text-sm text-muted-foreground">Average Rating</p>
-
-            <h2 className="flex items-center justify-center gap-1 text-3xl font-bold">
-              {averageRating}
-
-              <Star className="h-6 w-6 fill-yellow-400 text-yellow-400" />
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight tabular-nums">
+              {feedbacks.length}
             </h2>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <p className="text-sm text-muted-foreground">Published Reviews</p>
+        <Card className="gap-0 rounded-xl border border-border/80 py-0 shadow-none ring-0">
+          <CardContent className="p-5">
+            <p className="text-xs leading-5 text-muted-foreground">
+              Average Rating
+            </p>
 
-            <h2 className="flex items-center justify-center gap-2 text-3xl font-bold">
-              <MessageSquare className="h-6 w-6" />
+            <h2 className="mt-3 flex items-center gap-2 text-2xl font-semibold tracking-tight tabular-nums">
+              {averageRating}
+
+              <Star className="size-5 fill-amber-400 text-amber-400" />
+            </h2>
+          </CardContent>
+        </Card>
+
+        <Card className="gap-0 rounded-xl border border-border/80 py-0 shadow-none ring-0">
+          <CardContent className="p-5">
+            <p className="text-xs leading-5 text-muted-foreground">
+              Published Reviews
+            </p>
+
+            <h2 className="mt-3 flex items-center gap-2 text-2xl font-semibold tracking-tight tabular-nums">
+              <MessageSquare className="size-5 text-primary" />
 
               {publishedCount}
             </h2>
@@ -85,69 +102,74 @@ export default function Feedback() {
         </div>
       )}
 
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-xl font-semibold">Orders Awaiting Feedback</h2>
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <section className="min-w-0 space-y-4">
+          <div>
+            <h2 className="text-base font-semibold tracking-tight">
+              Your Feedback
+            </h2>
 
-          <p className="text-sm text-muted-foreground">
-            Review your completed orders.
-          </p>
-        </div>
+            <p className="text-xs leading-5 text-muted-foreground">
+              Feedback you have submitted.
+            </p>
+          </div>
 
-        {loading ? (
-          <div className="py-10 text-center text-muted-foreground">
-            Loading...
-          </div>
-        ) : orders.length === 0 ? (
-          <div className="rounded-lg border p-8 text-center text-muted-foreground">
-            You have no orders awaiting feedback.
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {orders.map((order) => (
-              <FeedbackOrderCard
-                key={order.id}
-                order={order}
-                onLeaveFeedback={() => {
-                  setSelectedOrder({
-                    id: order.id,
-                    orderNumber: order.orderNumber,
-                    projectName: order.projectName,
-                  })
+          {loading ? (
+            <div className="py-10 text-center text-muted-foreground">
+              Loading...
+            </div>
+          ) : feedbacks.length === 0 ? (
+            <div className="rounded-xl border border-dashed bg-muted/30 px-5 py-10 text-center text-sm text-muted-foreground">
+              You have not submitted any feedback yet.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {feedbacks.map((feedback) => (
+                <FeedbackCard key={feedback.id} feedback={feedback} />
+              ))}
+            </div>
+          )}
+        </section>
+        <section className="min-w-0 space-y-4 rounded-xl border border-border/80 bg-card p-5">
+          <div>
+            <h2 className="text-base font-semibold tracking-tight">
+              Orders Awaiting Feedback
+            </h2>
 
-                  setDialogOpen(true)
-                }}
-              />
-            ))}
+            <p className="text-xs leading-5 text-muted-foreground">
+              Review your completed orders.
+            </p>
           </div>
-        )}
-      </section>
 
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-xl font-semibold">Your Feedback</h2>
+          {loading ? (
+            <div className="py-10 text-center text-muted-foreground">
+              Loading...
+            </div>
+          ) : orders.length === 0 ? (
+            <div className="rounded-xl border border-dashed bg-muted/30 px-5 py-10 text-center text-sm text-muted-foreground">
+              You have no orders awaiting feedback.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {orders.map((order) => (
+                <FeedbackOrderCard
+                  key={order.id}
+                  order={order}
+                  onLeaveFeedback={() => {
+                    setSelectedOrder({
+                      id: order.id,
+                      orderNumber: order.orderNumber,
+                      projectName: order.projectName,
+                    })
 
-          <p className="text-sm text-muted-foreground">
-            Feedback you have submitted.
-          </p>
-        </div>
-
-        {loading ? (
-          <div className="py-10 text-center text-muted-foreground">
-            Loading...
-          </div>
-        ) : feedbacks.length === 0 ? (
-          <div className="rounded-lg border p-8 text-center text-muted-foreground">
-            You have not submitted any feedback yet.
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {feedbacks.map((feedback) => (
-              <FeedbackCard key={feedback.id} feedback={feedback} />
-            ))}
-          </div>
-        )}
-      </section>
+                    setDialogOpen(true)
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
       {selectedOrder && (
         <FeedbackDialog
           open={dialogOpen}

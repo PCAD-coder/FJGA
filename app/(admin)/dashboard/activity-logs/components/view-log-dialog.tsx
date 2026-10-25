@@ -42,56 +42,66 @@ export default function ViewLogDialog({ open, onOpenChange, log }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Activity Log Details</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-sm text-muted-foreground">Action</p>
 
               <p className="text-lg font-semibold">{log.action}</p>
             </div>
 
-            <Badge className={severityStyles[log.severity]}>
+            <Badge
+              className={`rounded-full px-2.5 py-1 text-[11px] capitalize ${severityStyles[log.severity]}`}
+            >
               <span className="mr-1">{severityIcons[log.severity]}</span>
 
               {log.severity}
             </Badge>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 rounded-lg border border-border/50 bg-muted/30 p-4 sm:grid-cols-2">
             <div>
               <p className="text-sm text-muted-foreground">User</p>
 
-              <p className="font-medium">{log.userName}</p>
+              <p className="mt-1 text-sm font-medium wrap-break-word">
+                {log.userName}
+              </p>
             </div>
 
             <div>
               <p className="text-sm text-muted-foreground">Role</p>
 
-              <p className="font-medium">{log.role}</p>
+              <p className="mt-1 text-sm font-medium wrap-break-word">
+                {log.role}
+              </p>
             </div>
 
             <div>
               <p className="text-sm text-muted-foreground">Module</p>
 
-              <p className="font-medium">{log.module}</p>
+              <p className="mt-1 text-sm font-medium wrap-break-word">
+                {log.module}
+              </p>
             </div>
 
             <div>
               <p className="text-sm text-muted-foreground">Timestamp</p>
 
-              <p className="font-medium">{log.timestamp}</p>
+              <p className="mt-1 text-sm font-medium wrap-break-word">
+                {log.timestamp}
+              </p>
             </div>
           </div>
 
           <div>
             <p className="mb-2 text-sm font-medium">Description</p>
 
-            <div className="rounded-md bg-muted p-4 text-sm">
+            <div className="rounded-lg border border-border/50 bg-muted/30 p-4 text-sm leading-7 wrap-break-word whitespace-pre-wrap">
               {log.description}
             </div>
           </div>

@@ -17,9 +17,9 @@ interface Props {
 
 export default function HomepageContentCard({ content, onEdit }: Props) {
   return (
-    <Card>
+    <Card className="min-w-0 gap-0 overflow-hidden rounded-xl border border-border/80 py-0 shadow-none ring-0">
       <CardContent className="p-5">
-        <div className="mb-5 flex items-start justify-between">
+        <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold">Homepage Content</h2>
 
@@ -34,24 +34,24 @@ export default function HomepageContentCard({ content, onEdit }: Props) {
           </Button>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-[320px_1fr]">
+        <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <div>
             <div className="relative h-[220px] overflow-hidden rounded-lg border">
               {content.heroImageUrl ? (
-  <Image
-    src={content.heroImageUrl}
-    alt={content.heroTitle}
-    width={1200}
-    height={600}
-    className="h-64 w-full rounded-lg object-cover"
-  />
-) : (
-  <div className="flex h-64 items-center justify-center rounded-lg border border-dashed bg-muted/30">
-    <span className="text-sm text-muted-foreground">
-      No hero image uploaded
-    </span>
-  </div>
-)}
+                <Image
+                  src={content.heroImageUrl}
+                  alt={content.heroTitle}
+                  width={1200}
+                  height={600}
+                  className="h-64 w-full rounded-lg object-cover"
+                />
+              ) : (
+                <div className="flex h-64 items-center justify-center rounded-lg border border-dashed bg-muted/30">
+                  <span className="text-sm text-muted-foreground">
+                    No hero image uploaded
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 

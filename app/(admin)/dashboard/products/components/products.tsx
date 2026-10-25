@@ -59,14 +59,16 @@ export default function Products() {
   })
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Products</h1>
+    <div className="mx-auto w-full max-w-[1600px] space-y-5 px-1 pt-2 pb-12 sm:px-4 sm:pt-3 lg:px-6">
+      <header className="border-b border-border/70 pb-4">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Products
+        </h1>
 
-        <p className="text-muted-foreground">
+        <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
           Manage furniture products and their materials.
         </p>
-      </div>
+      </header>
 
       <ProductToolbar
         search={search}
@@ -86,7 +88,7 @@ export default function Products() {
           onArchive={() => {}}
         />
       ) : filteredProducts.length === 0 ? (
-        <div className="rounded-lg border p-10 text-center">
+        <div className="rounded-xl border border-dashed bg-card px-6 py-16 text-center">
           <h3 className="font-medium">No products found</h3>
           <p className="text-sm text-muted-foreground">
             Try adjusting your search or filters.

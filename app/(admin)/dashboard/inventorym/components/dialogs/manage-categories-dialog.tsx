@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { useState } from "react"
 import { FolderPlus, Archive } from "lucide-react"
 
@@ -42,11 +44,15 @@ export function ManageCategoriesDialog({
       setSaving(true)
 
       await createCategory(newCategory.trim())
+      toast.success("Category added successfully.")
 
       setNewCategory("")
 
       await refresh()
     } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save category."
+      )
       console.error(error)
     } finally {
       setSaving(false)
@@ -56,9 +62,13 @@ export function ManageCategoriesDialog({
   async function handleArchive(id: string) {
     try {
       await archiveCategory(id)
+      toast.success("Category archived successfully.")
 
       await refresh()
     } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save category."
+      )
       console.error(error)
     }
   }

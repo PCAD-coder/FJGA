@@ -16,19 +16,17 @@ export default function OrderSummaryCard({
   icon: Icon,
 }: Props) {
   return (
-    <Card className="shadow-sm">
-      <CardContent className="p-3">
+    <Card className="gap-0 rounded-xl border border-border/80 py-0 shadow-none ring-0">
+      <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm font-medium text-muted-foreground">
-              {title}
-            </p>
+            <p className="text-xs font-medium text-muted-foreground">{title}</p>
 
-            <p className="mt-1 text-2xl font-semibold tracking-tight">
+            <p className="mt-2 text-xl font-semibold tracking-tight wrap-break-word tabular-nums">
               {value}
             </p>
 
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
               {description}
             </p>
           </div>

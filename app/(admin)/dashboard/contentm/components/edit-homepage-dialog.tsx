@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { ChangeEvent, useEffect, useState } from "react"
 import { ImageIcon, Upload, X } from "lucide-react"
 
@@ -16,10 +18,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 
-import {
-  uploadHomepageImage,
-  validateContentImage,
-} from "../services/content"
+import { uploadHomepageImage, validateContentImage } from "../services/content"
 
 import type { HomepageContent } from "../types/content"
 
@@ -36,17 +35,13 @@ export default function EditHomepageDialog({
   content,
   onSave,
 }: Props) {
-  const [formData, setFormData] =
-    useState<HomepageContent | null>(null)
+  const [formData, setFormData] = useState<HomepageContent | null>(null)
 
-  const [selectedImage, setSelectedImage] =
-    useState<File | null>(null)
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
 
-  const [previewUrl, setPreviewUrl] =
-    useState<string | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
-  const [error, setError] =
-    useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const [isSaving, setIsSaving] = useState(false)
 
@@ -69,9 +64,7 @@ export default function EditHomepageDialog({
     return null
   }
 
-  function handleImageChange(
-    event: ChangeEvent<HTMLInputElement>
-  ) {
+  function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
 
     if (!file) {
@@ -89,13 +82,14 @@ export default function EditHomepageDialog({
       setPreviewUrl(URL.createObjectURL(file))
       setError(null)
     } catch (error) {
-      event.target.value = ""
-
-      setError(
+      toast.error(
         error instanceof Error
           ? error.message
-          : "Invalid image."
+          : "Unable to save homepage content."
       )
+      event.target.value = ""
+
+      setError(error instanceof Error ? error.message : "Invalid image.")
     }
   }
 
@@ -110,55 +104,55 @@ export default function EditHomepageDialog({
   }
 
   async function handleSave() {
-  if (!formData) {
-    return
-  }
-
-  if (!formData.heroTitle.trim()) {
-    setError("Hero title is required.")
-    return
-  }
-
-  if (!formData.heroDescription.trim()) {
-    setError("Hero description is required.")
-    return
-  }
-
-  try {
-    setIsSaving(true)
-    setError(null)
-
-    let heroImageUrl = formData.heroImageUrl
-
-    if (selectedImage) {
-      heroImageUrl =
-        await uploadHomepageImage(selectedImage)
+    if (!formData) {
+      return
     }
 
-    await onSave({
-      ...formData,
-      heroTitle: formData.heroTitle.trim(),
-      heroDescription: formData.heroDescription.trim(),
-      heroImageUrl,
-    })
-  } catch (error) {
-    console.error(
-      "Failed to save homepage content:",
-      error
-    )
+    if (!formData.heroTitle.trim()) {
+      setError("Hero title is required.")
+      return
+    }
 
-    setError(
-      error instanceof Error
-        ? error.message
-        : "Failed to save homepage content."
-    )
-  } finally {
-    setIsSaving(false)
+    if (!formData.heroDescription.trim()) {
+      setError("Hero description is required.")
+      return
+    }
+
+    try {
+      setIsSaving(true)
+      setError(null)
+
+      let heroImageUrl = formData.heroImageUrl
+
+      if (selectedImage) {
+        heroImageUrl = await uploadHomepageImage(selectedImage)
+      }
+
+      await onSave({
+        ...formData,
+        heroTitle: formData.heroTitle.trim(),
+        heroDescription: formData.heroDescription.trim(),
+        heroImageUrl,
+      })
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to save homepage content."
+      )
+      console.error("Failed to save homepage content:", error)
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to save homepage content."
+      )
+    } finally {
+      setIsSaving(false)
+    }
   }
-}
 
-  const displayedImage =
-    previewUrl ?? formData.heroImageUrl
+  const displayedImage = previewUrl ?? formData.heroImageUrl
 
   return (
     <Dialog
@@ -171,16 +165,12 @@ export default function EditHomepageDialog({
     >
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            Edit Homepage Content
-          </DialogTitle>
+          <DialogTitle>Edit Homepage Content</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="hero-title">
-              Hero Title
-            </Label>
+            <Label htmlFor="hero-title">Hero Title</Label>
 
             <Input
               id="hero-title"
@@ -212,14 +202,12 @@ export default function EditHomepageDialog({
                     type="button"
                     variant="secondary"
                     size="icon"
-                    className="absolute right-3 top-3"
+                    className="absolute top-3 right-3"
                     disabled={isSaving}
                     onClick={handleRemoveSelectedImage}
                   >
                     <X className="size-4" />
-                    <span className="sr-only">
-                      Remove selected image
-                    </span>
+                    <span className="sr-only">Remove selected image</span>
                   </Button>
                 )}
               </div>
@@ -249,15 +237,10 @@ export default function EditHomepageDialog({
                 disabled={isSaving}
                 asChild
               >
-                <label
-                  htmlFor="hero-image"
-                  className="cursor-pointer"
-                >
+                <label htmlFor="hero-image" className="cursor-pointer">
                   <Upload className="mr-2 size-4" />
 
-                  {displayedImage
-                    ? "Choose New Image"
-                    : "Choose Image"}
+                  {displayedImage ? "Choose New Image" : "Choose Image"}
                 </label>
               </Button>
             </div>
@@ -268,9 +251,7 @@ export default function EditHomepageDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="hero-description">
-              Hero Description
-            </Label>
+            <Label htmlFor="hero-description">Hero Description</Label>
 
             <Textarea
               id="hero-description"
@@ -281,18 +262,13 @@ export default function EditHomepageDialog({
               onChange={(event) =>
                 setFormData({
                   ...formData,
-                  heroDescription:
-                    event.target.value,
+                  heroDescription: event.target.value,
                 })
               }
             />
           </div>
 
-          {error && (
-            <p className="text-sm text-destructive">
-              {error}
-            </p>
-          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
 
         <DialogFooter>
@@ -305,14 +281,8 @@ export default function EditHomepageDialog({
             Cancel
           </Button>
 
-          <Button
-            type="button"
-            disabled={isSaving}
-            onClick={handleSave}
-          >
-            {isSaving
-              ? "Saving..."
-              : "Save Changes"}
+          <Button type="button" disabled={isSaving} onClick={handleSave}>
+            {isSaving ? "Saving..." : "Save Changes"}
           </Button>
         </DialogFooter>
       </DialogContent>
