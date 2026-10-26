@@ -52,6 +52,22 @@ interface QuotationRow {
 interface QuotationDetailRow extends QuotationRow {
   customer_address_snapshot: string | null
   notes: string | null
+  terms_and_conditions: string | null
+
+  created_by_profile_id: string | null
+
+  created_by_profile:
+    | {
+        first_name: string | null
+        last_name: string | null
+        full_name: string | null
+      }
+    | {
+        first_name: string | null
+        last_name: string | null
+        full_name: string | null
+      }[]
+    | null
 
   quotation_items:
     | {
@@ -252,6 +268,7 @@ export async function getQuotationById(
       id,
       quotation_number,
       customer_id,
+      created_by_profile_id,
       source_type,
       custom_request_id,
       project_name,
@@ -263,12 +280,19 @@ export async function getQuotationById(
       delivery_fee,
       total_amount,
       notes,
+      terms_and_conditions,
       created_at,
       sent_at,
       accepted_at,
       declined_at,
 
       profiles!quotations_customer_id_fkey (
+        first_name,
+        last_name,
+        full_name
+      ),
+
+      created_by_profile:profiles!quotations_created_by_profile_id_fkey (
         first_name,
         last_name,
         full_name
@@ -312,11 +336,22 @@ export async function getQuotationById(
 
   const row = data as QuotationDetailRow
 
-  const profile = getSingleRelation(row.profiles)
+const profile = getSingleRelation(row.profiles)
 
-  const request = getSingleRelation(row.custom_order_requests)
+const createdByProfile = getSingleRelation(row.created_by_profile)
 
-  const clientName = getClientName(profile)
+const request = getSingleRelation(row.custom_order_requests)
+
+const clientName = getClientName(profile)
+
+const createdByName = createdByProfile
+  ? [createdByProfile.first_name, createdByProfile.last_name]
+      .map((value) => value?.trim() ?? "")
+      .filter(Boolean)
+      .join(" ") ||
+    createdByProfile.full_name?.trim() ||
+    null
+  : null
 
   const items: QuotationDetailItem[] = (row.quotation_items ?? []).map(
     (item) => {
@@ -368,10 +403,13 @@ export async function getQuotationById(
     id: row.id,
     quotationNumber: row.quotation_number,
 
-    customerId: row.customer_id,
-    clientName,
+customerId: row.customer_id,
+clientName,
 
-    sourceType: row.source_type,
+createdByProfileId: row.created_by_profile_id,
+createdByName,
+
+sourceType: row.source_type,
     customRequestId: row.custom_request_id,
     requestNumber: request?.request_number ?? null,
 
@@ -387,6 +425,7 @@ export async function getQuotationById(
     totalAmount: Number(row.total_amount ?? 0),
 
     notes: row.notes,
+    termsAndConditions: row.terms_and_conditions,
 
     createdAt: row.created_at,
     sentAt: row.sent_at,

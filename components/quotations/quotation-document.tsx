@@ -21,7 +21,7 @@ function formatCurrency(value: number) {
   }).format(value)
 }
 
-function formatDate(value: string | null) {
+function formatDateTime(value: string | null) {
   if (!value) {
     return "—"
   }
@@ -30,6 +30,11 @@ function formatDate(value: string | null) {
     year: "numeric",
     month: "long",
     day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Manila",
   }).format(new Date(value))
 }
 
@@ -100,10 +105,16 @@ export default function QuotationDocument({
           </p>
         </div>
 
-        <div className="text-right text-[10px]">
-          <p className="font-semibold">Date</p>
+        <div className="space-y-2 text-right text-[10px]">
+          <div>
+            <p className="font-semibold">Created By</p>
+            <p>{quotation.createdByName ?? "Not recorded"}</p>
+          </div>
 
-          <p>{formatDate(quotation.sentAt ?? quotation.createdAt)}</p>
+          <div>
+            <p className="font-semibold">Date & Time</p>
+            <p>{formatDateTime(quotation.createdAt)}</p>
+          </div>
         </div>
       </section>
       {/* Project Information */}
@@ -214,13 +225,12 @@ export default function QuotationDocument({
             <td className="border-x border-black" />
             <td className="border-x border-black" />
             <td className="border-x border-r border-black" />
-            
           </tr>
 
           {/* Subtotal */}
           <tr>
-            <td colSpan={6}className="border-t border-black" />
-            
+            <td colSpan={6} className="border-t border-black" />
+
             <td className="border border-black px-2 py-2 text-right font-semibold">
               Subtotal
             </td>
@@ -232,7 +242,7 @@ export default function QuotationDocument({
 
           {/* VAT */}
           <tr>
-            <td colSpan={6}/>
+            <td colSpan={6} />
 
             <td className="border border-black px-2 py-2 text-right font-semibold">
               VAT ({quotation.vatRate}%)
@@ -245,7 +255,7 @@ export default function QuotationDocument({
 
           {/* Delivery */}
           <tr>
-            <td colSpan={6}/>
+            <td colSpan={6} />
 
             <td className="border border-black px-2 py-2 text-right font-semibold">
               Delivery Fee
@@ -258,7 +268,7 @@ export default function QuotationDocument({
 
           {/* Total */}
           <tr>
-            <td colSpan={6}/>
+            <td colSpan={6} />
 
             <td className="border border-black px-2 py-2 text-right text-sm font-bold">
               TOTAL
@@ -271,21 +281,32 @@ export default function QuotationDocument({
         </tbody>
       </table>
 
-      {/* Notes */}
-      {quotation.notes && (
-        <section className="mt-5">
-          <p className="text-xs font-bold">Notes:</p>
+{/* Notes */}
+{quotation.notes && (
+  <section className="mt-5">
+    <p className="text-xs font-bold">Notes:</p>
 
-          <p className="mt-1 text-xs leading-relaxed whitespace-pre-line">
-            {quotation.notes}
-          </p>
-        </section>
-      )}
+    <p className="mt-1 text-xs leading-relaxed whitespace-pre-line">
+      {quotation.notes}
+    </p>
+  </section>
+)}
 
-      {/* Footer */}
-      <footer className="mt-10 border-t border-black pt-3 text-center text-[10px]">
-        <p>Thank you for choosing FJ Glass and Aluminum.</p>
-      </footer>
+{/* Terms and Conditions */}
+{quotation.termsAndConditions && (
+  <section className="mt-5">
+    <p className="text-xs font-bold">Terms & Conditions:</p>
+
+    <p className="mt-1 text-[10px] leading-relaxed whitespace-pre-line">
+      {quotation.termsAndConditions}
+    </p>
+  </section>
+)}
+
+{/* Footer */}
+<footer className="mt-10 border-t border-black pt-3 text-center text-[10px]">
+  <p>Thank you for choosing FJ Glass and Aluminum.</p>
+</footer>
     </div>
   )
 }

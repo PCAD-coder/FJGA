@@ -21,10 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import {
-  User,
-  UserRole,
-} from "../../types/user-management"
+import { User, UserRole } from "../../types/user-management"
 
 interface ChangeRoleDialogProps {
   open: boolean
@@ -45,8 +42,7 @@ export default function ChangeRoleDialog({
   onOpenChange,
   onSubmit,
 }: ChangeRoleDialogProps) {
-  const [role, setRole] =
-    useState<UserRole>("client")
+  const [role, setRole] = useState<UserRole>("client")
 
   useEffect(() => {
     if (user) {
@@ -56,50 +52,44 @@ export default function ChangeRoleDialog({
 
   if (!user) return null
 
+  const firstName = user.first_name?.trim() ?? ""
+  const lastName = user.last_name?.trim() ?? ""
+  const fullName = user.full_name?.trim() ?? ""
+
+  const nameFromParts = [firstName, lastName].filter(Boolean).join(" ")
+
+  const displayName = nameFromParts || fullName || "Unknown User"
+
   async function handleSave() {
     await onSubmit(role)
     onOpenChange(false)
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>
-            Change User Role
-          </DialogTitle>
+          <DialogTitle>Change User Role</DialogTitle>
 
           <DialogDescription>
             Update the role for{" "}
-            <span className="font-semibold">
-              {user.first_name} {user.last_name}
-            </span>
-            .
+            <span className="font-semibold">{displayName}</span>.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-2 py-4">
           <Select
             value={role}
-            onValueChange={(value) =>
-              setRole(value as UserRole)
-            }
+            onValueChange={(value) => setRole(value as UserRole)}
           >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
 
             <SelectContent>
-              <SelectItem value="admin">
-                Administrator
-              </SelectItem>
+              <SelectItem value="admin">Administrator</SelectItem>
 
-              <SelectItem value="client">
-                Client
-              </SelectItem>
+              <SelectItem value="client">Client</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -113,10 +103,7 @@ export default function ChangeRoleDialog({
             Cancel
           </Button>
 
-          <Button
-            onClick={handleSave}
-            disabled={loading}
-          >
+          <Button onClick={handleSave} disabled={loading}>
             Save Changes
           </Button>
         </DialogFooter>

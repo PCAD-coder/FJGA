@@ -129,7 +129,8 @@ export async function getOrderById(orderId: string) {
         profiles (
           id,
           first_name,
-          last_name
+          last_name,
+          full_name
         ),
         order_items (
           *

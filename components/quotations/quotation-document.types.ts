@@ -33,10 +33,12 @@ export interface QuotationDocumentData {
   deliveryFee: number
   totalAmount: number
 
-  notes: string | null
+notes: string | null
+termsAndConditions: string | null
 
-  createdAt: string
-  sentAt: string | null
+createdByName?: string | null
+createdAt: string
+sentAt: string | null
 
   items: QuotationDocumentItem[]
 }

@@ -356,6 +356,10 @@ export default function AddProductDialog({
     product.markup_percentage,
   ])
 
+  const VAT_RATE = 0.12
+
+  const vatInclusiveSellingPrice = pricingPreview.sellingPrice * (1 + VAT_RATE)
+
   function handleImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
     if (!event.target.files) return
 
@@ -392,14 +396,13 @@ export default function AddProductDialog({
     setLabor((prev) => prev.filter((_, i) => i !== index))
   }
   async function handleSave() {
-
     try {
       // Basic validation
       if (!formIsValid) {
         toast.error("Missing required information", {
-        description: "Please complete all required fields before saving.",
-      })
-      return
+          description: "Please complete all required fields before saving.",
+        })
+        return
       }
 
       // Generate temporary product code.
@@ -417,7 +420,6 @@ export default function AddProductDialog({
       })
     } catch (error) {
       console.error("Failed to save product:", error)
-    
     }
   }
 
@@ -1176,16 +1178,13 @@ export default function AddProductDialog({
                     </div>
                     <section>
                       <div className="flex justify-between border-t pt-2 font-semibold">
-                        <span>Estimated Selling Price</span>
+                        <span>Estimated Selling Price (VAT included)</span>
                         <span>
                           ₱
-                          {(pricingPreview.sellingPrice ?? 0).toLocaleString(
-                            undefined,
-                            {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            }
-                          )}
+                          {vatInclusiveSellingPrice.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
                         </span>
                       </div>
                     </section>

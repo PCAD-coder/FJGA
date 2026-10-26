@@ -176,9 +176,11 @@ export default function Sales() {
     return sales.reduce((total, sale) => total + sale.balance, 0)
   }, [sales])
 
-  const paidOrders = useMemo(() => {
-    return sales.filter((sale) => sale.paymentStatus === "paid").length
-  }, [sales])
+const totalProfit = useMemo(() => {
+  return sales
+    .filter((sale) => sale.orderStatus === "delivered")
+    .reduce((total, sale) => total + sale.profit, 0)
+}, [sales])
 
   if (loading) {
     return <SalesSkeleton />
@@ -218,13 +220,13 @@ export default function Sales() {
           icon={CreditCard}
           color="text-amber-600 dark:text-amber-400"
         />
-        <DashboardCard
-          title="Paid Orders"
-          value={String(paidOrders)}
-          description="Fully paid orders"
-          icon={DollarSign}
-          color="text-primary"
-        />
+<DashboardCard
+  title="Total Profit"
+  value={formatCurrency(totalProfit)}
+  description="Estimated profit from delivered orders"
+  icon={DollarSign}
+  color="text-primary"
+/>
       </div>
       {/* PENDING PAYMENT SUBMISSIONS */}
 
@@ -329,6 +331,8 @@ export default function Sales() {
 
                     <TableHead>Total</TableHead>
 
+                    <TableHead>Profit</TableHead>
+
                     <TableHead>Paid</TableHead>
 
                     <TableHead>Balance</TableHead>
@@ -365,6 +369,10 @@ export default function Sales() {
                       </TableCell>
 
                       <TableCell>{formatCurrency(sale.totalAmount)}</TableCell>
+
+                      <TableCell className="font-medium">
+  {formatCurrency(sale.profit)}
+</TableCell>
 
                       <TableCell>{formatCurrency(sale.amountPaid)}</TableCell>
 

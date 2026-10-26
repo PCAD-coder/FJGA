@@ -15,6 +15,28 @@ export interface CreateCustomOrderRequestServerInput {
   referenceNotes: string
 }
 
+function convertToCentimeters(value: number, unit: string): number {
+  switch (unit) {
+    case "mm":
+      return value / 10
+
+    case "in":
+      return value * 2.54
+
+    case "m":
+      return value * 100
+
+    case "ft":
+      return value * 30.48
+
+    case "cm":
+      return value
+
+    default:
+      throw new Error("Unsupported measurement unit.")
+  }
+}
+
 export async function createCustomOrderRequestServer(
   input: CreateCustomOrderRequestServerInput
 ): Promise<string> {
@@ -55,13 +77,13 @@ export async function createCustomOrderRequestServer(
     throw new Error("Only clients can submit custom order requests.")
   }
 
-const {
-  projectDetails,
-  specifications,
-  contactNumber,
-  deliveryAddress,
-  referenceNotes,
-} = input
+  const {
+    projectDetails,
+    specifications,
+    contactNumber,
+    deliveryAddress,
+    referenceNotes,
+  } = input
 
   // ==========================================================
   // 3. Basic server-side validation
@@ -129,9 +151,7 @@ const {
   const height = Number(specifications.height)
 
   const depth =
-    specifications.depth.trim() === ""
-      ? null
-      : Number(specifications.depth)
+    specifications.depth.trim() === "" ? null : Number(specifications.depth)
 
   if (!Number.isFinite(width) || width <= 0) {
     throw new Error("A valid width is required.")
@@ -145,12 +165,22 @@ const {
     throw new Error("Depth must be greater than zero.")
   }
 
+  const widthCm = convertToCentimeters(width, specifications.dimensionUnit)
+
+  const heightCm = convertToCentimeters(height, specifications.dimensionUnit)
+
+  const depthCm =
+    depth === null
+      ? null
+      : convertToCentimeters(depth, specifications.dimensionUnit)
+
   // ==========================================================
   // 6. Atomic request + address creation
   // ==========================================================
 
-  const { data: requestId, error: requestError } =
-    await adminSupabase.rpc("create_custom_order_request_transaction", {
+  const { data: requestId, error: requestError } = await adminSupabase.rpc(
+    "create_custom_order_request_transaction",
+    {
       p_customer_id: profile.id,
 
       p_contact_number: contactNumber.trim(),
@@ -160,10 +190,10 @@ const {
       p_quantity: projectDetails.quantity,
       p_description: projectDetails.description,
 
-      p_width: width,
-      p_height: height,
-      p_depth: depth,
-      p_dimension_unit: specifications.dimensionUnit,
+      p_width: widthCm,
+      p_height: heightCm,
+      p_depth: depthCm,
+      p_dimension_unit: "cm",
 
       p_measurements_approximate: specifications.measurementsApproximate,
 
@@ -183,54 +213,42 @@ const {
 
       p_let_fjga_recommend: specifications.letFjgaRecommend,
 
-      p_other_preferences:
-        specifications.otherPreferences.trim() || null,
+      p_other_preferences: specifications.otherPreferences.trim() || null,
 
       p_reference_notes: null,
 
       p_address: {
-        house_building_number:
-          deliveryAddress.houseBuildingNumber.trim(),
+        house_building_number: deliveryAddress.houseBuildingNumber.trim(),
 
         street: deliveryAddress.street.trim(),
 
         building_subdivision:
           deliveryAddress.buildingSubdivision.trim() || null,
 
-        unit_floor:
-          deliveryAddress.unitFloor.trim() || null,
+        unit_floor: deliveryAddress.unitFloor.trim() || null,
 
-        region_psgc_code:
-          deliveryAddress.regionPsgcCode.trim(),
+        region_psgc_code: deliveryAddress.regionPsgcCode.trim(),
 
-        region_name:
-          deliveryAddress.regionName.trim(),
+        region_name: deliveryAddress.regionName.trim(),
 
-        province_psgc_code:
-          deliveryAddress.provincePsgcCode?.trim() || null,
+        province_psgc_code: deliveryAddress.provincePsgcCode?.trim() || null,
 
-        province_name:
-          deliveryAddress.provinceName?.trim() || null,
+        province_name: deliveryAddress.provinceName?.trim() || null,
 
-        city_psgc_code:
-          deliveryAddress.cityPsgcCode.trim(),
+        city_psgc_code: deliveryAddress.cityPsgcCode.trim(),
 
-        city_name:
-          deliveryAddress.cityName.trim(),
+        city_name: deliveryAddress.cityName.trim(),
 
-        barangay_psgc_code:
-          deliveryAddress.barangayPsgcCode.trim(),
+        barangay_psgc_code: deliveryAddress.barangayPsgcCode.trim(),
 
-        barangay_name:
-          deliveryAddress.barangayName.trim(),
+        barangay_name: deliveryAddress.barangayName.trim(),
 
-        postal_code:
-          deliveryAddress.postalCode.trim() || null,
+        postal_code: deliveryAddress.postalCode.trim() || null,
 
-        landmark:
-          deliveryAddress.landmark.trim() || null,
+        landmark: deliveryAddress.landmark.trim() || null,
       },
-    })
+    }
+  )
 
   if (requestError) {
     throw new Error(

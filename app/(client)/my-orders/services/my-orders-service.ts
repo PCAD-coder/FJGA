@@ -402,7 +402,8 @@ export async function getMyOrders(): Promise<Order[]> {
           changed_by,
           profiles:changed_by (
             first_name,
-            last_name
+            last_name,
+            full_name
           )
         `
       )
@@ -583,10 +584,16 @@ export async function getMyOrders(): Promise<Order[]> {
         ? history.profiles[0]
         : history.profiles
 
-      const changedBy =
-        profile?.first_name || profile?.last_name
-          ? `${profile?.first_name ?? ""} ${profile?.last_name ?? ""}`.trim()
-          : null
+const firstName = profile?.first_name?.trim() ?? ""
+const lastName = profile?.last_name?.trim() ?? ""
+const fullName = profile?.full_name?.trim() ?? ""
+
+const nameFromParts = [firstName, lastName].filter(Boolean).join(" ")
+
+const changedBy =
+  nameFromParts ||
+  fullName ||
+  null
 
       return {
         id: history.id,

@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select"
 
 import { useEffect, useState } from "react"
-import { Loader2 } from "lucide-react"
+import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react"
 import { ProductionProject, ProductionStage } from "../../types/production"
 import { Textarea } from "@/components/ui/textarea"
 
@@ -58,24 +58,14 @@ const stageToDb: Record<string, string> = {
   "Ready for Delivery": "ready_for_delivery",
 }
 
-const dbToStage: Record<string, string> = {
-  pending: "Pending",
-  material_prep: "Material Prep",
-  glass_cutting: "Glass Cutting",
-  frame_fabrication: "Frame Fabrication",
-  assembly: "Assembly",
-  finishing: "Finishing",
-  quality_check: "Quality Check",
-  ready_for_delivery: "Ready for Delivery",
-}
-
 export default function UpdateStageDialog({
   project,
   open,
   onOpenChange,
   onStageChange,
 }: Props) {
-  const [stage, setStage] = useState("Pending")
+  type StageAction = "next" | "revert" | null
+  const [stageAction, setStageAction] = useState<StageAction>(null)
   const [notes, setNotes] = useState("")
   const [saving, setSaving] = useState(false)
 
@@ -95,14 +85,7 @@ export default function UpdateStageDialog({
 
   useEffect(() => {
     if (project) {
-      const initialStage =
-        project.projectType === "return" &&
-        project.applicableStages?.length &&
-        !project.applicableStages.includes(project.stage)
-          ? project.applicableStages[0]
-          : project.stage
-
-      setStage(initialStage)
+      setStageAction(null)
       setNotes("")
       setReplacement(false)
       setReplacementMaterialId("")
@@ -151,8 +134,6 @@ export default function UpdateStageDialog({
   }, [replacement, project])
 
   if (!project) return null
-  const currentStageDb = stageToDb[project.stage]
-  const selectedStageDb = stageToDb[stage]
   const availableStages =
     project.projectType === "return" && project.applicableStages?.length
       ? project.applicableStages
@@ -167,19 +148,44 @@ export default function UpdateStageDialog({
           "Ready for Delivery",
         ] as ProductionStage[])
 
-  const stageOrder: Record<string, number> = {
-    pending: 0,
-    material_prep: 1,
-    glass_cutting: 2,
-    frame_fabrication: 3,
-    assembly: 4,
-    finishing: 5,
-    quality_check: 6,
-    ready_for_delivery: 7,
-  }
+  const currentStageIndex = availableStages.indexOf(project.stage)
 
-  const isGoingBackward =
-    stageOrder[selectedStageDb] < stageOrder[currentStageDb]
+  const previousStage =
+    currentStageIndex > 0 ? availableStages[currentStageIndex - 1] : null
+
+  const nextStage =
+    currentStageIndex >= 0 && currentStageIndex < availableStages.length - 1
+      ? availableStages[currentStageIndex + 1]
+      : null
+
+  const targetStage =
+    stageAction === "next"
+      ? nextStage
+      : stageAction === "revert"
+        ? previousStage
+        : null
+
+  const targetStageDb = targetStage ? stageToDb[targetStage] : null
+
+  const handleNextStage = async () => {
+    if (!nextStage || saving) return
+
+    const nextStageDb = stageToDb[nextStage]
+
+    if (!nextStageDb) return
+
+    setSaving(true)
+
+    try {
+      await onStageChange(nextStageDb, notes)
+
+      setNotes("")
+      setStageAction(null)
+      onOpenChange(false)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -187,8 +193,8 @@ export default function UpdateStageDialog({
         <DialogHeader className="space-y-2">
           <DialogTitle>Update production stage</DialogTitle>
           <p className="text-sm text-muted-foreground">
-            Move this project to another production stage and optionally leave a
-            note for the production team.
+            Advance this project to the next production stage or return it to
+            the previous stage.
           </p>
         </DialogHeader>
 
@@ -201,25 +207,69 @@ export default function UpdateStageDialog({
             <p className="mt-1 text-base font-semibold">{project.stage}</p>
           </div>
 
-          {/* New stage */}
-          <div className="space-y-2">
-            <p className="text-sm font-medium">New stage</p>
+          {/* Stage movement */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              disabled={!previousStage || saving}
+              onClick={() =>
+                setStageAction((current) =>
+                  current === "revert" ? null : "revert"
+                )
+              }
+              className={`rounded-lg border p-4 text-left transition-colors ${
+                stageAction === "revert"
+                  ? "border-primary bg-primary/5"
+                  : "bg-background hover:bg-muted/50"
+              } disabled:cursor-not-allowed disabled:opacity-50`}
+            >
+              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Previous stage
+              </div>
 
-            <Select value={stage} onValueChange={setStage}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a production stage" />
-              </SelectTrigger>
+              <p className="mt-1 font-semibold">
+                {previousStage ?? "No previous stage"}
+              </p>
+            </button>
 
-              <SelectContent>
-                {availableStages.map((availableStage) => (
-                  <SelectItem key={availableStage} value={availableStage}>
-                    {availableStage}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <button
+              type="button"
+              disabled={!nextStage || saving}
+              onClick={handleNextStage}
+              className="rounded-lg border bg-background p-4 text-left transition-colors hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                {saving ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    Next stage
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </>
+                )}
+              </div>
+
+              <p className="mt-1 font-semibold">
+                {nextStage ?? "No next stage"}
+              </p>
+            </button>
           </div>
-          {isGoingBackward && project.projectType === "order" && (
+          {targetStage && (
+            <div className="rounded-lg border bg-muted/30 px-4 py-3">
+              <p className="text-xs text-muted-foreground">Selected action</p>
+
+              <p className="mt-1 text-sm font-medium">
+                {project.stage}
+                {" → "}
+                {targetStage}
+              </p>
+            </div>
+          )}
+          {stageAction === "revert" && project.projectType === "order" && (
             <div className="space-y-4 rounded-lg border bg-muted/20 p-4">
               <div>
                 <p className="text-sm font-semibold">Material replacement</p>
@@ -365,53 +415,63 @@ export default function UpdateStageDialog({
             Cancel
           </Button>
 
-          <Button
-            disabled={
-              saving ||
-              stage === project.stage ||
-              (replacement &&
-                (!replacementMaterialId ||
-                  !replacementQuantity ||
-                  Number(replacementQuantity) <= 0))
-            }
-            onClick={async () => {
-              setSaving(true)
-
-              try {
-                const finalNotes = replacementReason.trim()
-                  ? `${notes.trim()}${
-                      notes.trim() ? "\n\n" : ""
-                    }Replacement reason: ${replacementReason.trim()}`
-                  : notes
-
-                await onStageChange(
-                  stageToDb[stage],
-                  finalNotes,
-                  replacement
-                    ? {
-                        orderItemId: project.orderItemId,
-                        materialId: replacementMaterialId,
-                        quantity: Number(replacementQuantity),
-                        reason: replacementReason,
-                      }
-                    : undefined
-                )
-                setNotes("")
-                onOpenChange(false)
-              } finally {
-                setSaving(false)
+          {stageAction === "revert" && (
+            <Button
+              disabled={
+                saving ||
+                !targetStageDb ||
+                (replacement &&
+                  (!replacementMaterialId ||
+                    !replacementQuantity ||
+                    Number(replacementQuantity) <= 0))
               }
-            }}
-          >
-            {saving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              "Save changes"
-            )}
-          </Button>
+              onClick={async () => {
+                setSaving(true)
+
+                try {
+                  const finalNotes = replacementReason.trim()
+                    ? `${notes.trim()}${
+                        notes.trim() ? "\n\n" : ""
+                      }Replacement reason: ${replacementReason.trim()}`
+                    : notes
+
+                  if (!targetStageDb) {
+                    return
+                  }
+
+                  await onStageChange(
+                    targetStageDb,
+                    finalNotes,
+                    replacement
+                      ? {
+                          orderItemId: project.orderItemId,
+                          materialId: replacementMaterialId,
+                          quantity: Number(replacementQuantity),
+                          reason: replacementReason,
+                        }
+                      : undefined
+                  )
+
+                  setNotes("")
+                  setStageAction(null)
+                  onOpenChange(false)
+                } finally {
+                  setSaving(false)
+                }
+              }}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Reverting...
+                </>
+              ) : replacement ? (
+                "Revert & Replace Material"
+              ) : (
+                "Revert stage"
+              )}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

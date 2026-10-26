@@ -21,6 +21,11 @@ export function ProductCard({ product, onEdit, onArchive }: ProductCardProps) {
   const thumbnail =
     product.images.length > 0 ? product.images[0].image_url : null
 
+  const VAT_RATE = 0.12
+
+  const vatInclusiveSellingPrice =
+    (product.pricing?.sellingPrice ?? 0) * (1 + VAT_RATE)
+
   return (
     <Card className="h-full gap-0 overflow-hidden rounded-xl border border-border/80 py-0 shadow-sm ring-0 transition-shadow hover:shadow-md">
       <div className="relative aspect-[3/2] overflow-hidden border-b border-border/60 bg-muted">
@@ -99,11 +104,13 @@ export function ProductCard({ product, onEdit, onArchive }: ProductCardProps) {
           </div>
 
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs">
-            <span className="text-muted-foreground">Selling Price</span>
+            <span className="text-muted-foreground">
+              Selling Price (VAT included)
+            </span>
 
             <span className="text-base font-semibold text-primary tabular-nums">
               &#8369;
-              {(product.pricing?.sellingPrice ?? 0).toLocaleString(undefined, {
+              {vatInclusiveSellingPrice.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}

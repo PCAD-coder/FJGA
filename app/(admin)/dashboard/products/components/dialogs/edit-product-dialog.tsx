@@ -438,6 +438,10 @@ export default function EditProductDialog({
     form.markup_percentage,
   ])
 
+  const VAT_RATE = 0.12
+
+  const vatInclusiveSellingPrice = pricingPreview.sellingPrice * (1 + VAT_RATE)
+
   function handleImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
     if (!event.target.files) return
 
@@ -474,38 +478,37 @@ export default function EditProductDialog({
     setLabor((prev) => prev.filter((_, i) => i !== index))
   }
   async function handleSave() {
-  if (!product) return
+    if (!product) return
 
-  try {
-    // Basic validation
-    if (!formIsValid) {
-      toast.error("Missing required information", {
-        description: "Please complete all required fields before saving.",
+    try {
+      // Basic validation
+      if (!formIsValid) {
+        toast.error("Missing required information", {
+          description: "Please complete all required fields before saving.",
+        })
+        return
+      }
+
+      await onSave({
+        product: {
+          ...form,
+          product_code: product.product_code,
+        },
+        images,
+        existingImages,
+        materials,
+        labor,
+        variants: variantSelections,
       })
-      return
+
+      // Parent handles loading/success/error toasts.
+      // Only reset local state after a successful save.
+    } catch (error) {
+      // Parent toast.promise already shows the error toast.
+      // Keep this only for debugging.
+      console.error("Failed to save product:", error)
     }
-
-    await onSave({
-      product: {
-        ...form,
-        product_code: product.product_code,
-      },
-      images,
-      existingImages,
-      materials,
-      labor,
-      variants: variantSelections,
-    })
-
-    // Parent handles loading/success/error toasts.
-    // Only reset local state after a successful save.
-    
-  } catch (error) {
-    // Parent toast.promise already shows the error toast.
-    // Keep this only for debugging.
-    console.error("Failed to save product:", error)
   }
-}
 
   function toggleVariantMaterial(
     group: keyof ProductVariantMaterialSelections,
@@ -522,23 +525,23 @@ export default function EditProductDialog({
       }
     })
   }
- const previewImage = useMemo(() => {
-  if (existingImages.length > 0) return existingImages[0].image_url
+  const previewImage = useMemo(() => {
+    if (existingImages.length > 0) return existingImages[0].image_url
 
-  if (images.length > 0) {
-    return URL.createObjectURL(images[0])
-  }
-
-  return null
-}, [existingImages, images])
-
-useEffect(() => {
-  return () => {
-    if (previewImage && previewImage.startsWith("blob:")) {
-      URL.revokeObjectURL(previewImage)
+    if (images.length > 0) {
+      return URL.createObjectURL(images[0])
     }
-  }
-}, [previewImage])
+
+    return null
+  }, [existingImages, images])
+
+  useEffect(() => {
+    return () => {
+      if (previewImage && previewImage.startsWith("blob:")) {
+        URL.revokeObjectURL(previewImage)
+      }
+    }
+  }, [previewImage])
   return (
     <Dialog
       open={open}
@@ -1280,16 +1283,13 @@ useEffect(() => {
                   </div>
 
                   <div className="flex justify-between border-t pt-2 font-semibold">
-                    <span>Estimated Selling Price</span>
+                    <span>Estimated Selling Price (VAT included)</span>
                     <span>
                       ₱
-                      {(pricingPreview.sellingPrice ?? 0).toLocaleString(
-                        undefined,
-                        {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        }
-                      )}
+                      {vatInclusiveSellingPrice.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                     </span>
                   </div>
                 </div>

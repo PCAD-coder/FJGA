@@ -85,12 +85,27 @@ const openChangeRole = (user: User) => {
 }),
 
     globalFilterFn: (row, _, value) => {
-      const user = row.original
+  const user = row.original
 
-      return `${user.first_name} ${user.last_name} ${user.email}`
-        .toLowerCase()
-        .includes(String(value).toLowerCase())
-    },
+  const firstName = user.first_name?.trim() ?? ""
+  const lastName = user.last_name?.trim() ?? ""
+  const fullName = user.full_name?.trim() ?? ""
+  const email = user.email?.trim() ?? ""
+
+  const searchableText = [
+    firstName,
+    lastName,
+    fullName,
+    email,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+
+  return searchableText.includes(
+    String(value).trim().toLowerCase()
+  )
+},
   })
 
   const actions = {

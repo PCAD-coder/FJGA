@@ -6,10 +6,7 @@ export type PaymentMethod =
   | "online_banking"
   | "qrph"
 
-export type SalesPaymentStatus =
-  | "unpaid"
-  | "partial"
-  | "paid"
+export type SalesPaymentStatus = "unpaid" | "partial" | "paid"
 
 export interface SalesPayment {
   id: string
@@ -39,10 +36,14 @@ export interface SalesRecord {
   paymentMethod: PaymentMethod | null
 
   subtotal: number
-vatRate: number
-vatAmount: number
-deliveryFee: number
-totalAmount: number
+  vatRate: number
+  vatAmount: number
+  deliveryFee: number
+  totalAmount: number
+
+  materialCost: number
+laborCost: number
+profit: number
 
   /**
    * Amount that must be paid before production can start.
@@ -82,10 +83,7 @@ totalAmount: number
   payments: SalesPayment[]
 }
 
-export type PaymentSubmissionStatus =
-  | "pending"
-  | "approved"
-  | "rejected"
+export type PaymentSubmissionStatus = "pending" | "approved" | "rejected"
 
 export interface PaymentSubmission {
   id: string

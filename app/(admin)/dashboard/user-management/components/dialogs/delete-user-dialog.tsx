@@ -32,27 +32,28 @@ export default function DeleteUserDialog({
 }: DeleteUserDialogProps) {
   if (!user) return null
 
+  const firstName = user.first_name?.trim() ?? ""
+  const lastName = user.last_name?.trim() ?? ""
+  const fullName = user.full_name?.trim() ?? ""
+
+  const nameFromParts = [firstName, lastName].filter(Boolean).join(" ")
+
+  const displayName = nameFromParts || fullName || "Unknown User"
+
   async function handleDelete() {
     await onConfirm()
     onOpenChange(false)
   }
 
   return (
-    <AlertDialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            Delete User
-          </AlertDialogTitle>
+          <AlertDialogTitle>Delete User</AlertDialogTitle>
 
           <AlertDialogDescription>
             Are you sure you want to delete{" "}
-            <span className="font-semibold">
-              {user.first_name} {user.last_name}
-            </span>
+            <span className="font-semibold">{displayName}</span>
             ?
             <br />
             <br />
@@ -61,14 +62,9 @@ export default function DeleteUserDialog({
         </AlertDialogHeader>
 
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={loading}>
-            Cancel
-          </AlertDialogCancel>
+          <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
 
-          <AlertDialogAction
-            disabled={loading}
-            onClick={handleDelete}
-          >
+          <AlertDialogAction disabled={loading} onClick={handleDelete}>
             Delete
           </AlertDialogAction>
         </AlertDialogFooter>

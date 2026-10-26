@@ -12,6 +12,9 @@ interface Props {
 }
 
 export default function ProductCard({ product }: Props) {
+  const VAT_RATE = 0.12
+
+  const vatInclusivePrice = product.sellingPrice * (1 + VAT_RATE)
   return (
     <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-sm transition-shadow hover:shadow-md">
       <div className="relative aspect-[3/2] w-full overflow-hidden border-b border-border/60 bg-muted">
@@ -44,10 +47,12 @@ export default function ProductCard({ product }: Props) {
           </div>
 
           <div className="mt-3 border-t border-border/70 pt-3">
-            <p className="text-xs text-muted-foreground">Starts at</p>
+            <p className="text-xs text-muted-foreground">
+              Starts at (VAT included)
+            </p>
             <p className="mt-0.5 text-lg font-semibold tracking-tight tabular-nums">
               ₱
-              {product.sellingPrice.toLocaleString(undefined, {
+              {vatInclusivePrice.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}

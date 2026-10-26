@@ -162,6 +162,59 @@ export function SaleDetailsDialog({
   </div>
 </div>
 
+{/* PROFIT BREAKDOWN */}
+
+<div className="rounded-lg border p-4">
+  <h3 className="mb-4 font-semibold">Profit Breakdown</h3>
+
+  <div className="space-y-3 text-sm">
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-muted-foreground">
+        Revenue Before VAT & Delivery
+      </span>
+
+      <span className="font-medium">
+        {formatCurrency(sale.subtotal)}
+      </span>
+    </div>
+
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-muted-foreground">
+        Material Cost
+      </span>
+
+      <span className="font-medium">
+        -{formatCurrency(sale.materialCost)}
+      </span>
+    </div>
+
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-muted-foreground">
+        Labor Cost
+      </span>
+
+      <span className="font-medium">
+        -{formatCurrency(sale.laborCost)}
+      </span>
+    </div>
+
+    <div className="flex items-center justify-between gap-4 border-t pt-3">
+      <span className="font-semibold">
+        Estimated Profit
+      </span>
+
+      <span className="text-lg font-bold">
+        {formatCurrency(sale.profit)}
+      </span>
+    </div>
+  </div>
+
+  <p className="mt-3 text-xs leading-5 text-muted-foreground">
+    Profit is calculated from the order subtotal before VAT and delivery,
+    less the recorded material and labor costs.
+  </p>
+</div>
+
                 {/* PAYMENT SUMMARY */}
 
                 <div className="rounded-lg border p-4">

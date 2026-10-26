@@ -71,6 +71,23 @@ const specificationLabels: Record<string, string> = {
   primaryUse: "Primary Use",
   tableShape: "Table Shape",
   chairType: "Chair Type",
+
+  handlePreference: "Preferred Handle / Knob",
+  lockPreference: "Preferred Lock",
+  hingePreference: "Preferred Hinges",
+
+  windowHandlePreference: "Preferred Handle / Grip",
+  windowLockPreference: "Preferred Lock / Latch",
+  windowHardwarePreference: "Preferred Window Hardware",
+
+  partitionHandlePreference: "Preferred Handle / Knob",
+  partitionLockPreference: "Preferred Lock / Latch",
+  partitionHardwarePreference: "Preferred Hinges / Hardware",
+
+  railingHardwarePreference: "Preferred Railing Hardware / Fittings",
+  tableHardwarePreference: "Preferred Table Hardware / Fittings",
+  chairHardwarePreference: "Preferred Chair Hardware / Fittings",
+  otherHardwarePreference: "Preferred Hardware / Accessories",
 }
 
 function formatLabel(value: string) {

@@ -158,6 +158,10 @@ export interface ClientQuotationDetail
   extends ClientQuotationSummary {
   customerAddressSnapshot: string | null
   notes: string | null
+  termsAndConditions: string | null
+
+  createdByProfileId: string | null
+  createdByName: string | null
   createdAt: string
 
   items: ClientQuotationItem[]

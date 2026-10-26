@@ -41,7 +41,41 @@ export default function Analytics() {
 
   const [revenueData, setRevenueData] = useState<RevenueData[]>([])
   const [ordersData, setOrdersData] = useState<OrdersData[]>([])
-  const [period, setPeriod] = useState<AnalyticsPeriod>("monthly")
+const now = new Date()
+
+const currentYear = now.getFullYear()
+const currentMonth = now.getMonth() + 1
+const currentQuarter = Math.floor(now.getMonth() / 3) + 1
+
+const [year, setYear] = useState(currentYear)
+const [quarter, setQuarter] = useState<number | null>(currentQuarter)
+const [month, setMonth] = useState<number | null>(currentMonth)
+
+const period: AnalyticsPeriod =
+  month !== null
+    ? `${year}-${String(month).padStart(2, "0")}`
+    : quarter !== null
+      ? `quarter-${year}-${quarter}`
+      : `year-${year}`
+
+  function handleYearChange(selectedYear: number) {
+  setYear(selectedYear)
+  setQuarter(null)
+  setMonth(null)
+}
+
+function handleQuarterChange(selectedQuarter: number | null) {
+  setQuarter(selectedQuarter)
+  setMonth(null)
+}
+
+function handleMonthChange(selectedMonth: number | null) {
+  setMonth(selectedMonth)
+
+  if (selectedMonth !== null) {
+    setQuarter(Math.floor((selectedMonth - 1) / 3) + 1)
+  }
+}
 
   const [summary, setSummary] = useState({
     totalRevenue: 0,
@@ -102,17 +136,13 @@ export default function Analytics() {
 
         <div className="flex flex-wrap items-center gap-2">
           <AnalyticsFilter
-            value={period}
-            onChange={(value) => {
-              if (
-                value === "monthly" ||
-                value === "quarterly" ||
-                value === "yearly"
-              ) {
-                setPeriod(value)
-              }
-            }}
-          />
+  year={year}
+  quarter={quarter}
+  month={month}
+  onYearChange={handleYearChange}
+  onQuarterChange={handleQuarterChange}
+  onMonthChange={handleMonthChange}
+/>
 
           <AnalyticsExportMenu
             period={period}

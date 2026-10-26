@@ -128,10 +128,10 @@ export interface QuotationDetailItem {
   lineTotal: number
 
   materials: {
-  materialName: string
-  quantity: number
-  unit: string
-}[]
+    materialName: string
+    quantity: number
+    unit: string
+  }[]
 
   materialsSnapshot: QuotationDetailMaterialSnapshot[]
   laborSnapshot: QuotationDetailLaborSnapshot[]
@@ -144,6 +144,9 @@ export interface QuotationDetail {
   customerId: string
   clientName: string
 
+  createdByProfileId: string | null
+  createdByName: string | null
+
   sourceType: "catalog" | "custom_request"
   customRequestId: string | null
   requestNumber: string | null
@@ -153,13 +156,14 @@ export interface QuotationDetail {
 
   status: "draft" | "sent" | "accepted" | "declined"
 
-subtotal: number
-vatRate: number
-vatAmount: number
-deliveryFee: number
-totalAmount: number
+  subtotal: number
+  vatRate: number
+  vatAmount: number
+  deliveryFee: number
+  totalAmount: number
 
   notes: string | null
+  termsAndConditions: string | null
 
   createdAt: string
   sentAt: string | null

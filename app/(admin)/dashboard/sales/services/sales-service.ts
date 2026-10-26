@@ -78,6 +78,12 @@ customer_contact_number,
         notes,
         created_at,
         updated_at
+      ),
+      order_items(
+        material_subtotal,
+        labor_subtotal,
+        materials_snapshot,
+        labor_snapshot
       )
     `
     )
@@ -103,6 +109,66 @@ customer_contact_number,
 
     const totalAmount = Number(order.total_amount ?? 0)
 
+const orderItems = Array.isArray(order.order_items)
+  ? order.order_items
+  : []
+
+const materialCost = orderItems.reduce(
+  (orderTotal: number, item: any) => {
+    const snapshots = Array.isArray(item.materials_snapshot)
+      ? item.materials_snapshot
+      : []
+
+    if (snapshots.length > 0) {
+      return (
+        orderTotal +
+        snapshots.reduce(
+          (itemTotal: number, snapshot: any) =>
+            itemTotal +
+            Number(
+              snapshot.base_cost ??
+                Number(snapshot.unit_cost ?? 0) *
+                  Number(snapshot.quantity ?? 0)
+            ),
+          0
+        )
+      )
+    }
+
+    return orderTotal + Number(item.material_subtotal ?? 0)
+  },
+  0
+)
+
+const laborCost = orderItems.reduce(
+  (orderTotal: number, item: any) => {
+    const snapshots = Array.isArray(item.labor_snapshot)
+      ? item.labor_snapshot
+      : []
+
+    if (snapshots.length > 0) {
+      return (
+        orderTotal +
+        snapshots.reduce(
+          (itemTotal: number, snapshot: any) =>
+            itemTotal +
+            Number(
+              snapshot.base_cost ??
+                Number(snapshot.labor_cost ?? 0) *
+                  Number(snapshot.quantity ?? 0)
+            ),
+          0
+        )
+      )
+    }
+
+    return orderTotal + Number(item.labor_subtotal ?? 0)
+  },
+  0
+)
+
+const profit = subtotal - materialCost - laborCost
+
     const requiredDownPayment = totalAmount * 0.5
 
     const amountPaid = payments.reduce(
@@ -123,16 +189,13 @@ customer_contact_number,
 
     const latestPayment = sortedPayments[0] ?? null
 
-const firstName = profile?.first_name?.trim() ?? ""
-const lastName = profile?.last_name?.trim() ?? ""
-const fullName = profile?.full_name?.trim() ?? ""
+    const firstName = profile?.first_name?.trim() ?? ""
+    const lastName = profile?.last_name?.trim() ?? ""
+    const fullName = profile?.full_name?.trim() ?? ""
 
-const nameFromParts = [firstName, lastName].filter(Boolean).join(" ")
+    const nameFromParts = [firstName, lastName].filter(Boolean).join(" ")
 
-const customerName =
-  nameFromParts ||
-  fullName ||
-  "Unknown Customer"
+    const customerName = nameFromParts || fullName || "Unknown Customer"
 
     return {
       orderId: order.id,
@@ -152,6 +215,10 @@ const customerName =
       vatAmount,
       deliveryFee,
       totalAmount,
+
+      materialCost,
+      laborCost,
+      profit,
 
       requiredDownPayment,
 

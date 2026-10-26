@@ -115,8 +115,8 @@ export interface Order {
 
   profiles?: {
     id: string
-    first_name: string
-    last_name: string
+    first_name: string | null
+    last_name: string | null
     full_name: string | null
   } | null
 

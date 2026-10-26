@@ -13,21 +13,24 @@ interface ClientQuotationRow {
   custom_request_id: string | null
   status: ClientQuotationStatus
   project_name: string
-subtotal: number | string
-vat_rate: number | string
-vat_amount: number | string
-delivery_fee: number | string
-total_amount: number | string
+  subtotal: number | string
+  vat_rate: number | string
+  vat_amount: number | string
+  delivery_fee: number | string
+  total_amount: number | string
   sent_at: string | null
   accepted_at: string | null
   declined_at: string | null
 }
 
-interface ClientQuotationDetailRow
-  extends ClientQuotationRow {
+interface ClientQuotationDetailRow extends ClientQuotationRow {
   customer_address_snapshot: string | null
   notes: string | null
+  terms_and_conditions: string | null
   created_at: string
+
+  created_by_profile_id: string | null
+  created_by_name_snapshot: string | null
 
   quotation_items:
     | {
@@ -54,12 +57,9 @@ interface ClientQuotationDetailRow
 export async function acceptQuotation(
   quotationId: string
 ): Promise<AcceptQuotationResult> {
-  const { data, error } = await supabase.rpc(
-    "accept_quotation",
-    {
-      p_quotation_id: quotationId,
-    }
-  )
+  const { data, error } = await supabase.rpc("accept_quotation", {
+    p_quotation_id: quotationId,
+  })
 
   if (error) {
     throw new Error(error.message)
@@ -68,9 +68,7 @@ export async function acceptQuotation(
   const result = data?.[0]
 
   if (!result) {
-    throw new Error(
-      "The quotation was accepted, but no order was returned."
-    )
+    throw new Error("The quotation was accepted, but no order was returned.")
   }
 
   return {
@@ -84,9 +82,7 @@ export interface AcceptQuotationResult {
   orderNumber: string
 }
 
-function toNullableNumber(
-  value: number | string | null
-): number | null {
+function toNullableNumber(value: number | string | null): number | null {
   if (value === null) {
     return null
   }
@@ -94,9 +90,7 @@ function toNullableNumber(
   return Number(value)
 }
 
-function toMaterialSnapshotArray(
-  value: unknown
-): {
+function toMaterialSnapshotArray(value: unknown): {
   material_name?: unknown
   quantity?: unknown
   unit?: unknown
@@ -106,13 +100,13 @@ function toMaterialSnapshotArray(
   }
 
   return value.filter(
-    (item): item is {
+    (
+      item
+    ): item is {
       material_name?: unknown
       quantity?: unknown
       unit?: unknown
-    } =>
-      typeof item === "object" &&
-      item !== null
+    } => typeof item === "object" && item !== null
   )
 }
 
@@ -121,10 +115,13 @@ export async function getClientQuotationById(
 ): Promise<ClientQuotationDetail> {
   const { data, error } = await supabase
     .from("quotations")
-    .select(`
+    .select(
+      `
       id,
       quotation_number,
       custom_request_id,
+      created_by_profile_id,
+      created_by_name_snapshot,
       status,
       project_name,
       customer_address_snapshot,
@@ -134,6 +131,7 @@ export async function getClientQuotationById(
       delivery_fee,
       total_amount,
       notes,
+      terms_and_conditions,
       created_at,
       sent_at,
       accepted_at,
@@ -153,13 +151,10 @@ export async function getClientQuotationById(
         line_total,
         materials_snapshot
       )
-    `)
+    `
+    )
     .eq("id", quotationId)
-    .in("status", [
-      "sent",
-      "accepted",
-      "declined",
-    ])
+    .in("status", ["sent", "accepted", "declined"])
     .order("item_number", {
       referencedTable: "quotation_items",
       ascending: true,
@@ -170,14 +165,14 @@ export async function getClientQuotationById(
     throw new Error(error.message)
   }
 
-  const row =
-    data as ClientQuotationDetailRow
+  const row = data as ClientQuotationDetailRow
 
   if (!row.custom_request_id) {
-    throw new Error(
-      "Quotation is not associated with a custom request."
-    )
+    throw new Error("Quotation is not associated with a custom request.")
   }
+
+  const createdByName =
+  row.created_by_name_snapshot?.trim() || null
 
   return {
     id: row.id,
@@ -186,66 +181,50 @@ export async function getClientQuotationById(
     status: row.status,
 
     projectName: row.project_name,
-    customerAddressSnapshot:
-      row.customer_address_snapshot,
-subtotal: Number(row.subtotal ?? 0),
-vatRate: Number(row.vat_rate ?? 0),
-vatAmount: Number(row.vat_amount ?? 0),
-deliveryFee: Number(
-  row.delivery_fee ?? 0
-),
-totalAmount: Number(
-  row.total_amount ?? 0
-),
+    customerAddressSnapshot: row.customer_address_snapshot,
+    subtotal: Number(row.subtotal ?? 0),
+    vatRate: Number(row.vat_rate ?? 0),
+    vatAmount: Number(row.vat_amount ?? 0),
+    deliveryFee: Number(row.delivery_fee ?? 0),
+    totalAmount: Number(row.total_amount ?? 0),
 
-    notes: row.notes,
-    createdAt: row.created_at,
+notes: row.notes,
+termsAndConditions: row.terms_and_conditions,
 
-    sentAt: row.sent_at,
+createdByProfileId: row.created_by_profile_id,
+createdByName,
+
+createdAt: row.created_at,
+
+sentAt: row.sent_at,
     acceptedAt: row.accepted_at,
     declinedAt: row.declined_at,
 
-    items: (row.quotation_items ?? []).map(
-      (item) => ({
-        id: item.id,
-        itemNumber: item.item_number,
-        itemName: item.item_name,
-        details: item.details,
+    items: (row.quotation_items ?? []).map((item) => ({
+      id: item.id,
+      itemNumber: item.item_number,
+      itemName: item.item_name,
+      details: item.details,
 
-        width: toNullableNumber(
-          item.width
-        ),
-        height: toNullableNumber(
-          item.height
-        ),
-        depth: toNullableNumber(
-          item.depth
-        ),
-        dimensionUnit:
-          item.dimension_unit,
+      width: toNullableNumber(item.width),
+      height: toNullableNumber(item.height),
+      depth: toNullableNumber(item.depth),
+      dimensionUnit: item.dimension_unit,
 
-        quantity: Number(item.quantity),
-        unitPrice: Number(
-          item.unit_price ?? 0
-        ),
-        lineTotal: Number(
-          item.line_total ?? 0
-        ),
-        materials: toMaterialSnapshotArray(
-  item.materials_snapshot
-).map((material) => ({
-  materialName:
-    typeof material.material_name === "string"
-      ? material.material_name
-      : "Material",
-  quantity: Number(material.quantity ?? 0),
-  unit:
-    typeof material.unit === "string"
-      ? material.unit
-      : "",
-})),
-      })
-    ),
+      quantity: Number(item.quantity),
+      unitPrice: Number(item.unit_price ?? 0),
+      lineTotal: Number(item.line_total ?? 0),
+      materials: toMaterialSnapshotArray(item.materials_snapshot).map(
+        (material) => ({
+          materialName:
+            typeof material.material_name === "string"
+              ? material.material_name
+              : "Material",
+          quantity: Number(material.quantity ?? 0),
+          unit: typeof material.unit === "string" ? material.unit : "",
+        })
+      ),
+    })),
   }
 }
 export async function getQuotationForCustomRequest(
@@ -253,7 +232,8 @@ export async function getQuotationForCustomRequest(
 ): Promise<ClientQuotationSummary | null> {
   const { data, error } = await supabase
     .from("quotations")
-    .select(`
+    .select(
+      `
       id,
       quotation_number,
       custom_request_id,
@@ -267,13 +247,10 @@ export async function getQuotationForCustomRequest(
       sent_at,
       accepted_at,
       declined_at
-    `)
+    `
+    )
     .eq("custom_request_id", requestId)
-    .in("status", [
-      "sent",
-      "accepted",
-      "declined",
-    ])
+    .in("status", ["sent", "accepted", "declined"])
     .order("created_at", {
       ascending: false,
     })
@@ -288,8 +265,7 @@ export async function getQuotationForCustomRequest(
     return null
   }
 
-  const row =
-    data as ClientQuotationRow
+  const row = data as ClientQuotationRow
 
   if (!row.custom_request_id) {
     return null
@@ -297,36 +273,25 @@ export async function getQuotationForCustomRequest(
 
   return {
     id: row.id,
-    quotationNumber:
-      row.quotation_number,
-    customRequestId:
-      row.custom_request_id,
+    quotationNumber: row.quotation_number,
+    customRequestId: row.custom_request_id,
     status: row.status,
     projectName: row.project_name,
-subtotal: Number(row.subtotal ?? 0),
-vatRate: Number(row.vat_rate ?? 0),
-vatAmount: Number(row.vat_amount ?? 0),
-deliveryFee: Number(
-  row.delivery_fee ?? 0
-),
-totalAmount: Number(
-  row.total_amount ?? 0
-),
+    subtotal: Number(row.subtotal ?? 0),
+    vatRate: Number(row.vat_rate ?? 0),
+    vatAmount: Number(row.vat_amount ?? 0),
+    deliveryFee: Number(row.delivery_fee ?? 0),
+    totalAmount: Number(row.total_amount ?? 0),
     sentAt: row.sent_at,
     acceptedAt: row.accepted_at,
     declinedAt: row.declined_at,
   }
 }
 
-export async function declineQuotation(
-  quotationId: string
-): Promise<void> {
-  const { error } = await supabase.rpc(
-    "decline_quotation",
-    {
-      p_quotation_id: quotationId,
-    }
-  )
+export async function declineQuotation(quotationId: string): Promise<void> {
+  const { error } = await supabase.rpc("decline_quotation", {
+    p_quotation_id: quotationId,
+  })
 
   if (error) {
     throw new Error(error.message)
@@ -338,7 +303,8 @@ export async function getQuotationHistoryForCustomRequest(
 ): Promise<ClientQuotationSummary[]> {
   const { data, error } = await supabase
     .from("quotations")
-    .select(`
+    .select(
+      `
       id,
       quotation_number,
       custom_request_id,
@@ -352,13 +318,10 @@ export async function getQuotationHistoryForCustomRequest(
       sent_at,
       accepted_at,
       declined_at
-    `)
+    `
+    )
     .eq("custom_request_id", customRequestId)
-    .in("status", [
-      "sent",
-      "accepted",
-      "declined",
-    ])
+    .in("status", ["sent", "accepted", "declined"])
     .order("created_at", {
       ascending: false,
     })
@@ -369,24 +332,17 @@ export async function getQuotationHistoryForCustomRequest(
 
   return (data ?? []).map((quotation) => ({
     id: quotation.id,
-    quotationNumber:
-      quotation.quotation_number,
-    customRequestId:
-      quotation.custom_request_id,
-    status:
-      quotation.status as ClientQuotationStatus,
-    projectName:
-      quotation.project_name,
+    quotationNumber: quotation.quotation_number,
+    customRequestId: quotation.custom_request_id,
+    status: quotation.status as ClientQuotationStatus,
+    projectName: quotation.project_name,
     subtotal: Number(quotation.subtotal),
-vatRate: Number(quotation.vat_rate),
-vatAmount: Number(quotation.vat_amount),
-deliveryFee: Number(quotation.delivery_fee),
-totalAmount: Number(quotation.total_amount),
-    sentAt:
-      quotation.sent_at,
-    acceptedAt:
-      quotation.accepted_at,
-    declinedAt:
-      quotation.declined_at,
+    vatRate: Number(quotation.vat_rate),
+    vatAmount: Number(quotation.vat_amount),
+    deliveryFee: Number(quotation.delivery_fee),
+    totalAmount: Number(quotation.total_amount),
+    sentAt: quotation.sent_at,
+    acceptedAt: quotation.accepted_at,
+    declinedAt: quotation.declined_at,
   }))
 }

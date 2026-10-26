@@ -8,7 +8,7 @@ import type {
   MaterialUsage,
 } from "../types/analytics"
 
-export type AnalyticsPeriod = "monthly" | "quarterly" | "yearly"
+export type AnalyticsPeriod = string
 
 interface DateRange {
   start: Date
@@ -16,24 +16,56 @@ interface DateRange {
 }
 
 function getDateRange(period: AnalyticsPeriod): DateRange {
+  if (period.startsWith("year-")) {
+    const year = Number(period.replace("year-", ""))
+
+    if (Number.isInteger(year)) {
+      return {
+        start: new Date(year, 0, 1),
+        end: new Date(year + 1, 0, 1),
+      }
+    }
+  }
+
+  if (period.startsWith("quarter-")) {
+    const [, yearValue, quarterValue] = period.split("-")
+
+    const year = Number(yearValue)
+    const quarter = Number(quarterValue)
+
+    if (
+      Number.isInteger(year) &&
+      Number.isInteger(quarter) &&
+      quarter >= 1 &&
+      quarter <= 4
+    ) {
+      const startMonth = (quarter - 1) * 3
+
+      return {
+        start: new Date(year, startMonth, 1),
+        end: new Date(year, startMonth + 3, 1),
+      }
+    }
+  }
+
+  const [yearValue, monthValue] = period.split("-")
+
+  const year = Number(yearValue)
+  const month = Number(monthValue) - 1
+
+  if (
+    Number.isInteger(year) &&
+    Number.isInteger(month) &&
+    month >= 0 &&
+    month <= 11
+  ) {
+    return {
+      start: new Date(year, month, 1),
+      end: new Date(year, month + 1, 1),
+    }
+  }
+
   const now = new Date()
-
-  if (period === "yearly") {
-    return {
-      start: new Date(now.getFullYear(), 0, 1),
-      end: new Date(now.getFullYear() + 1, 0, 1),
-    }
-  }
-
-  if (period === "quarterly") {
-    const currentQuarter = Math.floor(now.getMonth() / 3)
-    const startMonth = currentQuarter * 3
-
-    return {
-      start: new Date(now.getFullYear(), startMonth, 1),
-      end: new Date(now.getFullYear(), startMonth + 3, 1),
-    }
-  }
 
   return {
     start: new Date(now.getFullYear(), now.getMonth(), 1),
@@ -110,7 +142,9 @@ export async function getAnalyticsSummary(
     customerSatisfaction,
   }
 }
-export async function getAnalyticsTrends(period: AnalyticsPeriod): Promise<{
+export async function getAnalyticsTrends(
+  period: AnalyticsPeriod
+): Promise<{
   revenueData: RevenueData[]
   ordersData: OrdersData[]
 }> {
@@ -132,13 +166,21 @@ export async function getAnalyticsTrends(period: AnalyticsPeriod): Promise<{
 
   const orders = data ?? []
 
-  const revenueMap = new Map<string, number>()
-  const ordersMap = new Map<string, number>()
+  const isMonthly =
+    !period.startsWith("quarter-") &&
+    !period.startsWith("year-")
 
-  if (period === "monthly") {
+  /*
+   * MONTH VIEW
+   * Group chart data by day.
+   */
+  if (isMonthly) {
     const year = start.getFullYear()
     const month = start.getMonth()
     const daysInMonth = new Date(year, month + 1, 0).getDate()
+
+    const revenueMap = new Map<string, number>()
+    const ordersMap = new Map<string, number>()
 
     for (let day = 1; day <= daysInMonth; day++) {
       const key = `${year}-${month}-${day}`
@@ -150,14 +192,19 @@ export async function getAnalyticsTrends(period: AnalyticsPeriod): Promise<{
     for (const order of orders) {
       const date = new Date(order.created_at)
 
-      const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
+      const key =
+        `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
 
       revenueMap.set(
         key,
-        (revenueMap.get(key) ?? 0) + Number(order.total_amount ?? 0)
+        (revenueMap.get(key) ?? 0) +
+          Number(order.total_amount ?? 0)
       )
 
-      ordersMap.set(key, (ordersMap.get(key) ?? 0) + 1)
+      ordersMap.set(
+        key,
+        (ordersMap.get(key) ?? 0) + 1
+      )
     }
 
     const revenueData: RevenueData[] = []
@@ -166,19 +213,22 @@ export async function getAnalyticsTrends(period: AnalyticsPeriod): Promise<{
     for (let day = 1; day <= daysInMonth; day++) {
       const key = `${year}-${month}-${day}`
 
+      const label = new Date(
+        year,
+        month,
+        day
+      ).toLocaleDateString("en-PH", {
+        month: "short",
+        day: "numeric",
+      })
+
       revenueData.push({
-        month: new Date(year, month, day).toLocaleDateString("en-PH", {
-          month: "short",
-          day: "numeric",
-        }),
+        month: label,
         revenue: revenueMap.get(key) ?? 0,
       })
 
       ordersData.push({
-        month: new Date(year, month, day).toLocaleDateString("en-PH", {
-          month: "short",
-          day: "numeric",
-        }),
+        month: label,
         orders: ordersMap.get(key) ?? 0,
       })
     }
@@ -189,22 +239,32 @@ export async function getAnalyticsTrends(period: AnalyticsPeriod): Promise<{
     }
   }
 
-  // Quarterly and yearly analytics are grouped by month.
-  const current = new Date(start.getFullYear(), start.getMonth(), 1)
+  /*
+   * QUARTER / YEAR VIEW
+   * Group chart data by month.
+   */
+  const revenueMap = new Map<string, number>()
+  const ordersMap = new Map<string, number>()
 
-  const revenueData: RevenueData[] = []
-  const ordersData: OrdersData[] = []
+  const months: Date[] = []
 
-  while (current < end) {
-    const year = current.getFullYear()
-    const month = current.getMonth()
+  const cursor = new Date(
+    start.getFullYear(),
+    start.getMonth(),
+    1
+  )
 
-    const key = `${year}-${month}`
+  while (cursor < end) {
+    months.push(new Date(cursor))
+
+    cursor.setMonth(cursor.getMonth() + 1)
+  }
+
+  for (const date of months) {
+    const key = `${date.getFullYear()}-${date.getMonth()}`
 
     revenueMap.set(key, 0)
     ordersMap.set(key, 0)
-
-    current.setMonth(current.getMonth() + 1)
   }
 
   for (const order of orders) {
@@ -214,36 +274,39 @@ export async function getAnalyticsTrends(period: AnalyticsPeriod): Promise<{
 
     revenueMap.set(
       key,
-      (revenueMap.get(key) ?? 0) + Number(order.total_amount ?? 0)
+      (revenueMap.get(key) ?? 0) +
+        Number(order.total_amount ?? 0)
     )
 
-    ordersMap.set(key, (ordersMap.get(key) ?? 0) + 1)
+    ordersMap.set(
+      key,
+      (ordersMap.get(key) ?? 0) + 1
+    )
   }
 
-  const monthCursor = new Date(start.getFullYear(), start.getMonth(), 1)
+  const revenueData: RevenueData[] = months.map((date) => {
+    const key = `${date.getFullYear()}-${date.getMonth()}`
 
-  while (monthCursor < end) {
-    const year = monthCursor.getFullYear()
-    const month = monthCursor.getMonth()
-
-    const key = `${year}-${month}`
-
-    const label = monthCursor.toLocaleDateString("en-PH", {
-      month: "short",
-    })
-
-    revenueData.push({
-      month: label,
+    return {
+      month: date.toLocaleDateString("en-PH", {
+        month: "short",
+        year: "numeric",
+      }),
       revenue: revenueMap.get(key) ?? 0,
-    })
+    }
+  })
 
-    ordersData.push({
-      month: label,
+  const ordersData: OrdersData[] = months.map((date) => {
+    const key = `${date.getFullYear()}-${date.getMonth()}`
+
+    return {
+      month: date.toLocaleDateString("en-PH", {
+        month: "short",
+        year: "numeric",
+      }),
       orders: ordersMap.get(key) ?? 0,
-    })
-
-    monthCursor.setMonth(monthCursor.getMonth() + 1)
-  }
+    }
+  })
 
   return {
     revenueData,

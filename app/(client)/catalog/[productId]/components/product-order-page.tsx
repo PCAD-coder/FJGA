@@ -320,6 +320,10 @@ export default function ProductOrderPage({
 
   const vatRate = 12
 
+  const vatInclusiveUnitPrice =
+    Math.round((estimatedPrice * (1 + vatRate / 100) + Number.EPSILON) * 100) /
+    100
+
   const vatAmount =
     Math.round((productTotal * (vatRate / 100) + Number.EPSILON) * 100) / 100
 
@@ -375,10 +379,13 @@ export default function ProductOrderPage({
               {product.description}
             </p>
             <div className="mt-4">
-              <p className="text-xs text-muted-foreground">Unit price</p>
+              <p className="text-xs text-muted-foreground">
+                Unit price (VAT included)
+              </p>
+
               <p className="mt-1 text-2xl font-semibold tracking-tight">
                 &#8369;
-                {estimatedPrice.toLocaleString(undefined, {
+                {vatInclusiveUnitPrice.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
@@ -673,8 +680,8 @@ export default function ProductOrderPage({
               </p>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Unit price: ₱
-                {estimatedPrice.toLocaleString(undefined, {
+                Unit price (VAT included): ₱
+                {vatInclusiveUnitPrice.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
