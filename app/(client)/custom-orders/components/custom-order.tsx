@@ -153,7 +153,7 @@ function CustomOrderCard({
 
                 <p className="text-sm text-muted-foreground">
                   {formatCategory(request.product_category)}
-                  <span className="mx-2">â€¢</span>
+                  <span className="mx-2">•</span>
                   Quantity: {request.quantity}
                 </p>
               </div>
@@ -516,7 +516,7 @@ export default function CustomOrder() {
           className="flex flex-col gap-3 border-t pt-4 pb-6 sm:flex-row sm:items-center sm:justify-between"
         >
           <p aria-live="polite" className="text-sm text-muted-foreground">
-            Showing {startIndex + 1}â€“
+            Showing {startIndex + 1}–
             {Math.min(startIndex + PAGE_SIZE, filteredRequests.length)} of{" "}
             {filteredRequests.length} requests
           </p>
@@ -586,8 +586,8 @@ function formatDimensions(request: CustomOrderRequestListItem) {
   const unit = dimension_unit ?? ""
 
   if (depth != null) {
-    return `${width} Ã— ${height} Ã— ${depth} ${unit}`
+    return `${width} × ${height} × ${depth} ${unit}`
   }
 
-  return `${width} Ã— ${height} ${unit}`
+  return `${width} × ${height} ${unit}`
 }

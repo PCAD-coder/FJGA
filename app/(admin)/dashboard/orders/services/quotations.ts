@@ -258,6 +258,8 @@ export async function getQuotationById(
       customer_address_snapshot,
       status,
       subtotal,
+      vat_rate,
+      vat_amount,
       delivery_fee,
       total_amount,
       notes,

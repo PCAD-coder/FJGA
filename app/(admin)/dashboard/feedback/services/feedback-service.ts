@@ -15,12 +15,14 @@ interface FeedbackQueryResult {
   created_at: string
   profiles:
     | {
-        first_name: string | null
-        last_name: string | null
+first_name: string | null
+last_name: string | null
+full_name: string | null
       }
     | {
-        first_name: string | null
-        last_name: string | null
+first_name: string | null
+last_name: string | null
+full_name: string | null
       }[]
     | null
   orders:
@@ -58,12 +60,13 @@ function getClientName(profile: FeedbackQueryResult["profiles"]): string {
     return "Unknown Client"
   }
 
-  return (
-    [customer.first_name, customer.last_name]
-      .filter(Boolean)
-      .join(" ")
-      .trim() || "Unknown Client"
-  )
+  const firstName = customer.first_name?.trim() ?? ""
+  const lastName = customer.last_name?.trim() ?? ""
+  const fullName = customer.full_name?.trim() ?? ""
+
+  const nameFromParts = [firstName, lastName].filter(Boolean).join(" ")
+
+  return nameFromParts || fullName || "Unknown Client"
 }
 
 function getProjectName(orders: FeedbackQueryResult["orders"]): string {
@@ -132,7 +135,8 @@ export async function getFeedbacks(): Promise<Feedback[]> {
       created_at,
       profiles!feedback_customer_id_fkey (
         first_name,
-        last_name
+        last_name,
+        full_name
       ),
       orders!feedback_order_id_fkey (
         order_number,

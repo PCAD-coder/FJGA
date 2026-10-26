@@ -34,7 +34,7 @@ interface PendingPaymentSubmissionsProps {
 }
 
 function formatCurrency(value: number) {
-  return `â‚±${value.toLocaleString(undefined, {
+  return `₱${value.toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`
@@ -42,7 +42,7 @@ function formatCurrency(value: number) {
 
 function formatDate(value: string | null) {
   if (!value) {
-    return "â€”"
+    return "—"
   }
 
   return new Date(value).toLocaleDateString()
@@ -66,7 +66,7 @@ function getPaymentMethodLabel(method: PaymentSubmission["paymentMethod"]) {
       return "Cash on Delivery"
 
     default:
-      return "â€”"
+      return "—"
   }
 }
 
@@ -238,7 +238,7 @@ export default function PendingPaymentSubmissions({
 
                     <TableCell>{formatDate(submission.paymentDate)}</TableCell>
 
-                    <TableCell>{submission.referenceNumber ?? "â€”"}</TableCell>
+                    <TableCell>{submission.referenceNumber ?? "—"}</TableCell>
 
                     <TableCell>{formatDate(submission.submittedAt)}</TableCell>
 

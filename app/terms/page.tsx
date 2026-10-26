@@ -24,7 +24,7 @@ export default function TermsPage() {
         Terms and Conditions
       </h1>
       <p className="mt-3 text-sm text-muted-foreground">
-        Version {TERMS_VERSION} Â· Effective October 25, 2026
+        Version {TERMS_VERSION} · Effective October 25, 2026
       </p>
       <p className="mt-6 rounded-xl border bg-card p-5 text-sm leading-7">
         Please review these terms before creating an account. They explain how

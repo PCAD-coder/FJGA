@@ -31,21 +31,38 @@ export function getColumns({
       cell: ({ row }) => {
         const user = row.original
 
+        const firstName = user.first_name?.trim() ?? ""
+const lastName = user.last_name?.trim() ?? ""
+const fullName = user.full_name?.trim() ?? ""
+
+const nameFromParts = [firstName, lastName].filter(Boolean).join(" ")
+
+const displayName =
+  nameFromParts ||
+  fullName ||
+  "Unknown User"
+
+const initials = displayName
+  .split(/\s+/)
+  .filter(Boolean)
+  .slice(0, 2)
+  .map((name) => name.charAt(0).toUpperCase())
+  .join("")
+
         return (
           <div className="flex items-center gap-3">
             <Avatar className="size-9 border border-border/60">
               <AvatarImage src={user.profile_image ?? ""} />
 
-              <AvatarFallback className="bg-primary/10 text-base font-medium text-primary">
-                {user.first_name?.charAt(0)}
-                {user.last_name?.charAt(0)}
-              </AvatarFallback>
+<AvatarFallback className="bg-primary/10 text-base font-medium text-primary">
+  {initials || "U"}
+</AvatarFallback>
             </Avatar>
 
             <div className="min-w-0">
-              <p className="text-sm font-medium">
-                {user.first_name} {user.last_name}
-              </p>
+<p className="text-sm font-medium">
+  {displayName}
+</p>
 
               <p className="text-sm text-muted-foreground">{user.email}</p>
             </div>

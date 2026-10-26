@@ -46,12 +46,12 @@ export default function EditMaterialDialog({
     setMarkup(material.markup_percentage ?? 0)
   }, [material])
 
-  // âœ… Hook stays before any return
+  // ✅ Hook stays before any return
   const sellingPrice = useMemo(() => {
     return unitCost * (1 + markup / 100)
   }, [unitCost, markup])
 
-  // âœ… Conditional return after all hooks
+  // ✅ Conditional return after all hooks
   if (!material) return null
 
   const selectedMaterial = material

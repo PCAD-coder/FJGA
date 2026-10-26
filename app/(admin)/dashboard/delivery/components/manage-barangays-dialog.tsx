@@ -173,7 +173,7 @@ export default function ManageBarangaysDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Manage Barangays â€” {city.cityName}</DialogTitle>
+          <DialogTitle>Manage Barangays — {city.cityName}</DialogTitle>
 
           <DialogDescription>
             Choose which barangays are available for delivery within this city

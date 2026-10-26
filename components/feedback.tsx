@@ -55,13 +55,13 @@ export default function FeedbackSection() {
             </p>
 
             <h2 className="mt-4 max-w-2xl font-serif text-4xl leading-tight font-medium tracking-tight sm:text-5xl">
-              Trusted by Our Customers
+              Trusted by Our Clients
             </h2>
           </div>
 
           <div className="md:pb-1">
             <p className="max-w-xl text-sm leading-7 text-muted-foreground md:text-base">
-              Hear from customers who have worked with FJ Glass and Aluminum
+              Hear from clients who have worked with FJ Glass and Aluminum
               for their glass, aluminum, furniture, and custom fabrication
               needs.
             </p>
@@ -113,7 +113,7 @@ export default function FeedbackSection() {
                       </p>
 
                       <p className="mt-1 text-sm text-muted-foreground">
-                        FJ Glass and Aluminum Customer
+                        FJ Glass and Aluminum Client
                       </p>
                     </div>
 

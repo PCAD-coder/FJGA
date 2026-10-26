@@ -14,6 +14,7 @@ interface ActivityLogRow {
     | {
         first_name: string | null
         last_name: string | null
+        full_name: string | null
         role: string
       }
     | null
@@ -35,6 +36,7 @@ export async function getActivityLogs(): Promise<ActivityLog[]> {
       profiles (
         first_name,
         last_name,
+        full_name,
         role
       )
     `)
@@ -50,16 +52,21 @@ export async function getActivityLogs(): Promise<ActivityLog[]> {
       ? log.profiles[0]
       : log.profiles
 
-    const fullName = profile
-      ? [profile.first_name, profile.last_name]
-          .filter(Boolean)
-          .join(" ")
-      : "Unknown User"
+const firstName = profile?.first_name?.trim() ?? ""
+const lastName = profile?.last_name?.trim() ?? ""
+const fullName = profile?.full_name?.trim() ?? ""
+
+const nameFromParts = [firstName, lastName].filter(Boolean).join(" ")
+
+const userName =
+  nameFromParts ||
+  fullName ||
+  "Unknown User"
 
     return {
       id: log.id,
       userId: log.user_id,
-      userName: fullName || "Unknown User",
+      userName,
       role: profile?.role ?? "Unknown",
       action: log.action,
       module: log.module,

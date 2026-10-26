@@ -126,7 +126,7 @@ function getPaymentStatusLabel(
 }
 
 function formatPrintCurrency(value: number) {
-  return `â‚±${value.toLocaleString(undefined, {
+  return `₱${value.toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`
@@ -184,7 +184,7 @@ export function SalesExportMenu({
       .map((row) => row.map(escapeCsvValue).join(","))
       .join("\r\n")
 
-    // UTF-8 BOM helps Excel display characters such as â‚± correctly.
+    // UTF-8 BOM helps Excel display characters such as ₱ correctly.
     const blob = new Blob(["\uFEFF", csvContent], {
       type: "text/csv;charset=utf-8;",
     })
@@ -273,11 +273,11 @@ export function SalesExportMenu({
           </td>
 
           <td>
-            ${escapeHtml(formatDate(sale.lastPaymentDate) || "â€”")}
+            ${escapeHtml(formatDate(sale.lastPaymentDate) || "—")}
           </td>
 
           <td>
-            ${escapeHtml(formatDate(sale.nextPaymentDue) || "â€”")}
+            ${escapeHtml(formatDate(sale.nextPaymentDue) || "—")}
           </td>
         </tr>
       `
@@ -513,7 +513,7 @@ export function SalesExportMenu({
           </table>
 
           <div class="footer">
-            FJ Glass and Aluminum â€” Sales Report
+            FJ Glass and Aluminum — Sales Report
           </div>
         </main>
       </body>

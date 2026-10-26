@@ -456,7 +456,7 @@ export default function ProductOrderPage({
                     {variants.glass.map((variant) => (
                       <SelectItem key={variant.id} value={variant.id}>
                         {variant.color ?? variant.material_name}
-                        {variant.thickness ? ` â€” ${variant.thickness}` : ""}
+                        {variant.thickness ? ` — ${variant.thickness}` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -665,7 +665,7 @@ export default function ProductOrderPage({
               <p className="text-sm text-muted-foreground">Estimated total</p>
 
               <p className="text-3xl font-semibold tracking-tight tabular-nums">
-                â‚±
+                ₱
                 {totalPrice.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
@@ -673,7 +673,7 @@ export default function ProductOrderPage({
               </p>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Unit price: â‚±
+                Unit price: ₱
                 {estimatedPrice.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
@@ -695,7 +695,7 @@ export default function ProductOrderPage({
                 </span>
 
                 <span className="font-medium">
-                  â‚±
+                  ₱
                   {productTotal.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
@@ -709,7 +709,7 @@ export default function ProductOrderPage({
                 </span>
 
                 <span className="font-medium">
-                  â‚±
+                  ₱
                   {vatAmount.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
@@ -729,7 +729,7 @@ export default function ProductOrderPage({
                     "Unavailable"
                   ) : (
                     <>
-                      â‚±
+                      ₱
                       {deliveryFee.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
@@ -757,7 +757,7 @@ export default function ProductOrderPage({
                   <span className="font-semibold">Grand Total</span>
 
                   <span className="text-xl font-bold">
-                    â‚±
+                    ₱
                     {totalPrice.toLocaleString(undefined, {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,

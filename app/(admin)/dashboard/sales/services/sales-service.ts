@@ -62,7 +62,8 @@ customer_contact_number,
       profiles (
         id,
         first_name,
-        last_name
+        last_name,
+        full_name
       ),
 
       order_payments (
@@ -122,9 +123,16 @@ customer_contact_number,
 
     const latestPayment = sortedPayments[0] ?? null
 
-    const customerName = profile
-      ? `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim()
-      : "Unknown Customer"
+const firstName = profile?.first_name?.trim() ?? ""
+const lastName = profile?.last_name?.trim() ?? ""
+const fullName = profile?.full_name?.trim() ?? ""
+
+const nameFromParts = [firstName, lastName].filter(Boolean).join(" ")
+
+const customerName =
+  nameFromParts ||
+  fullName ||
+  "Unknown Customer"
 
     return {
       orderId: order.id,

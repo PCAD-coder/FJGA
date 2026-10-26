@@ -67,7 +67,7 @@ function formatCurrency(value: number): string {
 }
 
 function formatDate(value: string | null): string {
-  if (!value) return "â€”"
+  if (!value) return "—"
 
   return new Intl.DateTimeFormat("en-PH", {
     year: "numeric",
@@ -92,10 +92,10 @@ function formatDimensions(item: ClientQuotationItem): string {
   }
 
   if (values.length === 0) {
-    return "â€”"
+    return "—"
   }
 
-  return `${values.join(" Ã— ")} ${item.dimensionUnit ?? ""}`.trim()
+  return `${values.join(" × ")} ${item.dimensionUnit ?? ""}`.trim()
 }
 
 function getStatusVariant(

@@ -27,9 +27,32 @@ interface ProductionHistoryEntry {
   notes: string | null
   changed_at: string
   profiles:
-    | { first_name: string; last_name: string }
-    | { first_name: string; last_name: string }[]
+    | {
+        first_name: string | null
+        last_name: string | null
+        full_name: string | null
+      }
+    | {
+        first_name: string | null
+        last_name: string | null
+        full_name: string | null
+      }[]
     | null
+}
+function getUpdaterName(profiles: ProductionHistoryEntry["profiles"]): string {
+  const profile = Array.isArray(profiles) ? (profiles[0] ?? null) : profiles
+
+  if (!profile) {
+    return "Unknown User"
+  }
+
+  const firstName = profile.first_name?.trim() ?? ""
+  const lastName = profile.last_name?.trim() ?? ""
+  const fullName = profile.full_name?.trim() ?? ""
+
+  const nameFromParts = [firstName, lastName].filter(Boolean).join(" ")
+
+  return nameFromParts || fullName || "Unknown User"
 }
 
 interface Props {
@@ -99,28 +122,28 @@ export default function ProductionDetailsDialog({
                   <p className="font-semibold">{project.clientName}</p>
                 </div>
                 <div>
-  <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-    Contact Number
-  </p>
-  <p className="font-semibold">
-    {project.contactNumber ?? "Not provided"}
-  </p>
-</div>
+                  <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                    Contact Number
+                  </p>
+                  <p className="font-semibold">
+                    {project.contactNumber ?? "Not provided"}
+                  </p>
+                </div>
 
-<div>
-  <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-    Payment Method
-  </p>
-  <p className="font-semibold">
-    {project.paymentMethod === "cash_on_delivery"
-      ? "Cash on Delivery"
-      : project.paymentMethod === "card"
-        ? "Card"
-        : project.paymentMethod === "gcash"
-          ? "GCash"
-          : "Not specified"}
-  </p>
-</div>
+                <div>
+                  <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                    Payment Method
+                  </p>
+                  <p className="font-semibold">
+                    {project.paymentMethod === "cash_on_delivery"
+                      ? "Cash on Delivery"
+                      : project.paymentMethod === "card"
+                        ? "Card"
+                        : project.paymentMethod === "gcash"
+                          ? "GCash"
+                          : "Not specified"}
+                  </p>
+                </div>
 
                 <div>
                   <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
@@ -269,10 +292,7 @@ export default function ProductionDetailsDialog({
 
                         {entry.profiles && (
                           <p className="mt-1 text-xs text-muted-foreground">
-                            Updated by{" "}
-                            {Array.isArray(entry.profiles)
-                              ? `${entry.profiles[0]?.first_name ?? ""} ${entry.profiles[0]?.last_name ?? ""}`
-                              : `${entry.profiles.first_name} ${entry.profiles.last_name}`}
+                            Updated by {getUpdaterName(entry.profiles)}
                           </p>
                         )}
 

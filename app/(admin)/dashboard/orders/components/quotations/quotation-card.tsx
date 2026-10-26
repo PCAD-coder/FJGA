@@ -69,7 +69,7 @@ function formatCurrency(value: number): string {
 
 function formatDate(value: string | null): string {
   if (!value) {
-    return "â€”"
+    return "—"
   }
 
   return new Intl.DateTimeFormat("en-PH", {
@@ -183,7 +183,7 @@ export default function QuotationCard({
               <p className="text-xs text-muted-foreground">Request</p>
 
               <p className="text-sm font-medium">
-                {quotation.requestNumber ?? "â€”"}
+                {quotation.requestNumber ?? "—"}
               </p>
             </div>
           </div>

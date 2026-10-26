@@ -311,7 +311,7 @@ export default function DocumentationPage() {
               </Button>
             </section>
             <footer className="flex flex-wrap justify-between gap-3 border-t pt-6 text-sm text-muted-foreground">
-              <span>FJ Glass and Aluminum Â· Customer documentation</span>
+              <span>FJ Glass and Aluminum · Customer documentation</span>
               <a
                 href="#guide-content"
                 className="underline underline-offset-4 hover:text-foreground"

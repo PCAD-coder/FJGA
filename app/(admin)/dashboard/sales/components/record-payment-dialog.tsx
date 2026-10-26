@@ -37,7 +37,7 @@ interface RecordPaymentDialogProps {
 }
 
 function formatCurrency(value: number) {
-  return `â‚±${value.toLocaleString(undefined, {
+  return `₱${value.toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`
