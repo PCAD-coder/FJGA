@@ -10,14 +10,14 @@ export default async function Layout({
 }: {
   children: React.ReactNode
 }) {
-  await requireClient()
+  const profile = await requireClient()
   const cookieStore = await cookies()
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
       <div className="flex min-h-screen w-full">
-        <AppSidebar items={clientMenu} menuLabel="CLIENT MENU" />
+        <AppSidebar items={clientMenu} menuLabel="CLIENT MENU" profile={profile} />
         <main className="w-full flex-1">
           <div className="flex items-center gap-2 p-4">
             <SidebarTrigger />

@@ -229,20 +229,18 @@ export async function saveOrderQuotation(
 
 // Deny an order
 export async function denyOrder(orderId: string, reason: string) {
-  const { data, error } = await supabase
-    .from("orders")
-    .update({
-      status: "denied",
-      denial_reason: reason,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", orderId)
-    .select()
-    .single()
+  const trimmedReason = reason.trim()
+
+  if (!trimmedReason) {
+    throw new Error("A denial reason is required.")
+  }
+
+  const { error } = await supabase.rpc("deny_order", {
+    p_order_id: orderId,
+    p_reason: trimmedReason,
+  })
 
   if (error) throw error
-
-  return data
 }
 
 // Approve an order

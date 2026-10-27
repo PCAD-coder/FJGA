@@ -19,6 +19,7 @@ export interface CreateCustomOrderRequestInput {
   specifications: SpecificationsData
   contactNumber: string
   deliveryAddress: DeliveryAddressInput
+  siteVisitRequestId?: string | null
 }
 
 const CUSTOM_ORDER_BUCKET = "custom-order-references"
@@ -136,6 +137,7 @@ const {
     contactNumber: input.contactNumber,
     deliveryAddress,
     referenceNotes: designReference.notes,
+    siteVisitRequestId: input.siteVisitRequestId ?? null,
   })
 
   // Storage uploads cannot participate in the PostgreSQL
@@ -350,7 +352,7 @@ export async function getCustomOrderRequestById(
       id,
       request_number,
       customer_id,
-
+      site_visit_request_id,
       project_name,
       product_category,
       quantity,
@@ -425,6 +427,7 @@ export async function getCustomOrderRequestById(
     customer_id: request.customer_id,
 
     project_name: request.project_name,
+    site_visit_request_id: request.site_visit_request_id ?? null,
     product_category: request.product_category,
     quantity: request.quantity,
     description: request.description,

@@ -4,12 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { getColumns } from "../components/table"
-
 import { UserManagementService } from "../services/user-management.service"
 
 import {
-  CreateUserDto,
-  UpdateUserDto,
   User,
   UserManagementStats,
 } from "../types/user-management"
@@ -18,12 +15,6 @@ export function useUserManagement() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [addOpen, setAddOpen] = useState(false)
-  const [editOpen, setEditOpen] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const [changeRoleOpen, setChangeRoleOpen] = useState(false)
-
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
 
   const refresh = useCallback(async () => {
     try {
@@ -32,11 +23,9 @@ export function useUserManagement() {
       const data = await UserManagementService.getUsers()
 
       setUsers(data)
-
       setError(null)
     } catch (err) {
       console.error(err)
-
       setError("Unable to load users.")
     } finally {
       setLoading(false)
@@ -50,151 +39,41 @@ export function useUserManagement() {
   const stats = useMemo<UserManagementStats>(
     () => ({
       total: users.length,
-      active: users.filter((u) => u.status === "Active").length,
-      inactive: users.filter((u) => u.status === "Inactive").length,
-      administrators: users.filter((u) => u.role === "admin").length,
-      clients: users.filter((u) => u.role === "client").length,
+      active: users.filter((user) => user.status === "Active").length,
+      inactive: users.filter((user) => user.status === "Inactive").length,
+      administrators: users.filter((user) => user.role === "admin").length,
+      clients: users.filter((user) => user.role === "client").length,
     }),
     [users]
   )
 
-  const openAdd = () => {
-  setAddOpen(true)
-}
-
-const openEdit = (user: User) => {
-  setSelectedUser(user)
-  setEditOpen(true)
-}
-
-const openDelete = (user: User) => {
-  setSelectedUser(user)
-  setDeleteOpen(true)
-}
-
-const openChangeRole = (user: User) => {
-  setSelectedUser(user)
-  setChangeRoleOpen(true)
-}
   const table = useDataTable({
     data: users,
-    columns: getColumns({
-  onEdit: openEdit,
-  onDelete: openDelete,
-  onChangeRole: openChangeRole,
-}),
+    columns: getColumns(),
 
     globalFilterFn: (row, _, value) => {
-  const user = row.original
+      const user = row.original
 
-  const firstName = user.first_name?.trim() ?? ""
-  const lastName = user.last_name?.trim() ?? ""
-  const fullName = user.full_name?.trim() ?? ""
-  const email = user.email?.trim() ?? ""
+      const firstName = user.first_name?.trim() ?? ""
+      const lastName = user.last_name?.trim() ?? ""
+      const fullName = user.full_name?.trim() ?? ""
+      const email = user.email?.trim() ?? ""
 
-  const searchableText = [
-    firstName,
-    lastName,
-    fullName,
-    email,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase()
+      const searchableText = [
+        firstName,
+        lastName,
+        fullName,
+        email,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
 
-  return searchableText.includes(
-    String(value).trim().toLowerCase()
-  )
-},
+      return searchableText.includes(
+        String(value).trim().toLowerCase()
+      )
+    },
   })
-
-  const actions = {
-
-    openAdd,
-    openEdit,
-    openDelete,
-    openChangeRole,
-    refresh,
-
-    create: async (data: CreateUserDto) => {
-      try{
-        setLoading(true)
-        await UserManagementService.createUser(data)
-        await refresh()
-        setAddOpen(false)
-        } finally {
-          setLoading(false)
-        }
-      
-    },
-
-    update: async (id: string, data: UpdateUserDto) => {
-        try{
-            setLoading(true)
-            await UserManagementService.updateUser(id, data)
-            await refresh()
-            setEditOpen(false)
-            setSelectedUser(null)
-        }finally {
-          setLoading(false)
-        }
-      
-    },
-
-    deleteUser: async (id: string) => {
-        try{
-            setLoading(true)
-            await UserManagementService.deleteUser(id)
-            await refresh()
-            setDeleteOpen(false)
-            setSelectedUser(null)
-        }finally {
-          setLoading(false)
-        }
-      
-    },
-
-    changeRole: async (id: string, role: User["role"]) => {
-        try{
-            setLoading(true)
-            await UserManagementService.changeRole(id, role)
-            await refresh()
-            setChangeRoleOpen(false)
-            setSelectedUser(null)
-        }finally {
-          setLoading(false)
-        }
-      
-    },
-
-    toggleStatus: async (id: string) => {
-      await UserManagementService.toggleUserStatus(id)
-      await refresh()
-    },
-  }
-  const dialogs = {
-    add: {
-      open: addOpen,
-      setOpen: setAddOpen,
-    },
-
-    edit: {
-      open: editOpen,
-      setOpen: setEditOpen,
-    },
-
-    delete: {
-      open: deleteOpen,
-      setOpen: setDeleteOpen,
-    },
-
-    changeRole: {
-      open: changeRoleOpen,
-      setOpen: setChangeRoleOpen,
-    },
-
-    selectedUser,
-  }
 
   return {
     state: {
@@ -204,10 +83,6 @@ const openChangeRole = (user: User) => {
     },
 
     table,
-
     stats,
-
-    actions,
-    dialogs,
   }
 }

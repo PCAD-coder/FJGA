@@ -13,6 +13,7 @@ export interface CreateCustomOrderRequestServerInput {
   contactNumber: string
   deliveryAddress: DeliveryAddressInput
   referenceNotes: string
+  siteVisitRequestId?: string | null
 }
 
 function convertToCentimeters(value: number, unit: string): number {
@@ -83,7 +84,82 @@ export async function createCustomOrderRequestServer(
     contactNumber,
     deliveryAddress,
     referenceNotes,
+    siteVisitRequestId,
   } = input
+
+  let trustedSpecifications = specifications
+  let trustedContactNumber = contactNumber
+  let trustedDeliveryAddress = deliveryAddress
+
+  if (siteVisitRequestId) {
+    const { data: visit, error: visitError } = await adminSupabase
+      .from("site_visit_requests")
+      .select("*")
+      .eq("id", siteVisitRequestId)
+      .single()
+
+    if (visitError || !visit) {
+      throw new Error("Completed on-site visit not found.")
+    }
+
+    if (visit.customer_id !== profile.id) {
+      throw new Error("This on-site visit does not belong to your account.")
+    }
+
+    if (visit.status !== "completed") {
+      throw new Error(
+        "Only completed on-site visits can be used for a custom request."
+      )
+    }
+
+    if (visit.actual_width == null || visit.actual_height == null) {
+      throw new Error("The on-site visit has no confirmed measurements.")
+    }
+
+    const { data: existingRequest, error: existingRequestError } =
+      await adminSupabase
+        .from("custom_order_requests")
+        .select("id")
+        .eq("site_visit_request_id", siteVisitRequestId)
+        .maybeSingle()
+
+    if (existingRequestError) {
+      throw new Error(existingRequestError.message)
+    }
+
+    if (existingRequest) {
+      throw new Error(
+        "A custom request has already been created from this on-site visit."
+      )
+    }
+
+    trustedSpecifications = {
+      ...specifications,
+      dimensionUnit: "cm",
+      width: String(visit.actual_width),
+      height: String(visit.actual_height),
+      depth: visit.actual_depth == null ? "" : String(visit.actual_depth),
+      measurementsApproximate: false,
+    }
+
+    trustedContactNumber = visit.contact_number
+    trustedDeliveryAddress = {
+      houseBuildingNumber: visit.house_building_number,
+      street: visit.street,
+      buildingSubdivision: visit.building_subdivision ?? "",
+      unitFloor: visit.unit_floor ?? "",
+      regionPsgcCode: visit.region_psgc_code,
+      regionName: visit.region_name,
+      provincePsgcCode: visit.province_psgc_code,
+      provinceName: visit.province_name,
+      cityPsgcCode: visit.city_psgc_code,
+      cityName: visit.city_name,
+      barangayPsgcCode: visit.barangay_psgc_code,
+      barangayName: visit.barangay_name,
+      postalCode: visit.postal_code ?? "",
+      landmark: visit.landmark ?? "",
+    }
+  }
 
   // ==========================================================
   // 3. Basic server-side validation
@@ -93,27 +169,27 @@ export async function createCustomOrderRequestServer(
     throw new Error("Project name is required.")
   }
 
-  if (!contactNumber.trim()) {
+  if (!trustedContactNumber.trim()) {
     throw new Error("Contact number is required.")
   }
 
-  if (!deliveryAddress.houseBuildingNumber.trim()) {
+  if (!trustedDeliveryAddress.houseBuildingNumber.trim()) {
     throw new Error("House or building number is required.")
   }
 
-  if (!deliveryAddress.street.trim()) {
+  if (!trustedDeliveryAddress.street.trim()) {
     throw new Error("Street is required.")
   }
 
-  if (!deliveryAddress.regionPsgcCode) {
+  if (!trustedDeliveryAddress.regionPsgcCode) {
     throw new Error("Region is required.")
   }
 
-  if (!deliveryAddress.cityPsgcCode) {
+  if (!trustedDeliveryAddress.cityPsgcCode) {
     throw new Error("City or municipality is required.")
   }
 
-  if (!deliveryAddress.barangayPsgcCode) {
+  if (!trustedDeliveryAddress.barangayPsgcCode) {
     throw new Error("Barangay is required.")
   }
 
@@ -124,8 +200,8 @@ export async function createCustomOrderRequestServer(
   const { data: deliveryData, error: deliveryError } = await supabase.rpc(
     "get_delivery_fee_for_address",
     {
-      p_city_psgc_code: deliveryAddress.cityPsgcCode.trim(),
-      p_barangay_psgc_code: deliveryAddress.barangayPsgcCode.trim(),
+      p_city_psgc_code: trustedDeliveryAddress.cityPsgcCode.trim(),
+      p_barangay_psgc_code: trustedDeliveryAddress.barangayPsgcCode.trim(),
     }
   )
 
@@ -147,11 +223,11 @@ export async function createCustomOrderRequestServer(
   // 5. Parse dimensions
   // ==========================================================
 
-  const width = Number(specifications.width)
-  const height = Number(specifications.height)
+  const width = Number(trustedSpecifications.width)
+  const height = Number(trustedSpecifications.height)
 
   const depth =
-    specifications.depth.trim() === "" ? null : Number(specifications.depth)
+    trustedSpecifications.depth.trim() === "" ? null : Number(trustedSpecifications.depth)
 
   if (!Number.isFinite(width) || width <= 0) {
     throw new Error("A valid width is required.")
@@ -165,14 +241,14 @@ export async function createCustomOrderRequestServer(
     throw new Error("Depth must be greater than zero.")
   }
 
-  const widthCm = convertToCentimeters(width, specifications.dimensionUnit)
+  const widthCm = convertToCentimeters(width, trustedSpecifications.dimensionUnit)
 
-  const heightCm = convertToCentimeters(height, specifications.dimensionUnit)
+  const heightCm = convertToCentimeters(height, trustedSpecifications.dimensionUnit)
 
   const depthCm =
     depth === null
       ? null
-      : convertToCentimeters(depth, specifications.dimensionUnit)
+      : convertToCentimeters(depth, trustedSpecifications.dimensionUnit)
 
   // ==========================================================
   // 6. Atomic request + address creation
@@ -183,7 +259,7 @@ export async function createCustomOrderRequestServer(
     {
       p_customer_id: profile.id,
 
-      p_contact_number: contactNumber.trim(),
+      p_contact_number: trustedContactNumber.trim(),
 
       p_project_name: projectDetails.projectName.trim(),
       p_product_category: projectDetails.category,
@@ -195,7 +271,7 @@ export async function createCustomOrderRequestServer(
       p_depth: depthCm,
       p_dimension_unit: "cm",
 
-      p_measurements_approximate: specifications.measurementsApproximate,
+      p_measurements_approximate: trustedSpecifications.measurementsApproximate,
 
       p_specifications: specifications.specifications,
 
@@ -218,35 +294,36 @@ export async function createCustomOrderRequestServer(
       p_reference_notes: null,
 
       p_address: {
-        house_building_number: deliveryAddress.houseBuildingNumber.trim(),
+        house_building_number: trustedDeliveryAddress.houseBuildingNumber.trim(),
 
-        street: deliveryAddress.street.trim(),
+        street: trustedDeliveryAddress.street.trim(),
 
         building_subdivision:
-          deliveryAddress.buildingSubdivision.trim() || null,
+          trustedDeliveryAddress.buildingSubdivision.trim() || null,
 
-        unit_floor: deliveryAddress.unitFloor.trim() || null,
+        unit_floor: trustedDeliveryAddress.unitFloor.trim() || null,
 
-        region_psgc_code: deliveryAddress.regionPsgcCode.trim(),
+        region_psgc_code: trustedDeliveryAddress.regionPsgcCode.trim(),
 
-        region_name: deliveryAddress.regionName.trim(),
+        region_name: trustedDeliveryAddress.regionName.trim(),
 
-        province_psgc_code: deliveryAddress.provincePsgcCode?.trim() || null,
+        province_psgc_code: trustedDeliveryAddress.provincePsgcCode?.trim() || null,
 
-        province_name: deliveryAddress.provinceName?.trim() || null,
+        province_name: trustedDeliveryAddress.provinceName?.trim() || null,
 
-        city_psgc_code: deliveryAddress.cityPsgcCode.trim(),
+        city_psgc_code: trustedDeliveryAddress.cityPsgcCode.trim(),
 
-        city_name: deliveryAddress.cityName.trim(),
+        city_name: trustedDeliveryAddress.cityName.trim(),
 
-        barangay_psgc_code: deliveryAddress.barangayPsgcCode.trim(),
+        barangay_psgc_code: trustedDeliveryAddress.barangayPsgcCode.trim(),
 
-        barangay_name: deliveryAddress.barangayName.trim(),
+        barangay_name: trustedDeliveryAddress.barangayName.trim(),
 
-        postal_code: deliveryAddress.postalCode.trim() || null,
+        postal_code: trustedDeliveryAddress.postalCode.trim() || null,
 
-        landmark: deliveryAddress.landmark.trim() || null,
+        landmark: trustedDeliveryAddress.landmark.trim() || null,
       },
+      p_site_visit_request_id: input.siteVisitRequestId ?? null,
     }
   )
 

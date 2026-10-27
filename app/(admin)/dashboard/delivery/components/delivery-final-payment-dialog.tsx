@@ -137,7 +137,14 @@ export default function DeliveryFinalPaymentDialog({
       const { completeDeliveryWithPayment } =
         await import("../services/delivery-payment-actions")
 
-      await completeDeliveryWithPayment({
+      /*
+       * STEP 1:
+       * Complete the authoritative payment + delivery transaction.
+       *
+       * Once this succeeds, the payment, delivery, order, and official
+       * receipt have already been committed in the database.
+       */
+      const result = await completeDeliveryWithPayment({
         deliveryId: delivery.id,
         amount: paymentCentavos / 100,
         paymentMethod,
@@ -154,9 +161,54 @@ export default function DeliveryFinalPaymentDialog({
         proofFile: paymentMethod === "cash_on_delivery" ? proofFile : null,
       })
 
-      toast.success(
-        "Final payment recorded and delivery completed successfully."
-      )
+      /*
+       * STEP 2:
+       * The database transaction has succeeded.
+       *
+       * Receipt emailing is intentionally handled separately so a
+       * Brevo/network failure can never make the completed payment or
+       * delivery appear to have failed.
+       */
+      let receiptEmailSent = false
+
+      try {
+        const response = await fetch(
+          `/api/official-receipts/${result.receipt_id}/email`,
+          {
+            method: "POST",
+          }
+        )
+
+        const emailResult = await response.json()
+
+        if (!response.ok || !emailResult.success) {
+          throw new Error(
+            emailResult.error ?? "The official receipt email could not be sent."
+          )
+        }
+
+        receiptEmailSent = true
+      } catch (emailError) {
+        console.error(
+          "Official receipt email failed after delivery completion:",
+          emailError
+        )
+      }
+
+      /*
+       * STEP 3:
+       * Report the delivery result independently from the email result.
+       */
+      if (receiptEmailSent) {
+        toast.success(
+          `Delivery completed successfully. Official receipt ${result.receipt_number} was emailed to the customer.`
+        )
+      } else {
+        toast.warning(
+          `Delivery completed successfully and official receipt ${result.receipt_number} was created, but the receipt email could not be sent.`
+        )
+      }
+
       onOpenChange(false)
       onCompleted()
     } catch (err) {

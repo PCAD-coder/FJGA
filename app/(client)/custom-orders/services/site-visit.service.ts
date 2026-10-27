@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/client"
 import type {
   CreateSiteVisitRequestInput,
   SiteVisitFeePreview,
+  ClientSiteVisit,
 } from "../types/site-visit"
 
 const supabase = createClient()
@@ -153,4 +154,86 @@ export async function createSiteVisitRequest(
   }
 
   return visitId as string
+}
+
+export async function getClientSiteVisits(): Promise<ClientSiteVisit[]> {
+  const { data: visits, error: visitsError } = await supabase
+    .from("site_visit_requests")
+    .select("*")
+    .order("created_at", { ascending: false })
+
+  if (visitsError) {
+    throw new Error(visitsError.message)
+  }
+
+  if (!visits || visits.length === 0) {
+    return []
+  }
+
+  const visitIds = visits.map((visit) => visit.id)
+
+  const { data: linkedRequests, error: linkedError } = await supabase
+    .from("custom_order_requests")
+    .select("id, request_number, site_visit_request_id")
+    .in("site_visit_request_id", visitIds)
+
+  if (linkedError) {
+    throw new Error(linkedError.message)
+  }
+
+  const requestByVisitId = new Map(
+    (linkedRequests ?? []).map((request) => [
+      request.site_visit_request_id as string,
+      request,
+    ])
+  )
+
+  return visits.map((visit) => {
+    const linkedRequest = requestByVisitId.get(visit.id)
+
+    return {
+      id: visit.id,
+      visitNumber: visit.visit_number,
+      contactNumber: visit.contact_number,
+      status: visit.status,
+      preferredDate: visit.preferred_date,
+      preferredTimeSlot: visit.preferred_time_slot,
+      purpose: visit.purpose,
+      clientNotes: visit.client_notes,
+      address: {
+        houseBuildingNumber: visit.house_building_number,
+        street: visit.street,
+        buildingSubdivision: visit.building_subdivision ?? "",
+        unitFloor: visit.unit_floor ?? "",
+        regionPsgcCode: visit.region_psgc_code,
+        regionName: visit.region_name,
+        provincePsgcCode: visit.province_psgc_code,
+        provinceName: visit.province_name,
+        cityPsgcCode: visit.city_psgc_code,
+        cityName: visit.city_name,
+        barangayPsgcCode: visit.barangay_psgc_code,
+        barangayName: visit.barangay_name,
+        postalCode: visit.postal_code ?? "",
+        landmark: visit.landmark ?? "",
+      },
+      serviceName: visit.service_name_snapshot,
+      serviceFee: Number(visit.service_fee),
+      travelFee: Number(visit.travel_fee),
+      totalFee: Number(visit.total_fee),
+      scheduledAt: visit.scheduled_at,
+      assignedStaff: visit.assigned_staff,
+      actualWidth:
+        visit.actual_width == null ? null : Number(visit.actual_width),
+      actualHeight:
+        visit.actual_height == null ? null : Number(visit.actual_height),
+      actualDepth:
+        visit.actual_depth == null ? null : Number(visit.actual_depth),
+      dimensionUnit: visit.dimension_unit ?? "cm",
+      measurementNotes: visit.measurement_notes,
+      declineReason: visit.decline_reason,
+      createdAt: visit.created_at,
+      customRequestId: linkedRequest?.id ?? null,
+      customRequestNumber: linkedRequest?.request_number ?? null,
+    } satisfies ClientSiteVisit
+  })
 }

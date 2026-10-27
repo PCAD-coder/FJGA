@@ -225,14 +225,10 @@ export async function denyCustomOrderRequest(
     throw new Error("A denial reason is required.")
   }
 
-  const { error } = await supabase
-    .from("custom_order_requests")
-    .update({
-      status: "denied",
-      denial_reason: trimmedReason,
-    })
-    .eq("id", requestId)
-    .eq("status", "pending")
+  const { error } = await supabase.rpc("deny_custom_order_request", {
+    p_request_id: requestId,
+    p_reason: trimmedReason,
+  })
 
   if (error) throw error
 }

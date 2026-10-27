@@ -31,6 +31,7 @@ export interface CustomOrderRequest {
   id: string
   request_number: string | null
   customer_id: string
+  site_visit_request_id: string | null
 
   project_name: string
   product_category: string | null
@@ -79,6 +80,7 @@ export interface CustomOrderRequestDetail {
   id: string
   request_number: string | null
   customer_id: string
+  site_visit_request_id: string | null
 
   project_name: string
   product_category: string | null

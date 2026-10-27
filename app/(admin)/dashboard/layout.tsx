@@ -10,14 +10,14 @@ export default async function Layout({
 }: {
   children: React.ReactNode
 }) {
-  await requireAdmin()
+  const profile = await requireAdmin()
   const cookieStore = await cookies()
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
       <div className="flex min-h-screen w-full min-w-0">
-        <AppSidebar items={adminMenu} menuLabel="ADMIN MENU" />
+        <AppSidebar items={adminMenu} menuLabel="ADMIN MENU" profile={profile} />
         <main className="min-w-0 flex-1">
           <div className="flex items-center gap-2 p-4">
             <SidebarTrigger />

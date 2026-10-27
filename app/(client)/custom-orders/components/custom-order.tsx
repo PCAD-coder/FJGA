@@ -39,6 +39,9 @@ import type {
 } from "../types/custom-order-request"
 import { CustomOrderDetailsDialog } from "./request-details/custom-order-details-dialog"
 import { RequestSiteVisitDialog } from "./site-visit/request-site-visit-dialog"
+import { SiteVisitHistory } from "./site-visit/site-visit-history"
+import { getClientSiteVisits } from "../services/site-visit.service"
+import type { ClientSiteVisit } from "../types/site-visit"
 
 const statusConfig: Record<
   CustomOrderRequestListItem["status"],
@@ -264,6 +267,10 @@ const PAGE_SIZE = 10
 export default function CustomOrder() {
   const [page, setPage] = useState(1)
   const [isCreatingRequest, setIsCreatingRequest] = useState(false)
+  const [sourceSiteVisit, setSourceSiteVisit] = useState<ClientSiteVisit | null>(null)
+  const [siteVisits, setSiteVisits] = useState<ClientSiteVisit[]>([])
+  const [siteVisitsLoading, setSiteVisitsLoading] = useState(true)
+  const [siteVisitsError, setSiteVisitsError] = useState<string | null>(null)
   const [isSiteVisitOpen, setIsSiteVisitOpen] = useState(false)
   const [requests, setRequests] = useState<CustomOrderRequestListItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -351,17 +358,51 @@ export default function CustomOrder() {
       setIsLoading(false)
     }
   }
+  async function loadSiteVisits() {
+    try {
+      setSiteVisitsLoading(true)
+      setSiteVisitsError(null)
+      setSiteVisits(await getClientSiteVisits())
+    } catch (error) {
+      console.error("Failed to load on-site visits:", error)
+      setSiteVisitsError(
+        error instanceof Error ? error.message : "Failed to load on-site visits."
+      )
+    } finally {
+      setSiteVisitsLoading(false)
+    }
+  }
+
   useEffect(() => {
     void loadRequests()
+    void loadSiteVisits()
   }, [])
 
   if (isCreatingRequest) {
     return (
       <CustomOrderWizard
-        onCancel={() => setIsCreatingRequest(false)}
+        initialData={
+          sourceSiteVisit &&
+          sourceSiteVisit.actualWidth != null &&
+          sourceSiteVisit.actualHeight != null
+            ? {
+                siteVisitRequestId: sourceSiteVisit.id,
+                contactNumber: sourceSiteVisit.contactNumber,
+                deliveryAddress: sourceSiteVisit.address,
+                width: sourceSiteVisit.actualWidth,
+                height: sourceSiteVisit.actualHeight,
+                depth: sourceSiteVisit.actualDepth,
+              }
+            : null
+        }
+        onCancel={() => {
+          setIsCreatingRequest(false)
+          setSourceSiteVisit(null)
+        }}
         onSuccess={async () => {
           setIsCreatingRequest(false)
-          await loadRequests()
+          setSourceSiteVisit(null)
+          await Promise.all([loadRequests(), loadSiteVisits()])
         }}
       />
     )
@@ -400,7 +441,10 @@ export default function CustomOrder() {
   <Button
     type="button"
     size="lg"
-    onClick={() => setIsCreatingRequest(true)}
+    onClick={() => {
+      setSourceSiteVisit(null)
+      setIsCreatingRequest(true)
+    }}
   >
     <Plus className="mr-2 h-4 w-4" />
     New Custom Request
@@ -450,6 +494,22 @@ export default function CustomOrder() {
           </CardContent>
         </Card>
       </div>
+
+      <SiteVisitHistory
+        visits={siteVisits}
+        isLoading={siteVisitsLoading}
+        error={siteVisitsError}
+        onRetry={() => void loadSiteVisits()}
+        onCreateCustomRequest={(visit) => {
+          if (visit.actualWidth == null || visit.actualHeight == null) {
+            toast.error("This visit does not have confirmed measurements yet.")
+            return
+          }
+
+          setSourceSiteVisit(visit)
+          setIsCreatingRequest(true)
+        }}
+      />
 
       {/* Requests */}
       <Tabs
@@ -578,9 +638,10 @@ export default function CustomOrder() {
         isLoading={isDetailsLoading}
       />
       <RequestSiteVisitDialog
-  open={isSiteVisitOpen}
-  onOpenChange={setIsSiteVisitOpen}
-/>
+        open={isSiteVisitOpen}
+        onOpenChange={setIsSiteVisitOpen}
+        onSuccess={loadSiteVisits}
+      />
     </div>
   )
 }

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 
@@ -15,8 +15,9 @@ import { Label } from "@/components/ui/label"
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
-
+  const passwordResetSuccess = searchParams.get("password-reset") === "success"
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -49,9 +50,7 @@ export default function LoginPage() {
   // EMAIL LOGIN
   //------------------------------------------
 
-  const handleLogin = async (
-    e: React.FormEvent<HTMLFormElement>
-  ) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     setLoading(true)
@@ -59,32 +58,16 @@ export default function LoginPage() {
 
     try {
       //--------------------------------------
-      // Check if email exists
-      //--------------------------------------
-
-      const { data: existingUser } = await supabase
-        .from("profiles")
-        .select("auth_user_id")
-        .eq("email", email)
-        .maybeSingle()
-
-      if (!existingUser) {
-        setError("No account exists with this email.")
-        return
-      }
-
-      //--------------------------------------
       // Login
       //--------------------------------------
 
-      const { data, error } =
-        await supabase.auth.signInWithPassword({
-          email,
-          password,
-        })
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      })
 
       if (error) {
-        setError("Incorrect password.")
+        setError("Invalid email or password.")
         return
       }
 
@@ -101,17 +84,19 @@ export default function LoginPage() {
         await supabase.auth.signOut()
 
         router.push(
-          `/verify-email?email=${encodeURIComponent(email)}`
+          `/verify-email?email=${encodeURIComponent(
+            email.trim().toLowerCase()
+          )}`
         )
 
         return
       }
 
       //--------------------------------------
-      // Get Role
+      // Redirect Based on Role
       //--------------------------------------
 
-      router.push("/auth/redirect");
+      router.push("/auth/redirect")
     } catch (err) {
       console.error(err)
       setError("Something went wrong.")
@@ -129,7 +114,7 @@ export default function LoginPage() {
     >
       <Button
         variant="ghost"
-        className="absolute left-4 top-4"
+        className="absolute top-4 left-4"
         onClick={() => router.back()}
       >
         ← Back
@@ -140,17 +125,11 @@ export default function LoginPage() {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2, duration: 0.4 }}
-        className="bg-muted m-auto h-fit w-full max-w-sm overflow-hidden rounded-[calc(var(--radius)+.125rem)] border shadow-md shadow-zinc-950/5 dark:[--color-muted:var(--color-zinc-900)]"
+        className="m-auto h-fit w-full max-w-sm overflow-hidden rounded-[calc(var(--radius)+.125rem)] border bg-muted shadow-md shadow-zinc-950/5 dark:[--color-muted:var(--color-zinc-900)]"
       >
-        <div className="bg-card -m-px rounded-[calc(var(--radius)+.125rem)] border p-8 pb-6">
-
+        <div className="-m-px rounded-[calc(var(--radius)+.125rem)] border bg-card p-8 pb-6">
           <div className="text-center">
-
-            <Link
-              href="/"
-              aria-label="go home"
-              className="mx-auto block w-fit"
-            >
+            <Link href="/" aria-label="go home" className="mx-auto block w-fit">
               <LogoIcon />
             </Link>
 
@@ -158,87 +137,59 @@ export default function LoginPage() {
               Sign In to FJ Glass And Aluminum
             </h1>
 
-            <p className="text-sm">
-              Welcome back! Sign in to continue.
-            </p>
-
+            <p className="text-sm">Welcome back! Sign in to continue.</p>
           </div>
 
           <div className="mt-6 space-y-6">
-
             <div className="space-y-2">
-
-              <Label htmlFor="email">
-                Email Address
-              </Label>
+              <Label htmlFor="email">Email Address</Label>
 
               <Input
                 id="email"
                 type="email"
                 required
                 value={email}
-                onChange={(e) =>
-                  setEmail(e.target.value)
-                }
+                onChange={(e) => setEmail(e.target.value)}
               />
-
             </div>
 
             <div className="space-y-2">
-
               <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
 
-                <Label htmlFor="password">
-                  Password
-                </Label>
-
-                <Button
-                  asChild
-                  variant="link"
-                  size="sm"
-                >
-                  <Link href="/forgot-password">
-                    Forgot Password?
-                  </Link>
+                <Button asChild variant="link" size="sm">
+                  <Link href="/forgot-password">Forgot Password?</Link>
                 </Button>
-
               </div>
 
               <div className="relative">
-
                 <Input
                   id="password"
-                  type={
-                    showPassword
-                      ? "text"
-                      : "password"
-                  }
+                  type={showPassword ? "text" : "password"}
                   required
                   value={password}
-                  onChange={(e) =>
-                    setPassword(e.target.value)
-                  }
+                  onChange={(e) => setPassword(e.target.value)}
                   className="pr-10"
                 />
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setShowPassword(!showPassword)
-                  }
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
-                  {showPassword ? (
-                    <EyeOff size={18} />
-                  ) : (
-                    <Eye size={18} />
-                  )}
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
-
               </div>
-
             </div>
-                        {error && (
+            {passwordResetSuccess && (
+              <div className="rounded-md border border-green-200 bg-green-50 p-3 dark:border-green-900 dark:bg-green-950">
+                <p className="text-sm text-green-700 dark:text-green-400">
+                  Password updated successfully. You can now sign in with your
+                  new password.
+                </p>
+              </div>
+            )}
+            {error && (
               <div className="rounded-md border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950">
                 <p className="text-sm text-red-600 dark:text-red-400">
                   {error}
@@ -246,11 +197,7 @@ export default function LoginPage() {
               </div>
             )}
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loading}
-            >
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -271,7 +218,6 @@ export default function LoginPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-3">
-
             <Button
               type="button"
               variant="outline"
@@ -304,25 +250,17 @@ export default function LoginPage() {
 
               <span>Continue with Google</span>
             </Button>
-
           </div>
         </div>
 
         <div className="p-3">
           <p className="text-center text-sm text-accent-foreground">
             Don't have an account?
-            <Button
-              asChild
-              variant="link"
-              className="px-2"
-            >
-              <Link href="/sign-up">
-                Create Account
-              </Link>
+            <Button asChild variant="link" className="px-2">
+              <Link href="/sign-up">Create Account</Link>
             </Button>
           </p>
         </div>
-
       </motion.form>
     </motion.section>
   )

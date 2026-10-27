@@ -32,6 +32,7 @@ export default function SignUp() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [termsOpen, setTermsOpen] = useState(false)
 
@@ -269,7 +270,7 @@ export default function SignUp() {
               </div>
               <Input
                 id="pwd"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
@@ -308,7 +309,7 @@ export default function SignUp() {
               </Label>
               <Input
                 id="confirmPwd"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 autoComplete="new-password"
@@ -326,6 +327,18 @@ export default function SignUp() {
               )}
               {passwordsMatch ? "Passwords match" : "Passwords must match"}
             </p>
+            <div className="flex items-center gap-2.5">
+              <input
+                id="show-password"
+                type="checkbox"
+                checked={showPassword}
+                onChange={(event) => setShowPassword(event.target.checked)}
+                className="size-4 cursor-pointer accent-primary"
+              />
+              <Label htmlFor="show-password" className="cursor-pointer text-sm">
+                Show password
+              </Label>
+            </div>
             <div className="flex items-start gap-2.5 pt-1">
               <input
                 id="accept-terms"

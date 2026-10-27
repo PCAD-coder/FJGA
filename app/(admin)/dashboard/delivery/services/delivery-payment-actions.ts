@@ -14,6 +14,12 @@ interface CompleteDeliveryWithPaymentInput {
   notes: string | null
   proofFile?: File | null
 }
+interface CompleteDeliveryWithPaymentResult {
+  receipt_id: string
+  receipt_number: string
+  receipt_payment_status: string
+  receipt_email_status: string
+}
 
 function sanitizeFileName(fileName: string) {
   return fileName
@@ -42,9 +48,51 @@ function validatePaymentProof(file: File) {
   }
 }
 
+function parseCompleteDeliveryResult(
+  data: unknown
+): CompleteDeliveryWithPaymentResult {
+  if (
+    !data ||
+    typeof data !== "object" ||
+    !("receipt_id" in data) ||
+    !("receipt_number" in data) ||
+    !("receipt_payment_status" in data) ||
+    !("receipt_email_status" in data)
+  ) {
+    throw new Error(
+      "Delivery completed, but the official receipt result was not returned correctly."
+    )
+  }
+
+  const receiptId = data.receipt_id
+  const receiptNumber = data.receipt_number
+  const receiptPaymentStatus =
+    data.receipt_payment_status
+  const receiptEmailStatus =
+    data.receipt_email_status
+
+  if (
+    typeof receiptId !== "string" ||
+    typeof receiptNumber !== "string" ||
+    typeof receiptPaymentStatus !== "string" ||
+    typeof receiptEmailStatus !== "string"
+  ) {
+    throw new Error(
+      "Delivery completed, but the official receipt result was invalid."
+    )
+  }
+
+  return {
+    receipt_id: receiptId,
+    receipt_number: receiptNumber,
+    receipt_payment_status: receiptPaymentStatus,
+    receipt_email_status: receiptEmailStatus,
+  }
+}
+
 export async function completeDeliveryWithPayment(
   input: CompleteDeliveryWithPaymentInput
-) {
+): Promise<CompleteDeliveryWithPaymentResult> {
   const supabase = await createClient()
 
   const {
@@ -81,7 +129,7 @@ export async function completeDeliveryWithPayment(
       )
     }
 
-    return data
+    return parseCompleteDeliveryResult(data)
   }
 
   /*
@@ -173,7 +221,7 @@ export async function completeDeliveryWithPayment(
       )
     }
 
-    return data
+    return parseCompleteDeliveryResult(data)
   } catch (error) {
     /*
      * The database transaction did not complete, so clean up the

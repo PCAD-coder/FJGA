@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
+import { ArrowLeft } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -61,7 +63,8 @@ export default function ProductOrderPage({
   const [width, setWidth] = useState(product.width)
   const [height, setHeight] = useState(product.height)
   const [depth, setDepth] = useState(product.depth)
-  const [quantity, setQuantity] = useState(1)
+  const [quantityInput, setQuantityInput] = useState("1")
+  const quantity = Number(quantityInput)
   const [notes, setNotes] = useState("")
   const [customerContactNumber, setCustomerContactNumber] = useState(
     contactNumber ?? ""
@@ -238,6 +241,11 @@ export default function ProductOrderPage({
 
   const handlePlaceOrder = async () => {
     try {
+      if (!quantityInput.trim() || !Number.isInteger(quantity) || quantity < 1 || quantity > 50) {
+        toast.error("Please enter a quantity between 1 and 50.")
+        return
+      }
+
       if (!customerContactNumber.trim()) {
         toast.error("Please enter your contact number.")
         return
@@ -350,6 +358,12 @@ export default function ProductOrderPage({
 
   return (
     <div className="mx-auto w-full max-w-7xl px-1 pt-4 pb-16 sm:px-4 lg:px-6">
+      <Button asChild variant="outline" className="mb-4">
+        <Link href="/catalog">
+          <ArrowLeft aria-hidden="true" />
+          Back
+        </Link>
+      </Button>
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-8 xl:gap-12">
         <div className="overflow-hidden rounded-2xl border bg-card lg:sticky lg:top-6">
           <div className="flex aspect-square items-center justify-center bg-white p-4 sm:p-10">
@@ -481,8 +495,18 @@ export default function ProductOrderPage({
               <Input
                 type="number"
                 min={1}
-                value={quantity}
-                onChange={(e) => setQuantity(Number(e.target.value))}
+                max={50}
+                value={quantityInput}
+                onChange={(e) => {
+                  const value = e.target.value
+                  const nextQuantity = Number(value)
+                  if (value === "" || (/^\d+$/.test(value) && Number.isInteger(nextQuantity) && nextQuantity >= 1 && nextQuantity <= 50)) {
+                    setQuantityInput(value)
+                  }
+                }}
+                onBlur={() => {
+                  if (!quantityInput.trim()) setQuantityInput("1")
+                }}
               />
             </div>
 
@@ -528,7 +552,9 @@ export default function ProductOrderPage({
 
             <div className="mt-5 border-t pt-5">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Payment Method</label>
+                <label className="text-sm font-medium">
+                  Payment Method
+                </label>
 
                 <Select
                   value={paymentMethod}
@@ -544,17 +570,13 @@ export default function ProductOrderPage({
                     <SelectItem value="cash_on_delivery">
                       Cash on Delivery
                     </SelectItem>
-                    {/*<SelectItem value="card">
-          Card
-        </SelectItem>
-        <SelectItem value="gcash">
-          Gcash
-        </SelectItem>*/}
                   </SelectContent>
                 </Select>
 
                 <p className="text-xs text-muted-foreground">
-                  Select how you would like to pay for this order.
+                  Select how you would like to pay for this order. A confirmed
+                  payment of 50% of your order total is required before production
+                  can begin.
                 </p>
               </div>
             </div>

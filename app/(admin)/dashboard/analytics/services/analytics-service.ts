@@ -15,6 +15,40 @@ interface DateRange {
   end: Date
 }
 
+export function getPreviousAnalyticsPeriod(
+  period: AnalyticsPeriod
+): AnalyticsPeriod {
+  if (period.startsWith("year-")) {
+    const year = Number(period.replace("year-", ""))
+
+    return `year-${year - 1}`
+  }
+
+  if (period.startsWith("quarter-")) {
+    const [, yearValue, quarterValue] = period.split("-")
+
+    const year = Number(yearValue)
+    const quarter = Number(quarterValue)
+
+    if (quarter === 1) {
+      return `quarter-${year - 1}-4`
+    }
+
+    return `quarter-${year}-${quarter - 1}`
+  }
+
+  const [yearValue, monthValue] = period.split("-")
+
+  const year = Number(yearValue)
+  const month = Number(monthValue)
+
+  if (month === 1) {
+    return `${year - 1}-12`
+  }
+
+  return `${year}-${String(month - 1).padStart(2, "0")}`
+}
+
 function getDateRange(period: AnalyticsPeriod): DateRange {
   if (period.startsWith("year-")) {
     const year = Number(period.replace("year-", ""))

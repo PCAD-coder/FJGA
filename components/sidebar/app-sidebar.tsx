@@ -1,6 +1,8 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { getUser } from "@/lib/auth/get-user";
+import { SignOutMenuItem } from "./sign-out-menu-item";
 
 import {
   Sidebar,
@@ -18,15 +20,11 @@ import {
 
 import {
   ChevronUp,
-  User,
-  Settings,
-  LogOut,
 } from "lucide-react";
 
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 
@@ -45,12 +43,40 @@ interface SidebarItem {
 interface AppSidebarProps {
   items: SidebarItem[];
   menuLabel: string;
+  profile: {
+    first_name?: string | null;
+    last_name?: string | null;
+    full_name?: string | null;
+    profile_image?: string | null;
+  };
 }
 
-export function AppSidebar({
+export async function AppSidebar({
   items,
   menuLabel,
+  profile,
 }: AppSidebarProps) {
+  const { user } = await getUser();
+  const metadata = user?.user_metadata;
+  const avatarUrl = [
+    metadata?.avatar_url,
+    metadata?.picture,
+    profile.profile_image,
+  ].find((value): value is string => typeof value === "string" && !!value.trim());
+
+  const userName =
+    [profile.first_name?.trim(), profile.last_name?.trim()]
+      .filter(Boolean)
+      .join(" ") ||
+    profile.full_name?.trim() ||
+    "User";
+  const initials = userName
+    .split(/\s+/)
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
   return (
     <Sidebar collapsible="icon">
       {/* HEADER */}
@@ -109,12 +135,12 @@ export function AppSidebar({
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton className="w-full flex items-center">
                   <Avatar className="h-6 w-6">
-                    <AvatarImage src="https://github.com/shadcn.png" />
-                    <AvatarFallback>CN</AvatarFallback>
+                    <AvatarImage src={avatarUrl} alt={userName} />
+                    <AvatarFallback>{initials}</AvatarFallback>
                   </Avatar>
 
                   <span className="flex-1 text-left">
-                    USER NAME
+                    {userName}
                   </span>
 
                   <ChevronUp className="ml-auto h-4 w-4" />
@@ -126,23 +152,7 @@ export function AppSidebar({
                 side="top"
                 className="w-fit min-w-0"
               >
-                <DropdownMenuItem className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Account
-                </DropdownMenuItem>
-
-                <DropdownMenuItem className="flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  Settings
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
-                  variant="destructive"
-                  className="flex items-center gap-2"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Sign Out
-                </DropdownMenuItem>
+                <SignOutMenuItem />
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>

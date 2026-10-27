@@ -1,8 +1,8 @@
 "use client"
 import { useRouter } from "next/navigation"
-
+import { useState } from "react"
 import Image from "next/image"
-
+import { OfficialReceiptDialog } from "./official-receipt/official-receipt-dialog"
 import {
   ArrowRight,
   CalendarDays,
@@ -12,6 +12,7 @@ import {
   MapPin,
   Package,
   Phone,
+  ReceiptText,
   Ruler,
   ShoppingCart,
 } from "lucide-react"
@@ -199,10 +200,12 @@ export default function OrderDetailsDialog({ order }: Props) {
     order.depth,
     order.dimensionUnit
   )
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false)
 
   const isCustomOrder = order.orderType === "custom"
 
   return (
+    <>
     <Dialog>
       <DialogTrigger asChild>
         <Button>View Order</Button>
@@ -728,7 +731,24 @@ export default function OrderDetailsDialog({ order }: Props) {
             </Button>
           </div>
         </div>
+        {order.status === "Completed" && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setIsReceiptOpen(true)}
+          >
+            <ReceiptText className="mr-2 size-4" />
+            View Official Receipt
+          </Button>
+        )}
       </DialogContent>
     </Dialog>
+    <OfficialReceiptDialog
+    orderId={order.id}
+    open={isReceiptOpen}
+    onOpenChange={setIsReceiptOpen}
+  />
+
+    </>
   )
 }

@@ -21,17 +21,17 @@ export const clientMenu = [
   },
   {
     title: "Catalog",
-    url: "catalog",
+    url: "/catalog",
     icon: BookOpen,
   },
   {
     title: "Custom Orders",
-    url: "custom-orders",
+    url: "/custom-orders",
     icon: PencilRuler,
   },
   {
     title: "My Orders",
-    url: "my-orders",
+    url: "/my-orders",
     icon: Package,
   },/*
   {

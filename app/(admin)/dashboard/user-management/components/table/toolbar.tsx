@@ -2,22 +2,22 @@
 
 import { Table } from "@tanstack/react-table"
 
-import { Plus } from "lucide-react"
-
-import { Button } from "@/components/ui/button"
-
 import { DataTableToolbar } from "@/components/ui/data-table-toolbar"
 import { DataTableViewOptions } from "@/components/ui/data-table-view-options"
 import { DataTableFacetedFilter } from "@/components/ui/data-table-faceted-filter"
 
 interface Props<TData> {
   table: Table<TData>
-  onAddUser?: () => void
 }
 
-export default function Toolbar<TData>({ table, onAddUser }: Props<TData>) {
+export default function Toolbar<TData>({
+  table,
+}: Props<TData>) {
   return (
-    <DataTableToolbar table={table} searchPlaceholder="Search users...">
+    <DataTableToolbar
+      table={table}
+      searchPlaceholder="Search registered accounts..."
+    >
       <DataTableFacetedFilter
         table={table}
         column="role"
@@ -51,14 +51,6 @@ export default function Toolbar<TData>({ table, onAddUser }: Props<TData>) {
       />
 
       <DataTableViewOptions table={table} />
-
-      <Button
-        className="ml-auto h-9 rounded-lg px-4 text-sm shadow-none"
-        onClick={onAddUser}
-      >
-        <Plus className="mr-2 h-4 w-4" />
-        Add New User
-      </Button>
     </DataTableToolbar>
   )
 }

@@ -27,7 +27,14 @@ import { getQuotationById } from "../services/quotations"
 import type { QuotationDetail } from "../types/quotation"
 import QuotationDetailsDialog from "./quotations/quotation-details-dialog"
 import type { Order } from "../types/order"
-
+import type { SiteVisit } from "../types/site-visit"
+import { useSiteVisits } from "../hooks/use-site-visits"
+import SiteVisitCard from "./cards/site-visit-card"
+import SiteVisitDetailsDialog from "./dialogs/site-visit-details-dialog"
+import ScheduleSiteVisitDialog from "./dialogs/schedule-site-visit-dialog"
+import DeclineSiteVisitDialog from "./dialogs/decline-site-visit-dialog"
+import CompleteSiteVisitDialog from "./dialogs/complete-site-visit-dialog"
+import DenyRequestDialog from "./dialogs/deny-request-dialog"
 import {
   Select,
   SelectContent,
@@ -43,6 +50,7 @@ import {
   CircleCheck,
   Factory,
   FileText,
+  MapPin,
 } from "lucide-react"
 import { formatCustomerName } from "../utils/format-customer-name"
 
@@ -52,6 +60,7 @@ export default function OrdersModule() {
   const [ordersPage, setOrdersPage] = useState(1)
   const [requestsPage, setRequestsPage] = useState(1)
   const [quotationsPage, setQuotationsPage] = useState(1)
+  const [siteVisitsPage, setSiteVisitsPage] = useState(1)
   const {
     orders,
     loading,
@@ -67,6 +76,7 @@ export default function OrdersModule() {
     loading: customRequestsLoading,
     error: customRequestsError,
     refresh: refreshCustomRequests,
+    deny: denyCustomRequest,
   } = useCustomOrderRequests()
 
   const {
@@ -76,16 +86,28 @@ export default function OrdersModule() {
     refresh: refreshQuotations,
   } = useQuotations()
 
+  const {
+    visits: siteVisits,
+    loading: siteVisitsLoading,
+    error: siteVisitsError,
+    schedule: scheduleVisit,
+    decline: declineVisit,
+    complete: completeVisit,
+  } = useSiteVisits()
+
   const [selectedCustomRequest, setSelectedCustomRequest] =
     useState<CustomOrder | null>(null)
 
   const [customRequestViewOpen, setCustomRequestViewOpen] = useState(false)
+  const [denyRequestOpen, setDenyRequestOpen] = useState(false)
 
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [viewOpen, setViewOpen] = useState(false)
+  const [orderToDeny, setOrderToDeny] = useState<Order | null>(null)
+  const [orderDenyOpen, setOrderDenyOpen] = useState(false)
 
   const [activeTab, setActiveTab] = useState("orders")
 
@@ -100,6 +122,16 @@ export default function OrdersModule() {
   const [quotationDetailsOpen, setQuotationDetailsOpen] = useState(false)
 
   const [quotationDetailsLoading, setQuotationDetailsLoading] = useState(false)
+
+  const [selectedSiteVisit, setSelectedSiteVisit] = useState<SiteVisit | null>(
+    null
+  )
+  const [siteVisitDetailsOpen, setSiteVisitDetailsOpen] = useState(false)
+  const [scheduleVisitOpen, setScheduleVisitOpen] = useState(false)
+  const [declineVisitOpen, setDeclineVisitOpen] = useState(false)
+  const [completeVisitOpen, setCompleteVisitOpen] = useState(false)
+  const [siteVisitSearch, setSiteVisitSearch] = useState("")
+  const [siteVisitStatusFilter, setSiteVisitStatusFilter] = useState("all")
 
   const [quotationDetailsError, setQuotationDetailsError] = useState<
     string | null
@@ -123,6 +155,33 @@ export default function OrdersModule() {
   const approvedOrders = orders.filter((o) => o.status === "approved").length
   const productionOrders = orders.filter(
     (o) => o.status === "in_production"
+  ).length
+
+  const filteredSiteVisits = useMemo(() => {
+    const query = siteVisitSearch.trim().toLowerCase()
+    return siteVisits.filter((visit) => {
+      const matchesSearch =
+        !query ||
+        visit.visitNumber.toLowerCase().includes(query) ||
+        visit.clientName.toLowerCase().includes(query) ||
+        visit.cityName.toLowerCase().includes(query) ||
+        visit.barangayName.toLowerCase().includes(query)
+      const matchesStatus =
+        siteVisitStatusFilter === "all" ||
+        visit.status === siteVisitStatusFilter
+      return matchesSearch && matchesStatus
+    })
+  }, [siteVisits, siteVisitSearch, siteVisitStatusFilter])
+
+  const totalSiteVisits = siteVisits.length
+  const pendingSiteVisits = siteVisits.filter(
+    (visit) => visit.status === "pending"
+  ).length
+  const scheduledSiteVisits = siteVisits.filter(
+    (visit) => visit.status === "scheduled"
+  ).length
+  const completedSiteVisits = siteVisits.filter(
+    (visit) => visit.status === "completed"
   ).length
 
   const totalCustomRequests = customRequests.length
@@ -151,6 +210,10 @@ export default function OrdersModule() {
     quotationsPage,
     Math.max(1, Math.ceil(quotations.length / PAGE_SIZE))
   )
+  const siteVisitPage = Math.min(
+    siteVisitsPage,
+    Math.max(1, Math.ceil(filteredSiteVisits.length / PAGE_SIZE))
+  )
   const visibleOrders = filteredOrders.slice(
     (orderPage - 1) * PAGE_SIZE,
     orderPage * PAGE_SIZE
@@ -162,6 +225,10 @@ export default function OrdersModule() {
   const visibleQuotations = quotations.slice(
     (quotationPage - 1) * PAGE_SIZE,
     quotationPage * PAGE_SIZE
+  )
+  const visibleSiteVisits = filteredSiteVisits.slice(
+    (siteVisitPage - 1) * PAGE_SIZE,
+    siteVisitPage * PAGE_SIZE
   )
 
   if (loading) {
@@ -221,6 +288,8 @@ export default function OrdersModule() {
           <TabsTrigger value="custom-requests">Custom Requests</TabsTrigger>
 
           <TabsTrigger value="quotations">Quotations</TabsTrigger>
+
+          <TabsTrigger value="site-visits">On-Site Visits</TabsTrigger>
         </TabsList>
 
         <TabsContent value="orders" className="space-y-4">
@@ -355,7 +424,10 @@ export default function OrdersModule() {
 
                         <Button
                           variant="destructive"
-                          onClick={() => deny(order.id, "Denied by admin")}
+                          onClick={() => {
+                            setOrderToDeny(order)
+                            setOrderDenyOpen(true)
+                          }}
                         >
                           Deny
                         </Button>
@@ -394,9 +466,12 @@ export default function OrdersModule() {
               await approve(id)
               setViewOpen(false)
             }}
-            onDeny={async (id) => {
-              await deny(id, "Denied by admin")
+            onDeny={async () => {
+              if (!selectedOrder) return
+
+              setOrderToDeny(selectedOrder)
               setViewOpen(false)
+              setOrderDenyOpen(true)
             }}
             onChangeStatus={async (id, status, options) => {
               await changeStatus(id, status, options)
@@ -404,6 +479,29 @@ export default function OrdersModule() {
             }}
             onStartProduction={startProduction}
           />
+          <DenyRequestDialog
+  open={orderDenyOpen}
+  onOpenChange={(open) => {
+    setOrderDenyOpen(open)
+
+    if (!open) {
+      setOrderToDeny(null)
+    }
+  }}
+  projectName={orderToDeny?.order_number}
+  onConfirm={async (reason) => {
+    if (!orderToDeny) return
+
+    try {
+      await deny(orderToDeny.id, reason)
+
+      setOrderDenyOpen(false)
+      setOrderToDeny(null)
+    } catch (error) {
+      console.error("Deny Order Error:", error)
+    }
+  }}
+/>
         </TabsContent>
 
         <TabsContent value="custom-requests" className="space-y-4">
@@ -483,19 +581,20 @@ export default function OrdersModule() {
           <ViewRequestDialog
             order={selectedCustomRequest}
             open={customRequestViewOpen}
-            onOpenChange={(open) => {
-              setCustomRequestViewOpen(open)
-
-              if (!open) {
-                setSelectedCustomRequest(null)
-              }
-            }}
+            onOpenChange={setCustomRequestViewOpen}
             onCreateQuotation={() => {
               if (!selectedCustomRequest) return
 
               setQuotationRequest(selectedCustomRequest)
               setCustomRequestViewOpen(false)
               setQuotationOpen(true)
+            }}
+            onDeny={() => {
+              setCustomRequestViewOpen(false)
+
+              setTimeout(() => {
+                setDenyRequestOpen(true)
+              }, 150)
             }}
           />
           <CreateQuotationDialog
@@ -510,6 +609,31 @@ export default function OrdersModule() {
             }}
             onSent={async () => {
               await refreshCustomRequests()
+            }}
+          />
+          <DenyRequestDialog
+            open={denyRequestOpen}
+            onOpenChange={setDenyRequestOpen}
+            projectName={selectedCustomRequest?.projectName}
+            onConfirm={async (reason) => {
+              if (!selectedCustomRequest) return
+
+              try {
+                await denyCustomRequest(selectedCustomRequest.id, reason)
+
+                setDenyRequestOpen(false)
+                setSelectedCustomRequest(null)
+
+                toast.success("Custom request denied successfully.")
+              } catch (error) {
+                console.error("Deny Custom Request Error:", error)
+
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to deny custom request."
+                )
+              }
             }}
           />
         </TabsContent>
@@ -557,6 +681,151 @@ export default function OrdersModule() {
             quotation={selectedQuotation}
             loading={quotationDetailsLoading}
             error={quotationDetailsError}
+          />
+        </TabsContent>
+
+        <TabsContent value="site-visits" className="space-y-4">
+          {siteVisitsLoading ? (
+            <OrdersListSkeleton />
+          ) : siteVisitsError ? (
+            <Card>
+              <CardContent className="py-10 text-center">
+                <p className="text-sm text-red-500">{siteVisitsError}</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-3">
+                <DashboardCard
+                  title="Total Visits"
+                  value={String(totalSiteVisits)}
+                  description="All on-site visit requests"
+                  icon={MapPin}
+                  color="text-blue-600 dark:text-blue-400"
+                />
+                <DashboardCard
+                  title="Pending"
+                  value={String(pendingSiteVisits)}
+                  description="Requests awaiting review"
+                  icon={Clock3}
+                  color="text-amber-600 dark:text-amber-400"
+                />
+                <DashboardCard
+                  title="Scheduled"
+                  value={String(scheduledSiteVisits)}
+                  description="Visits with confirmed schedules"
+                  icon={FileText}
+                  color="text-primary"
+                />
+                <DashboardCard
+                  title="Completed"
+                  value={String(completedSiteVisits)}
+                  description="Visits with confirmed measurements"
+                  icon={CircleCheck}
+                  color="text-emerald-600 dark:text-emerald-400"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/80 bg-card p-4">
+                <div className="relative w-full md:max-w-md">
+                  <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    className="h-9 rounded-lg bg-background/50 pl-9"
+                    placeholder="Search visit, client, city, or barangay..."
+                    value={siteVisitSearch}
+                    onChange={(e) => {
+                      setSiteVisitSearch(e.target.value)
+                      setSiteVisitsPage(1)
+                    }}
+                  />
+                </div>
+                <Select
+                  value={siteVisitStatusFilter}
+                  onValueChange={(value) => {
+                    setSiteVisitStatusFilter(value)
+                    setSiteVisitsPage(1)
+                  }}
+                >
+                  <SelectTrigger className="h-9 w-full rounded-lg bg-background/50 md:w-56">
+                    <SelectValue placeholder="Filter status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="scheduled">Scheduled</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="declined">Declined</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-4">
+                {visibleSiteVisits.length === 0 ? (
+                  <Card>
+                    <CardContent className="py-10 text-center">
+                      <p className="text-sm text-muted-foreground">
+                        No on-site visits found.
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  visibleSiteVisits.map((visit) => (
+                    <SiteVisitCard
+                      key={visit.id}
+                      visit={visit}
+                      onView={() => {
+                        setSelectedSiteVisit(visit)
+                        setSiteVisitDetailsOpen(true)
+                      }}
+                    />
+                  ))
+                )}
+              </div>
+
+              <OrdersPagination
+                label="On-site visits"
+                total={filteredSiteVisits.length}
+                page={siteVisitPage}
+                onPageChange={setSiteVisitsPage}
+              />
+            </>
+          )}
+
+          <SiteVisitDetailsDialog
+            visit={selectedSiteVisit}
+            open={siteVisitDetailsOpen}
+            onOpenChange={setSiteVisitDetailsOpen}
+            onSchedule={() => setScheduleVisitOpen(true)}
+            onDecline={() => setDeclineVisitOpen(true)}
+            onComplete={() => setCompleteVisitOpen(true)}
+          />
+          <ScheduleSiteVisitDialog
+            visit={selectedSiteVisit}
+            open={scheduleVisitOpen}
+            onOpenChange={setScheduleVisitOpen}
+            onSchedule={async (id, scheduledAt, staff) => {
+              await scheduleVisit(id, scheduledAt, staff)
+              setSiteVisitDetailsOpen(false)
+            }}
+          />
+          <DeclineSiteVisitDialog
+            visit={selectedSiteVisit}
+            open={declineVisitOpen}
+            onOpenChange={setDeclineVisitOpen}
+            onDecline={async (id, reason) => {
+              await declineVisit(id, reason)
+              setSiteVisitDetailsOpen(false)
+            }}
+          />
+          <CompleteSiteVisitDialog
+            visit={selectedSiteVisit}
+            open={completeVisitOpen}
+            onOpenChange={setCompleteVisitOpen}
+            onComplete={async (id, width, height, depth, notes) => {
+              await completeVisit(id, width, height, depth, notes)
+              setSiteVisitDetailsOpen(false)
+            }}
           />
         </TabsContent>
       </Tabs>

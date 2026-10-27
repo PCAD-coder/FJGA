@@ -50,9 +50,19 @@ const initialDeliveryAddress: DeliveryAddressInput = {
   landmark: "",
 }
 
+export interface CustomOrderWizardInitialData {
+  siteVisitRequestId: string
+  contactNumber: string
+  deliveryAddress: DeliveryAddressInput
+  width: number
+  height: number
+  depth: number | null
+}
+
 interface CustomOrderWizardProps {
   onCancel: () => void
   onSuccess: () => void
+  initialData?: CustomOrderWizardInitialData | null
 }
 
 const initialProjectDetails: ProjectDetailsData = {
@@ -86,6 +96,7 @@ const initialSpecifications: SpecificationsData = {
 export function CustomOrderWizard({
   onCancel,
   onSuccess,
+  initialData = null,
 }: CustomOrderWizardProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -102,6 +113,7 @@ export function CustomOrderWizard({
         specifications,
         contactNumber: contactNumber.trim(),
         deliveryAddress,
+        siteVisitRequestId: initialData?.siteVisitRequestId ?? null,
       })
 
       toast.success("Custom request submitted successfully.")
@@ -131,14 +143,25 @@ export function CustomOrderWizard({
   const [designReference, setDesignReference] = useState<DesignReferenceData>(
     initialDesignReference
   )
-  const [specifications, setSpecifications] = useState<SpecificationsData>(
-    initialSpecifications
+  const [specifications, setSpecifications] = useState<SpecificationsData>(() =>
+    initialData
+      ? {
+          ...initialSpecifications,
+          dimensionUnit: "cm",
+          width: String(initialData.width),
+          height: String(initialData.height),
+          depth: initialData.depth == null ? "" : String(initialData.depth),
+          measurementsApproximate: false,
+        }
+      : initialSpecifications
   )
 
-  const [contactNumber, setContactNumber] = useState("")
+  const [contactNumber, setContactNumber] = useState(
+    initialData?.contactNumber ?? ""
+  )
 
   const [deliveryAddress, setDeliveryAddress] = useState<DeliveryAddressInput>(
-    initialDeliveryAddress
+    initialData?.deliveryAddress ?? initialDeliveryAddress
   )
 
   const [deliveryZone, setDeliveryZone] = useState<DeliveryZoneResult | null>(
@@ -308,6 +331,12 @@ export function CustomOrderWizard({
           <p className="mt-1 text-muted-foreground">
             Tell us what you would like FJGA to build.
           </p>
+
+          {initialData && (
+            <p className="mt-2 text-sm font-medium text-emerald-600">
+              Confirmed measurements and address were filled from your completed on-site visit.
+            </p>
+          )}
         </div>
 
         <Button type="button" variant="ghost" onClick={onCancel}>

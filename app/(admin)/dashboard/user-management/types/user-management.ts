@@ -30,29 +30,13 @@ export type User = UserRecord
 /**
  * Data sent when creating a user.
  */
-export interface CreateUserDto {
-  first_name: string
-  last_name: string
-  email: string
-  role: UserRole
-}
 
-export interface UserFormValues {
-  first_name: string
-  last_name: string
-  email: string
-  role: UserRole
-}
+
 
 /**
  * Data sent when updating a user.
  */
-export interface UpdateUserDto {
-  first_name?: string
-  last_name?: string
-  role?: UserRole
-  status?: UserStatus
-}
+
 
 /**
  * Statistics displayed in the cards.
@@ -68,28 +52,3 @@ export interface UserManagementStats {
 /**
  * Service contract.
  */
-export interface IUserManagementService {
-  getUsers(): Promise<User[]>
-
-  createUser(
-    data: CreateUserDto
-  ): Promise<void>
-
-  updateUser(
-    id: string,
-    data: UpdateUserDto
-  ): Promise<void>
-
-  deleteUser(
-    id: string
-  ): Promise<void>
-
-  changeRole(
-    id: string,
-    role: UserRole
-  ): Promise<void>
-
-  toggleUserStatus(
-    id: string
-  ): Promise<void>
-}

@@ -29,6 +29,7 @@ import {
   getAnalyticsTrends,
   getTopProducts,
   getMaterialsUsage,
+  getPreviousAnalyticsPeriod,
   type AnalyticsPeriod,
 } from "../services/analytics-service"
 
@@ -41,47 +42,54 @@ export default function Analytics() {
 
   const [revenueData, setRevenueData] = useState<RevenueData[]>([])
   const [ordersData, setOrdersData] = useState<OrdersData[]>([])
-const now = new Date()
+  const now = new Date()
 
-const currentYear = now.getFullYear()
-const currentMonth = now.getMonth() + 1
-const currentQuarter = Math.floor(now.getMonth() / 3) + 1
+  const currentYear = now.getFullYear()
+  const currentMonth = now.getMonth() + 1
+  const currentQuarter = Math.floor(now.getMonth() / 3) + 1
 
-const [year, setYear] = useState(currentYear)
-const [quarter, setQuarter] = useState<number | null>(currentQuarter)
-const [month, setMonth] = useState<number | null>(currentMonth)
+  const [year, setYear] = useState(currentYear)
+  const [quarter, setQuarter] = useState<number | null>(currentQuarter)
+  const [month, setMonth] = useState<number | null>(currentMonth)
 
-const period: AnalyticsPeriod =
-  month !== null
-    ? `${year}-${String(month).padStart(2, "0")}`
-    : quarter !== null
-      ? `quarter-${year}-${quarter}`
-      : `year-${year}`
+  const period: AnalyticsPeriod =
+    month !== null
+      ? `${year}-${String(month).padStart(2, "0")}`
+      : quarter !== null
+        ? `quarter-${year}-${quarter}`
+        : `year-${year}`
 
   function handleYearChange(selectedYear: number) {
-  setYear(selectedYear)
-  setQuarter(null)
-  setMonth(null)
-}
-
-function handleQuarterChange(selectedQuarter: number | null) {
-  setQuarter(selectedQuarter)
-  setMonth(null)
-}
-
-function handleMonthChange(selectedMonth: number | null) {
-  setMonth(selectedMonth)
-
-  if (selectedMonth !== null) {
-    setQuarter(Math.floor((selectedMonth - 1) / 3) + 1)
+    setYear(selectedYear)
+    setQuarter(null)
+    setMonth(null)
   }
-}
+
+  function handleQuarterChange(selectedQuarter: number | null) {
+    setQuarter(selectedQuarter)
+    setMonth(null)
+  }
+
+  function handleMonthChange(selectedMonth: number | null) {
+    setMonth(selectedMonth)
+
+    if (selectedMonth !== null) {
+      setQuarter(Math.floor((selectedMonth - 1) / 3) + 1)
+    }
+  }
 
   const [summary, setSummary] = useState({
     totalRevenue: 0,
     completedOrders: 0,
     returnRequests: 0,
     customerSatisfaction: 4.8,
+  })
+
+  const [previousSummary, setPreviousSummary] = useState({
+    totalRevenue: 0,
+    completedOrders: 0,
+    returnRequests: 0,
+    customerSatisfaction: 0,
   })
 
   const [loading, setLoading] = useState(true)
@@ -91,15 +99,24 @@ function handleMonthChange(selectedMonth: number | null) {
       try {
         setLoading(true)
 
-        const [summaryData, trendsData, topProductsData, materialsUsageData] =
-          await Promise.all([
-            getAnalyticsSummary(period),
-            getAnalyticsTrends(period),
-            getTopProducts(period),
-            getMaterialsUsage(period),
-          ])
+        const previousPeriod = getPreviousAnalyticsPeriod(period)
+
+        const [
+          summaryData,
+          previousSummaryData,
+          trendsData,
+          topProductsData,
+          materialsUsageData,
+        ] = await Promise.all([
+          getAnalyticsSummary(period),
+          getAnalyticsSummary(previousPeriod),
+          getAnalyticsTrends(period),
+          getTopProducts(period),
+          getMaterialsUsage(period),
+        ])
 
         setSummary(summaryData)
+        setPreviousSummary(previousSummaryData)
 
         setRevenueData(trendsData.revenueData)
         setOrdersData(trendsData.ordersData)
@@ -118,6 +135,37 @@ function handleMonthChange(selectedMonth: number | null) {
 
     loadAnalytics()
   }, [period])
+  function getPercentageChange(current: number, previous: number) {
+    if (previous === 0) {
+      return null
+    }
+
+    return ((current - previous) / previous) * 100
+  }
+
+  function getComparisonLabel() {
+    if (month !== null) {
+      return "the previous month"
+    }
+
+    if (quarter !== null) {
+      return "the previous quarter"
+    }
+
+    return "the previous year"
+  }
+
+  const revenueChange = getPercentageChange(
+    summary.totalRevenue,
+    previousSummary.totalRevenue
+  )
+
+  const orderChange = getPercentageChange(
+    summary.completedOrders,
+    previousSummary.completedOrders
+  )
+
+  const comparisonLabel = getComparisonLabel()
 
   if (loading) return <AnalyticsSkeleton />
 
@@ -136,13 +184,13 @@ function handleMonthChange(selectedMonth: number | null) {
 
         <div className="flex flex-wrap items-center gap-2">
           <AnalyticsFilter
-  year={year}
-  quarter={quarter}
-  month={month}
-  onYearChange={handleYearChange}
-  onQuarterChange={handleQuarterChange}
-  onMonthChange={handleMonthChange}
-/>
+            year={year}
+            quarter={quarter}
+            month={month}
+            onYearChange={handleYearChange}
+            onQuarterChange={handleQuarterChange}
+            onMonthChange={handleMonthChange}
+          />
 
           <AnalyticsExportMenu
             period={period}
@@ -229,24 +277,80 @@ function handleMonthChange(selectedMonth: number | null) {
         <CardContent className="p-5">
           <ul className="list-disc space-y-3 pl-5 text-sm leading-6 marker:text-primary">
             <li>
-              Revenue increased by <strong>18%</strong> compared to the previous
-              month.
+              Revenue for the selected period reached{" "}
+              <strong>
+                ₱
+                {summary.totalRevenue.toLocaleString("en-PH", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </strong>
+              {revenueChange !== null ? (
+                <>
+                  , which is{" "}
+                  <strong>
+                    {Math.abs(revenueChange).toFixed(1)}%{" "}
+                    {revenueChange >= 0 ? "higher" : "lower"}
+                  </strong>{" "}
+                  than {comparisonLabel}.
+                </>
+              ) : (
+                <>. No previous-period revenue is available for comparison.</>
+              )}
             </li>
 
             <li>
-              <strong>Tempered Glass Door</strong> remains the highest-selling
-              product.
+              <strong>{summary.completedOrders}</strong>{" "}
+              {summary.completedOrders === 1 ? "order was" : "orders were"}{" "}
+              completed during the selected period
+              {orderChange !== null ? (
+                <>
+                  , which is{" "}
+                  <strong>
+                    {Math.abs(orderChange).toFixed(1)}%{" "}
+                    {orderChange >= 0 ? "higher" : "lower"}
+                  </strong>{" "}
+                  than {comparisonLabel}.
+                </>
+              ) : (
+                <>
+                  . No previous-period completed orders are available for
+                  comparison.
+                </>
+              )}
             </li>
 
-            <li>Order volume grew steadily over the last 6 months.</li>
+            {topProducts.length > 0 ? (
+              <li>
+                <strong>{topProducts[0].productName}</strong> is the
+                top-performing product for the selected period, generating{" "}
+                <strong>
+                  ₱
+                  {topProducts[0].revenue.toLocaleString("en-PH", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </strong>{" "}
+                in revenue.
+              </li>
+            ) : (
+              <li>
+                No delivered product sales were recorded for the selected
+                period.
+              </li>
+            )}
 
             <li>
-              Return requests decreased by <strong>10%</strong>, indicating
-              improved product quality.
+              <strong>{summary.returnRequests}</strong>{" "}
+              {summary.returnRequests === 1
+                ? "return request was"
+                : "return requests were"}{" "}
+              submitted during the selected period.
             </li>
 
             <li>
-              Customer satisfaction remains high at <strong>4.8 / 5</strong>.
+              Customer satisfaction for the selected period is{" "}
+              <strong>{summary.customerSatisfaction.toFixed(1)} / 5</strong>.
             </li>
           </ul>
         </CardContent>

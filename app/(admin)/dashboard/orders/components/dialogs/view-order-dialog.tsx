@@ -350,6 +350,17 @@ export default function ViewOrderDialog({
               </p>
             </div>
           </section>
+          {order.status === "denied" && order.denial_reason && (
+  <section className="space-y-2 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-950/20">
+    <h3 className="font-semibold text-red-700 dark:text-red-400">
+      Denial Reason
+    </h3>
+
+    <p className="text-sm whitespace-pre-wrap text-red-700 dark:text-red-300">
+      {order.denial_reason}
+    </p>
+  </section>
+)}
           {order.address && (
             <section className="space-y-4 rounded-lg border p-4">
               <div>
@@ -628,9 +639,9 @@ export default function ViewOrderDialog({
             </div>
 
             <div className="flex justify-between">
-  <span>VAT ({order.vat_rate}%)</span>
-  <span>₱{order.vat_amount.toFixed(2)}</span>
-</div>
+              <span>VAT ({order.vat_rate}%)</span>
+              <span>₱{order.vat_amount.toFixed(2)}</span>
+            </div>
 
             <div className="flex justify-between">
               <span>Delivery Fee</span>
@@ -642,6 +653,7 @@ export default function ViewOrderDialog({
               <span>₱{order.total_amount.toFixed(2)}</span>
             </div>
           </section>
+          {order.status !== "denied" && order.status !== "cancelled" && (
           <section className="space-y-4 rounded-lg border p-4">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -737,6 +749,7 @@ export default function ViewOrderDialog({
               </div>
             )}
           </section>
+          )}
         </div>
 
         <section className="flex flex-wrap justify-end gap-2 border-t pt-4">
