@@ -19,6 +19,7 @@ import {
   Clock3,
   FileText,
   PackageCheck,
+  MapPin,
   Plus,
   Search,
 } from "lucide-react"
@@ -37,6 +38,7 @@ import type {
   CustomOrderRequestListItem,
 } from "../types/custom-order-request"
 import { CustomOrderDetailsDialog } from "./request-details/custom-order-details-dialog"
+import { RequestSiteVisitDialog } from "./site-visit/request-site-visit-dialog"
 
 const statusConfig: Record<
   CustomOrderRequestListItem["status"],
@@ -262,6 +264,7 @@ const PAGE_SIZE = 10
 export default function CustomOrder() {
   const [page, setPage] = useState(1)
   const [isCreatingRequest, setIsCreatingRequest] = useState(false)
+  const [isSiteVisitOpen, setIsSiteVisitOpen] = useState(false)
   const [requests, setRequests] = useState<CustomOrderRequestListItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -383,10 +386,26 @@ export default function CustomOrder() {
           </p>
         </div>
 
-        <Button size="lg" onClick={() => setIsCreatingRequest(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Custom Request
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+  <Button
+    type="button"
+    size="lg"
+    variant="outline"
+    onClick={() => setIsSiteVisitOpen(true)}
+  >
+    <MapPin className="mr-2 h-4 w-4" />
+    Request On-Site Visit
+  </Button>
+
+  <Button
+    type="button"
+    size="lg"
+    onClick={() => setIsCreatingRequest(true)}
+  >
+    <Plus className="mr-2 h-4 w-4" />
+    New Custom Request
+  </Button>
+</div>
       </div>
 
       {/* Small Summary */}
@@ -558,6 +577,10 @@ export default function CustomOrder() {
         request={selectedRequest}
         isLoading={isDetailsLoading}
       />
+      <RequestSiteVisitDialog
+  open={isSiteVisitOpen}
+  onOpenChange={setIsSiteVisitOpen}
+/>
     </div>
   )
 }
