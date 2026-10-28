@@ -1,6 +1,5 @@
 "use server"
 
-import { redirect } from "next/navigation"
 
 import { createClient } from "@/lib/supabase/server"
 import { createOrderServer } from "@/app/(admin)/dashboard/orders/actions/create-order"
@@ -53,9 +52,9 @@ export async function createCustomizedOrder(input: {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) {
-    redirect("/login")
-  }
+if (!user) {
+  throw new Error("Authentication required")
+}
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
@@ -91,5 +90,7 @@ export async function createCustomizedOrder(input: {
     throw new Error(result.error)
   }
 
-  redirect("/my-orders?orderCreated=1")
+return {
+  success: true,
+}
 }

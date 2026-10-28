@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 
@@ -64,6 +65,7 @@ export default function ProductOrderPage({
   const [height, setHeight] = useState(product.height)
   const [depth, setDepth] = useState(product.depth)
   const [quantityInput, setQuantityInput] = useState("1")
+  const router = useRouter()
   const quantity = Number(quantityInput)
   const [notes, setNotes] = useState("")
   const [customerContactNumber, setCustomerContactNumber] = useState(
@@ -241,7 +243,12 @@ export default function ProductOrderPage({
 
   const handlePlaceOrder = async () => {
     try {
-      if (!quantityInput.trim() || !Number.isInteger(quantity) || quantity < 1 || quantity > 50) {
+      if (
+        !quantityInput.trim() ||
+        !Number.isInteger(quantity) ||
+        quantity < 1 ||
+        quantity > 50
+      ) {
         toast.error("Please enter a quantity between 1 and 50.")
         return
       }
@@ -313,6 +320,8 @@ export default function ProductOrderPage({
         aluminumVariantId: selectedAluminumVariant || undefined,
         glassVariantId: selectedGlassVariant || undefined,
       })
+
+      router.push("/my-orders?orderCreated=1")
     } catch (error) {
       console.error("Failed to place customized order:", error)
       toast.error(
@@ -500,7 +509,13 @@ export default function ProductOrderPage({
                 onChange={(e) => {
                   const value = e.target.value
                   const nextQuantity = Number(value)
-                  if (value === "" || (/^\d+$/.test(value) && Number.isInteger(nextQuantity) && nextQuantity >= 1 && nextQuantity <= 50)) {
+                  if (
+                    value === "" ||
+                    (/^\d+$/.test(value) &&
+                      Number.isInteger(nextQuantity) &&
+                      nextQuantity >= 1 &&
+                      nextQuantity <= 50)
+                  ) {
                     setQuantityInput(value)
                   }
                 }}
@@ -552,9 +567,7 @@ export default function ProductOrderPage({
 
             <div className="mt-5 border-t pt-5">
               <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  Payment Method
-                </label>
+                <label className="text-sm font-medium">Payment Method</label>
 
                 <Select
                   value={paymentMethod}
@@ -575,8 +588,8 @@ export default function ProductOrderPage({
 
                 <p className="text-xs text-muted-foreground">
                   Select how you would like to pay for this order. A confirmed
-                  payment of 50% of your order total is required before production
-                  can begin.
+                  payment of 50% of your order total is required before
+                  production can begin.
                 </p>
               </div>
             </div>
