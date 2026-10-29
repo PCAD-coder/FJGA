@@ -384,6 +384,20 @@ export async function POST(request: Request) {
     return Response.json({ error: "Order not found" }, { status: 404 })
   }
 
+  if (order.status === "denied") {
+  console.error("PAYMONGO WEBHOOK: Payment rejected for denied order", {
+    orderId: order.id,
+    orderNumber: order.order_number,
+    paymentId: payment.id,
+    eventId,
+  })
+
+  return Response.json(
+    { error: "Payment cannot be recorded for a denied order" },
+    { status: 409 }
+  )
+}
+
   /*
    * Make sure the PayMongo payment belongs
    * to the expected FJGA order.

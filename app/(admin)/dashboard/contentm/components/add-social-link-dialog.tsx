@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { ContactNumberInput } from "@/components/ui/contact-number-input"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -53,6 +54,7 @@ export default function AddSocialLinkDialog({
   const [platform, setPlatform] = useState<SocialPlatform>("facebook")
 
   const [label, setLabel] = useState("")
+  const UrlInput = platform === "phone" ? ContactNumberInput : Input
   const [url, setUrl] = useState("")
   const [displayOrder, setDisplayOrder] = useState("0")
 
@@ -84,8 +86,8 @@ export default function AddSocialLinkDialog({
     }
 
     if (platform === "phone") {
-      if (!value.startsWith("tel:") && !/^[+0-9()\-\s]+$/.test(value)) {
-        throw new Error("Enter a valid phone number.")
+      if (!/^[0-9]{11}$/.test(value)) {
+        throw new Error("Contact number must contain exactly 11 digits.")
       }
 
       return
@@ -223,13 +225,13 @@ export default function AddSocialLinkDialog({
           <div className="space-y-2">
             <Label htmlFor="social-url">Link / Contact</Label>
 
-            <Input
+            <UrlInput
               id="social-url"
               placeholder={
                 platform === "email"
                   ? "example@email.com"
                   : platform === "phone"
-                    ? "+63 912 345 6789"
+                    ? "09123456789"
                     : "https://..."
               }
               value={url}

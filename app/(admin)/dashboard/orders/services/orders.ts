@@ -245,15 +245,9 @@ export async function denyOrder(orderId: string, reason: string) {
 
 // Approve an order
 export async function approveOrder(orderId: string) {
-  const { data, error } = await supabase
-    .from("orders")
-    .update({
-      status: "approved",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", orderId)
-    .select()
-    .single()
+  const { data, error } = await supabase.rpc("approve_order", {
+    p_order_id: orderId,
+  })
 
   if (error) throw error
 

@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 
 import type { DeliveryStatus, DeliveryType } from "../types/delivery"
-
+import { logActivity } from "../../activity-logs/services/activity-logger.service"
 export async function updateDeliveryStatus(
   deliveryId: string,
   status: DeliveryStatus,
@@ -45,7 +45,13 @@ export async function updateDeliveryStatus(
 
   const { data: delivery, error: deliveryError } = await supabase
     .from("deliveries")
-    .select("order_id")
+    .select(`
+      order_id,
+      delivery_status,
+      orders (
+        order_number
+      )
+    `)
     .eq("id", deliveryId)
     .single()
 
@@ -148,6 +154,30 @@ if (status === "out_for_delivery") {
     )
   }
 }
+
+const order = Array.isArray(delivery.orders)
+  ? delivery.orders[0]
+  : delivery.orders
+
+const formatStatus = (value: string) =>
+  value
+    .split("_")
+    .map(
+      (word) =>
+        word.charAt(0).toUpperCase() + word.slice(1)
+    )
+    .join(" ")
+
+await logActivity({
+  action: "Updated Delivery Status",
+  module: "Delivery",
+  description: `Changed delivery status for ${
+    order?.order_number ?? "Unknown Order"
+  } from "${formatStatus(
+    delivery.delivery_status
+  )}" to "${formatStatus(status)}".`,
+  severity: status === "cancelled" ? "warning" : "info",
+})
 
 return data
 }

@@ -49,6 +49,9 @@ export async function placeProductOrder(
   paymentMethod: PaymentMethod,
   notes?: string
 ) {
+  if (!/^[0-9]{11}$/.test(customerContactNumber)) {
+    throw new Error("Contact number must contain exactly 11 digits.")
+  }
   const supabase = await createClient()
 
   const {

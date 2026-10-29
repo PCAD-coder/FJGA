@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { CheckCircle2, Loader2, MapPin, Truck, XCircle } from "lucide-react"
 
+import { ContactNumberInput } from "@/components/ui/contact-number-input"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -369,7 +370,8 @@ useEffect(() => {
             <span className="ml-1 text-destructive">*</span>
           </Label>
 
-          <Input
+          <ContactNumberInput
+            required
             id="contact-number"
             type="tel"
             inputMode="tel"
@@ -377,7 +379,6 @@ useEffect(() => {
             value={contactNumber}
             onChange={(event) => onContactNumberChange(event.target.value)}
             placeholder="e.g. 09171234567"
-            maxLength={20}
           />
 
           <p className="text-xs text-muted-foreground">

@@ -122,98 +122,100 @@ export function SaleDetailsDialog({
 
                 {/* ORDER BREAKDOWN */}
 
-<div className="rounded-lg border p-4">
-  <h3 className="mb-4 font-semibold">Order Breakdown</h3>
+                <div className="rounded-lg border p-4">
+                  <h3 className="mb-4 font-semibold">Order Breakdown</h3>
 
-  <div className="space-y-3 text-sm">
-    <div className="flex items-center justify-between gap-4">
-      <span className="text-muted-foreground">Subtotal</span>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-muted-foreground">Subtotal</span>
 
-      <span className="font-medium">
-        {formatCurrency(sale.subtotal)}
-      </span>
-    </div>
+                      <span className="font-medium">
+                        {formatCurrency(sale.subtotal)}
+                      </span>
+                    </div>
 
-    <div className="flex items-center justify-between gap-4">
-      <span className="text-muted-foreground">
-        VAT ({sale.vatRate}%)
-      </span>
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-muted-foreground">
+                        VAT ({sale.vatRate}%)
+                      </span>
 
-      <span className="font-medium">
-        {formatCurrency(sale.vatAmount)}
-      </span>
-    </div>
+                      <span className="font-medium">
+                        {formatCurrency(sale.vatAmount)}
+                      </span>
+                    </div>
 
-    <div className="flex items-center justify-between gap-4">
-      <span className="text-muted-foreground">Delivery Fee</span>
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-muted-foreground">
+                        Delivery Fee
+                      </span>
 
-      <span className="font-medium">
-        {formatCurrency(sale.deliveryFee)}
-      </span>
-    </div>
+                      <span className="font-medium">
+                        {formatCurrency(sale.deliveryFee)}
+                      </span>
+                    </div>
 
-    <div className="flex items-center justify-between gap-4 border-t pt-3">
-      <span className="font-semibold">Total Amount</span>
+                    <div className="flex items-center justify-between gap-4 border-t pt-3">
+                      <span className="font-semibold">Total Amount</span>
 
-      <span className="text-lg font-bold">
-        {formatCurrency(sale.totalAmount)}
-      </span>
-    </div>
-  </div>
-</div>
+                      <span className="text-lg font-bold">
+                        {formatCurrency(sale.totalAmount)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-{/* PROFIT BREAKDOWN */}
+                {/* PROFIT BREAKDOWN */}
 
-<div className="rounded-lg border p-4">
-  <h3 className="mb-4 font-semibold">Profit Breakdown</h3>
+                {sale.paymentStatus === "paid" && (
+                  <div className="rounded-lg border p-4">
+                    <h3 className="mb-4 font-semibold">Profit Breakdown</h3>
 
-  <div className="space-y-3 text-sm">
-    <div className="flex items-center justify-between gap-4">
-      <span className="text-muted-foreground">
-        Revenue Before VAT & Delivery
-      </span>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-muted-foreground">
+                          Revenue Before VAT & Delivery
+                        </span>
 
-      <span className="font-medium">
-        {formatCurrency(sale.subtotal)}
-      </span>
-    </div>
+                        <span className="font-medium">
+                          {formatCurrency(sale.subtotal)}
+                        </span>
+                      </div>
 
-    <div className="flex items-center justify-between gap-4">
-      <span className="text-muted-foreground">
-        Material Cost
-      </span>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-muted-foreground">
+                          Material Cost
+                        </span>
 
-      <span className="font-medium">
-        -{formatCurrency(sale.materialCost)}
-      </span>
-    </div>
+                        <span className="font-medium">
+                          -{formatCurrency(sale.materialCost)}
+                        </span>
+                      </div>
 
-    <div className="flex items-center justify-between gap-4">
-      <span className="text-muted-foreground">
-        Labor Cost
-      </span>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-muted-foreground">
+                          Labor Cost
+                        </span>
 
-      <span className="font-medium">
-        -{formatCurrency(sale.laborCost)}
-      </span>
-    </div>
+                        <span className="font-medium">
+                          -{formatCurrency(sale.laborCost)}
+                        </span>
+                      </div>
 
-    <div className="flex items-center justify-between gap-4 border-t pt-3">
-      <span className="font-semibold">
-        Estimated Profit
-      </span>
+                      <div className="flex items-center justify-between gap-4 border-t pt-3">
+                        <span className="font-semibold">Estimated Profit</span>
 
-      <span className="text-lg font-bold">
-        {formatCurrency(sale.profit)}
-      </span>
-    </div>
-  </div>
+                        <span className="text-lg font-bold">
+                          {formatCurrency(sale.profit)}
+                        </span>
+                      </div>
+                    </div>
 
-  <p className="mt-3 text-xs leading-5 text-muted-foreground">
-    Profit is calculated from the order subtotal before VAT and delivery,
-    less the recorded material and labor costs.
-  </p>
-</div>
+                    <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                      Profit is calculated from the order subtotal before VAT
+                      and delivery, less the recorded material and labor costs.
+                    </p>
+                  </div>
+                )}
 
                 {/* PAYMENT SUMMARY */}
 

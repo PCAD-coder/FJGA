@@ -37,7 +37,7 @@ export default function HelpCard() {
             </p>
 
             <p className="text-sm text-muted-foreground">
-              +63 917 123 4567
+              09178777291 / 0917441866
             </p>
 
           </div>
@@ -55,7 +55,7 @@ export default function HelpCard() {
             </p>
 
             <p className="text-sm text-muted-foreground">
-              support@fjglass.com
+              fjgaest2010@gmail.com
             </p>
 
           </div>

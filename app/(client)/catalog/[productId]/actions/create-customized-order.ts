@@ -46,6 +46,9 @@ export async function createCustomizedOrder(input: {
   aluminumVariantId?: string | null
   glassVariantId?: string | null
 }) {
+  if (!/^[0-9]{11}$/.test(input.customerContactNumber)) {
+    throw new Error("Contact number must contain exactly 11 digits.")
+  }
   const supabase = await createClient()
 
   const {

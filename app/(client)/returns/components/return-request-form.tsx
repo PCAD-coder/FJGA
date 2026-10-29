@@ -6,7 +6,7 @@ import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { ContactNumberInput } from "@/components/ui/contact-number-input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 
@@ -68,6 +68,10 @@ export default function ReturnRequestForm({ orders, onSubmitted }: Props) {
 
     if (description.trim().length < 50) {
       setError("Please provide at least 50 characters describing the issue.")
+      return
+    }
+    if (contactNumber && !/^[0-9]{11}$/.test(contactNumber)) {
+      setError("Contact number must contain exactly 11 digits.")
       return
     }
     if (photos && photos.length > 5) {
@@ -132,6 +136,7 @@ export default function ReturnRequestForm({ orders, onSubmitted }: Props) {
       setIssueType("")
       setDescription("")
       setContactNumber("")
+      setPhotos(null)
 
       onSubmitted?.()
     } catch (err) {
@@ -199,15 +204,15 @@ export default function ReturnRequestForm({ orders, onSubmitted }: Props) {
         </p>
       </div>
 
-      <PhotoUpload onChange={setPhotos} disabled={submitting} />
+      <PhotoUpload files={photos} onChange={setPhotos} disabled={submitting} />
 
       <div className="space-y-2">
         <Label>5. Contact Number (Optional)</Label>
 
-        <Input
+        <ContactNumberInput
           value={contactNumber}
           onChange={(event) => setContactNumber(event.target.value)}
-          placeholder="0917-XXX-XXXX"
+          placeholder="09171234567"
         />
 
         <p className="text-xs text-muted-foreground">

@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import {
   Tooltip,
   TooltipContent,
+  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { PanelLeftIcon } from "lucide-react"
@@ -126,7 +127,8 @@ function SidebarProvider({
   )
 
   return (
-    <SidebarContext.Provider value={contextValue}>
+    <TooltipProvider>
+      <SidebarContext.Provider value={contextValue}>
       <div
         data-slot="sidebar-wrapper"
         style={
@@ -144,7 +146,8 @@ function SidebarProvider({
       >
         {children}
       </div>
-    </SidebarContext.Provider>
+      </SidebarContext.Provider>
+    </TooltipProvider>
   )
 }
 

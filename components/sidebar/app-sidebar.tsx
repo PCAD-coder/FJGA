@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { getUser } from "@/lib/auth/get-user";
 import { SignOutMenuItem } from "./sign-out-menu-item";
+import { SidebarModuleLink } from "./sidebar-module-link";
 
 import {
   Sidebar,
@@ -111,15 +112,14 @@ export async function AppSidebar({
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link
-                      href={item.url}
-                      className="flex items-center gap-2"
-                    >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
+                  <SidebarModuleLink
+                    href={item.url}
+                    title={item.title}
+                    moduleUrls={items.map((module) => module.url)}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
+                  </SidebarModuleLink>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>

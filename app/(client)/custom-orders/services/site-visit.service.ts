@@ -79,8 +79,8 @@ export async function createSiteVisitRequest(
 
   const { address } = input
 
-  if (!input.contactNumber.trim()) {
-    throw new Error("Contact number is required.")
+  if (!/^[0-9]{11}$/.test(input.contactNumber)) {
+    throw new Error("Contact number must contain exactly 11 digits.")
   }
 
   if (!input.preferredDate) {

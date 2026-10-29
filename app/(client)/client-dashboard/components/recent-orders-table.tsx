@@ -103,7 +103,7 @@ export default function RecentOrdersTable({ orders }: Props) {
                         statusStyles[order.status]
                       }
                     >
-                      {order.status}
+                      {order.status === "Pending" ? "Under review" : order.status}
                     </Badge>
                   </TableCell>
                 </TableRow>

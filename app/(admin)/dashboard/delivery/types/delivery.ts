@@ -89,6 +89,7 @@ export interface DeliveryDetails {
 
   deliveredAt: string | null
   deliveryNotes: string | null
+  proofImageUrl: string | null
 
   deliveryFee: number
 

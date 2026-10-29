@@ -246,6 +246,29 @@ interface CompleteReturnDeliveryInput {
   deliveryId: string
   deliveryDate: string
   notes: string | null
+  proofFile: File
+}
+
+function validateReturnDeliveryProof(file: File) {
+  const allowedTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+  ]
+
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error(
+      "Delivery proof must be a JPG, PNG, or WebP image"
+    )
+  }
+
+  const maxFileSize = 5 * 1024 * 1024
+
+  if (file.size > maxFileSize) {
+    throw new Error(
+      "Delivery proof must not exceed 5 MB"
+    )
+  }
 }
 
 export async function completeReturnDelivery(
@@ -261,22 +284,120 @@ export async function completeReturnDelivery(
     throw new Error("Authentication required")
   }
 
-  const { data, error } = await supabase.rpc(
-    "complete_return_delivery",
-    {
-      p_return_delivery_id: input.deliveryId,
-      p_delivery_date: input.deliveryDate
-        ? `${input.deliveryDate}T00:00:00`
-        : null,
-      p_notes: input.notes,
-    }
-  )
-
-  if (error) {
+  /*
+   * A return delivery cannot be completed without
+   * photographic proof that the item was delivered.
+   */
+  if (!input.proofFile) {
     throw new Error(
-      error.message || "Failed to complete return delivery"
+      "Delivery proof photo is required"
     )
   }
 
-  return data
+  validateReturnDeliveryProof(input.proofFile)
+
+  /*
+   * Resolve the return request from the delivery itself.
+   * Do not accept a return request ID supplied by the browser.
+   */
+  const {
+    data: delivery,
+    error: deliveryError,
+  } = await supabase
+    .from("return_deliveries")
+    .select("return_request_id")
+    .eq("id", input.deliveryId)
+    .single()
+
+  if (
+    deliveryError ||
+    !delivery?.return_request_id
+  ) {
+    throw new Error(
+      deliveryError?.message ||
+        "Failed to resolve the return delivery"
+    )
+  }
+
+  const safeFileName = sanitizeFileName(
+    input.proofFile.name
+  )
+
+  const uniqueFileName =
+    `${crypto.randomUUID()}-${safeFileName}`
+
+  /*
+   * Organize each return's proof inside its own folder.
+   */
+  const proofImagePath =
+    `${delivery.return_request_id}/${uniqueFileName}`
+
+  /*
+   * Upload the proof first.
+   *
+   * If the database transaction fails afterward,
+   * the uploaded image will be removed so that an
+   * orphaned proof is not left in Storage.
+   */
+  const { error: uploadError } =
+    await supabase.storage
+      .from("return_delivery_proofs")
+      .upload(
+        proofImagePath,
+        input.proofFile,
+        {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: input.proofFile.type,
+        }
+      )
+
+  if (uploadError) {
+    throw new Error(
+      uploadError.message ||
+        "Failed to upload delivery proof"
+    )
+  }
+
+  try {
+    const { data, error } = await supabase.rpc(
+      "complete_return_delivery",
+      {
+        p_return_delivery_id: input.deliveryId,
+        p_delivery_date:
+          input.deliveryDate || null,
+        p_notes: input.notes,
+        p_proof_image_path: proofImagePath,
+      }
+    )
+
+    if (error) {
+      throw new Error(
+        error.message ||
+          "Failed to complete return delivery"
+      )
+    }
+
+    return data
+  } catch (error) {
+    /*
+     * PostgreSQL and Storage are separate systems.
+     *
+     * If completion failed, remove the proof image that
+     * was uploaded immediately before the RPC call.
+     */
+    const { error: cleanupError } =
+      await supabase.storage
+        .from("return_delivery_proofs")
+        .remove([proofImagePath])
+
+    if (cleanupError) {
+      console.error(
+        "RETURN DELIVERY PROOF CLEANUP ERROR:",
+        cleanupError
+      )
+    }
+
+    throw error
+  }
 }

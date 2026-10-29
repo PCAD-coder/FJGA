@@ -95,10 +95,12 @@ export interface ReturnDeliveryQueryResult {
   scheduled_time: string | null
   assigned_driver: string | null
   assigned_truck: string | null
-  delivered_at: string | null
-  delivery_notes: string | null
-  created_at: string
-  updated_at: string
+delivered_at: string | null
+delivery_notes: string | null
+proof_image_path: string | null
+proof_image_url?: string | null
+created_at: string
+updated_at: string
 
   return_requests:
     | {
@@ -429,6 +431,7 @@ export function mapOrderToDeliveryDetails(
 
     deliveredAt: row.delivered_at,
     deliveryNotes: row.delivery_notes,
+    proofImageUrl: null,
 
     deliveryFee: Number(order.delivery_fee ?? 0),
 
@@ -500,6 +503,7 @@ export function mapReturnToDeliveryDetails(
 
     deliveredAt: row.delivered_at,
     deliveryNotes: row.delivery_notes,
+    proofImageUrl: row.proof_image_url ?? null,
 
     deliveryFee: 0,
 

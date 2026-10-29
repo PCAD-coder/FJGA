@@ -23,7 +23,7 @@ const variant: Record<OrderStatus, string> = {
 export default function OrderStatusBadge({ status }: Props) {
   return (
     <Badge className={variant[status]}>
-      {status}
+      {status === "Pending" ? "Under review" : status}
     </Badge>
   )
 }

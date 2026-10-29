@@ -25,7 +25,15 @@ export default function RequestStatusList({
 
       </div>
 
-      {requests.map((request) => (
+      {requests.length === 0 ? (
+        <div className="rounded-xl border border-dashed bg-muted/20 px-6 py-12 text-center">
+          <h3 className="font-semibold">No return requests yet</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            You haven’t submitted any return requests. Once you submit a request
+            in the Request a Return tab, its status will appear here.
+          </p>
+        </div>
+      ) : requests.map((request) => (
 
         <RequestStatusCard
           key={request.id}

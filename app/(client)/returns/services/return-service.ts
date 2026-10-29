@@ -245,6 +245,9 @@ export async function createReturnRequest(input: {
   const description = input.description.trim()
   const issueType = input.issueType.trim()
   const contactNumber = input.contactNumber?.trim() || null
+  if (contactNumber && !/^[0-9]{11}$/.test(contactNumber)) {
+    throw new Error("Contact number must contain exactly 11 digits.")
+  }
 
   if (!input.orderId) {
     throw new Error("Please select an order")

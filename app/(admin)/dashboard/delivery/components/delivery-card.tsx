@@ -5,7 +5,7 @@ import { Delivery } from "../types/delivery"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
-import { Calendar, MapPin, Truck, Eye, Pencil, UserRound } from "lucide-react"
+import { Calendar, MapPin, Truck, Eye, UserRound } from "lucide-react"
 
 interface DeliveryCardProps {
   delivery: Delivery
@@ -26,7 +26,9 @@ export default function DeliveryCard({
   const getStatusColor = () => {
     switch (delivery.status) {
       case "scheduled":
-        return "bg-blue-100 text-blue-700"
+        return !hasSchedule
+          ? "bg-purple-100 text-purple-700"
+          : "bg-blue-100 text-blue-700"
 
       case "out_for_delivery":
         return "bg-orange-100 text-orange-700"
@@ -51,17 +53,11 @@ export default function DeliveryCard({
         return status.charAt(0).toUpperCase() + status.slice(1)
     }
   }
-  const canUpdateStatus =
-    delivery.status === "scheduled" || delivery.status === "out_for_delivery"
+  const canCompleteDelivery = delivery.status === "out_for_delivery"
 
   const canSchedule = delivery.status === "scheduled"
 
-  const hasSchedule = Boolean(
-    delivery.deliveryDate ||
-    delivery.deliveryTime ||
-    delivery.assignedDriver ||
-    delivery.assignedTruck
-  )
+  const hasSchedule = Boolean(delivery.deliveryDate && delivery.deliveryTime)
 
   return (
     <div className="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
@@ -79,7 +75,9 @@ export default function DeliveryCard({
         <Badge
           className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${getStatusColor()}`}
         >
-          {formatStatus(delivery.status)}
+          {delivery.status === "scheduled" && !hasSchedule
+            ? "Pending Schedule"
+            : formatStatus(delivery.status)}
         </Badge>
       </div>
 
@@ -193,10 +191,10 @@ export default function DeliveryCard({
           </Button>
         )}
 
-        {canUpdateStatus && (
+        {canCompleteDelivery && (
           <Button onClick={onUpdateStatus}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Update Status
+            <Truck className="mr-2 h-4 w-4" />
+            Order Delivered
           </Button>
         )}
       </div>

@@ -49,6 +49,7 @@ import {
 } from "./product-variant-material-link-service"
 
 import type { ProductVariantMaterialSelections } from "./product-variant-material-service"
+import { logActivity } from "../../activity-logs/services/activity-logger.service"
 
 export interface BuildProductInput {
   product: ProductInsert
@@ -401,13 +402,22 @@ export async function buildProduct(
       error: variantsResult.error,
     }
   }
-  // Step 5: Return complete product
-  const completedProduct = await buildProductWithDetails(product)
+// Step 5: Build complete product
+const completedProduct = await buildProductWithDetails(product)
 
-  return {
-    data: completedProduct,
-    error: null,
-  }
+// Step 6: Activity log
+await logActivity({
+  action: "Created Product",
+  module: "Products",
+  description: `Created product "${product.product_name}" (${product.product_code}).`,
+  severity: "info",
+})
+
+// Step 7: Return complete product
+return {
+  data: completedProduct,
+  error: null,
+}
 }
 
 export async function rebuildProduct(
@@ -490,9 +500,20 @@ export async function rebuildProduct(
     }
   }
 
-  // Step 5: Return updated product
-  return {
-    data: await buildProductWithDetails(product),
-    error: null,
-  }
+// Step 5: Build updated product
+const completedProduct = await buildProductWithDetails(product)
+
+// Step 6: Activity log
+await logActivity({
+  action: "Updated Product",
+  module: "Products",
+  description: `Updated product "${product.product_name}" (${product.product_code}).`,
+  severity: "info",
+})
+
+// Step 7: Return updated product
+return {
+  data: completedProduct,
+  error: null,
+}
 }

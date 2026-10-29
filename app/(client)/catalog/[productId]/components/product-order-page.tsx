@@ -6,6 +6,7 @@ import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { ContactNumberInput } from "@/components/ui/contact-number-input"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
@@ -253,8 +254,8 @@ export default function ProductOrderPage({
         return
       }
 
-      if (!customerContactNumber.trim()) {
-        toast.error("Please enter your contact number.")
+      if (!/^[0-9]{11}$/.test(customerContactNumber)) {
+        toast.error("Contact number must contain exactly 11 digits.")
         return
       }
       if (!address.houseBuildingNumber.trim()) {
@@ -548,7 +549,8 @@ export default function ProductOrderPage({
                 Contact Number
               </label>
 
-              <Input
+              <ContactNumberInput
+                required
                 id="customer-contact-number"
                 type="tel"
                 value={customerContactNumber}

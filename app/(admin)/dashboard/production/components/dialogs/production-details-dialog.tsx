@@ -15,7 +15,10 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 
 import { ProductionProject } from "../../types/production"
-import { getProductionHistory } from "../../services/production"
+import {
+  getProductionHistory,
+  getReturnProductionHistory,
+} from "../../services/production"
 
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
@@ -76,7 +79,11 @@ export default function ProductionDetailsDialog({
       setLoadingHistory(true)
 
       try {
-        const data = await getProductionHistory(project.id)
+        const data =
+          project.projectType === "return"
+            ? await getReturnProductionHistory(project.id)
+            : await getProductionHistory(project.id)
+
         setHistory(data)
       } finally {
         setLoadingHistory(false)

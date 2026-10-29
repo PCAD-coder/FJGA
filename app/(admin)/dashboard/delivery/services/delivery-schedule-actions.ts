@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server"
 
 import type { DeliveryType } from "../types/delivery"
 
+import { logActivity } from "../../activity-logs/services/activity-logger.service"
+
 export interface ScheduleDeliveryInput {
   deliveryId: string
   deliveryType?: DeliveryType
@@ -53,7 +55,10 @@ export async function scheduleDelivery(input: ScheduleDeliveryInput) {
         delivered_at,
         delivery_notes,
         created_at,
-        updated_at
+        updated_at,
+        return_requests (
+          return_number
+          )
         `
       )
       .single()
@@ -61,6 +66,26 @@ export async function scheduleDelivery(input: ScheduleDeliveryInput) {
     if (error) {
       throw new Error(error.message || "Failed to schedule return delivery")
     }
+
+    const returnRequest = Array.isArray(data.return_requests)
+      ? data.return_requests[0]
+      : data.return_requests
+
+    const scheduleDescription =
+      data.scheduled_date && data.scheduled_time
+        ? `${data.scheduled_date} at ${data.scheduled_time}`
+        : data.scheduled_date
+          ? data.scheduled_date
+          : "No date specified"
+
+    await logActivity({
+      action: "Scheduled Return Delivery",
+      module: "Returns",
+      description: `Scheduled delivery for return request ${
+        returnRequest?.return_number ?? "Unknown Return"
+      } on ${scheduleDescription}.`,
+      severity: "info",
+    })
 
     return data
   }
@@ -81,7 +106,10 @@ export async function scheduleDelivery(input: ScheduleDeliveryInput) {
       delivered_at,
       delivery_notes,
       created_at,
-      updated_at
+      updated_at,
+      orders (
+        order_number
+      )
       `
     )
     .single()
@@ -89,6 +117,24 @@ export async function scheduleDelivery(input: ScheduleDeliveryInput) {
   if (error) {
     throw new Error(error.message || "Failed to schedule delivery")
   }
+
+  const order = Array.isArray(data.orders) ? data.orders[0] : data.orders
+
+  const scheduleDescription =
+    data.scheduled_date && data.scheduled_time
+      ? `${data.scheduled_date} at ${data.scheduled_time}`
+      : data.scheduled_date
+        ? data.scheduled_date
+        : "No date specified"
+
+  await logActivity({
+    action: "Scheduled Delivery",
+    module: "Delivery",
+    description: `Scheduled delivery for ${
+      order?.order_number ?? "Unknown Order"
+    } on ${scheduleDescription}.`,
+    severity: "info",
+  })
 
   return data
 }

@@ -11,6 +11,7 @@ import { getProductMaterials } from "./material-service"
 import { getProductLabor } from "./labor-service"
 
 import type { ProductWithDetails } from "../types/product"
+import { logActivity } from "../../activity-logs/services/activity-logger.service"
 
 export async function getProducts(): Promise<ServiceResult<Product[]>> {
   const supabase = createClient()
@@ -113,6 +114,15 @@ export async function archiveProduct(
     .select()
     .single()
 
+  if (!error && data) {
+    await logActivity({
+      action: "Archived Product",
+      module: "Products",
+      description: `Archived product "${data.product_name}" (${data.product_code}).`,
+      severity: "warning",
+    })
+  }
+
   return {
     data,
     error: error?.message ?? null,
@@ -122,6 +132,7 @@ export async function restoreProduct(
   id: string
 ): Promise<ServiceResult<Product>> {
   const supabase = createClient()
+
   const { data, error } = await supabase
     .from("products")
     .update({
@@ -130,6 +141,15 @@ export async function restoreProduct(
     .eq("id", id)
     .select()
     .single()
+
+  if (!error && data) {
+    await logActivity({
+      action: "Restored Product",
+      module: "Products",
+      description: `Restored product "${data.product_name}" (${data.product_code}).`,
+      severity: "info",
+    })
+  }
 
   return {
     data,

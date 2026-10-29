@@ -87,6 +87,7 @@ customer_contact_number,
       )
     `
     )
+    .neq("status", "denied")
     .order("created_at", { ascending: false })
 
   if (error) {

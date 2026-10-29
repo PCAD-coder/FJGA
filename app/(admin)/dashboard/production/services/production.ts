@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/client"
 import type { ProductionProject, ProductionStage } from "../types/production"
-
+import { logActivity } from "../../activity-logs/services/activity-logger.service"
 const supabase = createClient()
 
 const STAGE_LABELS: Record<string, ProductionStage> = {
@@ -630,6 +630,15 @@ function stageToProgress(stage: string): number {
       return 0
   }
 }
+
+function formatProductionStage(stage: string | null): string {
+  if (!stage) return "Pending"
+
+  return stage
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ")
+}
 export async function updateReturnProductionStage(
   productionJobId: string,
   stage: string,
@@ -714,33 +723,114 @@ export async function updateReturnProductionStage(
   if (updateError) {
     throw updateError
   }
-  /*
- * Notify the client only for meaningful return-production milestones.
- *
- * The RPC independently verifies:
- * - the caller is an active admin
- * - the production job exists
- * - the job is actually at the supplied stage
- * - the stage is an allowed client-facing milestone
- *
- * Duplicate milestone notifications are prevented by the RPC.
- */
-if (stage === "quality_check" || stage === "ready_for_delivery") {
-  const { error: notificationError } = await supabase.rpc(
-    "notify_return_production_stage",
-    {
-      p_production_job_id: productionJobId,
-      p_stage: stage,
-    }
-  )
 
-  if (notificationError) {
-    console.error(
-      "Failed to create return production notification:",
-      notificationError
+  /*
+ * Automatically create the return delivery when
+ * return production reaches Ready for Delivery.
+ *
+ * Check first so moving backward and later returning
+ * to Ready for Delivery does not create a duplicate.
+ */
+if (
+  stage === "ready_for_delivery" &&
+  currentStage !== "ready_for_delivery"
+) {
+  const { data: existingReturnDelivery, error: deliveryCheckError } =
+    await supabase
+      .from("return_deliveries")
+      .select("id")
+      .eq("production_job_id", productionJobId)
+      .maybeSingle()
+
+  if (deliveryCheckError) {
+    throw new Error(
+      deliveryCheckError.message ||
+        "Failed to check existing return delivery"
     )
   }
+
+  if (!existingReturnDelivery) {
+    const { error: deliveryInsertError } = await supabase
+      .from("return_deliveries")
+      .insert({
+        return_request_id: currentJob.return_request_id,
+        production_job_id: productionJobId,
+        delivery_status: "scheduled",
+      })
+
+    if (deliveryInsertError) {
+      throw new Error(
+        deliveryInsertError.message ||
+          "Failed to create return delivery"
+      )
+    }
+  }
 }
+
+const {
+  data: { user },
+} = await supabase.auth.getUser()
+
+let profileId: string | null = null
+
+if (user) {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("auth_user_id", user.id)
+    .single()
+
+  profileId = profile?.id ?? null
+}
+
+const { error: historyError } = await supabase
+  .from("return_production_history")
+  .insert({
+    production_job_id: productionJobId,
+    from_stage: currentStage,
+    to_stage: stage,
+    changed_by: profileId,
+    notes: notes?.trim() || null,
+  })
+
+if (historyError) {
+  throw historyError
+}
+  /*
+   * Notify the client only for meaningful return-production milestones.
+   *
+   * The RPC independently verifies:
+   * - the caller is an active admin
+   * - the production job exists
+   * - the job is actually at the supplied stage
+   * - the stage is an allowed client-facing milestone
+   *
+   * Duplicate milestone notifications are prevented by the RPC.
+   */
+  if (stage === "quality_check" || stage === "ready_for_delivery") {
+    const { error: notificationError } = await supabase.rpc(
+      "notify_return_production_stage",
+      {
+        p_production_job_id: productionJobId,
+        p_stage: stage,
+      }
+    )
+
+    if (notificationError) {
+      console.error(
+        "Failed to create return production notification:",
+        notificationError
+      )
+    }
+  }
+  await logActivity({
+    action: "Updated Return Production Stage",
+    module: "Production",
+    description: `Changed return production stage from "${formatProductionStage(
+      currentStage
+    )}" to "${formatProductionStage(stage)}".`,
+    severity: "info",
+  })
 }
 
 export async function updateProductionStage(
@@ -756,7 +846,7 @@ export async function updateProductionStage(
 ) {
   const { data: currentOrder, error: fetchError } = await supabase
     .from("orders")
-    .select("production_stage")
+    .select("order_number, production_stage")
     .eq("id", orderId)
     .single()
 
@@ -949,6 +1039,14 @@ export async function updateProductionStage(
       )
     }
   }
+  await logActivity({
+    action: "Updated Production Stage",
+    module: "Production",
+    description: `Changed production stage for ${currentOrder.order_number} from "${formatProductionStage(
+      currentOrder.production_stage
+    )}" to "${formatProductionStage(stage)}".`,
+    severity: "info",
+  })
 }
 
 export async function getProductionHistory(orderId: string) {
@@ -969,6 +1067,31 @@ export async function getProductionHistory(orderId: string) {
       `
     )
     .eq("order_id", orderId)
+    .order("changed_at", { ascending: true })
+
+  if (error) throw error
+
+  return data ?? []
+}
+
+export async function getReturnProductionHistory(
+  productionJobId: string
+) {
+  const { data, error } = await supabase
+    .from("return_production_history")
+    .select(`
+      id,
+      from_stage,
+      to_stage,
+      notes,
+      changed_at,
+      profiles:changed_by (
+        first_name,
+        last_name,
+        full_name
+      )
+    `)
+    .eq("production_job_id", productionJobId)
     .order("changed_at", { ascending: true })
 
   if (error) throw error

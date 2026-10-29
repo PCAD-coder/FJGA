@@ -182,6 +182,7 @@ export async function getDeliveryDetails(
   assigned_truck,
   delivered_at,
   delivery_notes,
+  proof_image_path,
   created_at,
   updated_at,
 
@@ -253,7 +254,31 @@ export async function getDeliveryDetails(
       throw new Error("Return delivery record not found")
     }
 
-    return data
+let proofImageUrl: string | null = null
+
+if (data.proof_image_path) {
+  const { data: signedUrlData, error: signedUrlError } =
+    await supabase.storage
+      .from("return_delivery_proofs")
+      .createSignedUrl(
+        data.proof_image_path,
+        60 * 10
+      )
+
+  if (signedUrlError) {
+    console.error(
+      "Failed to create return delivery proof signed URL:",
+      signedUrlError
+    )
+  } else {
+    proofImageUrl = signedUrlData.signedUrl
+  }
+}
+
+return {
+  ...data,
+  proof_image_url: proofImageUrl,
+}
   }
 
   const { data, error } = await supabase

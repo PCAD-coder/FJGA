@@ -300,6 +300,16 @@ return_resolutions (
       status: mapStatus(request.status, Boolean(activeInspection)),
       inspectionId: inspection?.id ?? null,
       inspection: inspectionDetails,
+        timeline: (request.return_request_timeline ?? [])
+    .map((entry) => ({
+      status: entry.status,
+      createdAt: entry.created_at,
+    }))
+    .sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() -
+        new Date(b.createdAt).getTime()
+    ),
       resolution: resolutionDetails,
     })
   }

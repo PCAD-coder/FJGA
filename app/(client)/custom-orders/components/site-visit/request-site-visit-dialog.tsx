@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { ContactNumberInput } from "@/components/ui/contact-number-input"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -417,8 +418,8 @@ export function RequestSiteVisitDialog({
   }
 
   async function handleSubmit() {
-    if (!contactNumber.trim()) {
-      toast.error("Contact number is required.")
+    if (!/^[0-9]{11}$/.test(contactNumber)) {
+      toast.error("Contact number must contain exactly 11 digits.")
       return
     }
 
@@ -532,6 +533,15 @@ export function RequestSiteVisitDialog({
         </DialogHeader>
 
         <div className="space-y-6 py-2">
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+            <p className="text-sm font-semibold">Payment during the visit</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Payment for the on-site visit fee must be settled during the
+              on-site visit. Please prepare the payment before your scheduled
+              visit.
+            </p>
+          </div>
+
           <section className="space-y-4">
             <div>
               <h3 className="font-semibold">Contact Information</h3>
@@ -547,7 +557,8 @@ export function RequestSiteVisitDialog({
                 <span className="ml-1 text-destructive">*</span>
               </Label>
 
-              <Input
+              <ContactNumberInput
+                required
                 id="visit-contact"
                 value={contactNumber}
                 onChange={(event) =>

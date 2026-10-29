@@ -22,6 +22,8 @@ import {
   Factory,
   Truck,
   CircleCheck,
+  Clock,
+  HammerIcon,
 } from "lucide-react"
 
 import { toast } from "sonner"
@@ -70,15 +72,19 @@ export default function ProductionModule() {
     page * jobsPerPage
   )
 
-  const totalProjects = projects.length
+const activeProjects = projects.filter(
+  (project) => project.stage !== "Ready for Delivery"
+)
 
-  const inProduction = projects.filter(
-    (project) => project.stage !== "Ready for Delivery"
-  ).length
+const totalActiveProjects = activeProjects.length
 
-  const readyForDelivery = projects.filter(
-    (project) => project.stage === "Ready for Delivery"
-  ).length
+const pendingProductionCount = activeProjects.filter(
+  (project) => project.stage === "Pending"
+).length
+
+const inProductionCount = activeProjects.filter(
+  (project) => project.stage !== "Pending"
+).length
 
   return (
     <div className="mx-auto w-full max-w-[1600px] min-w-0 space-y-4 px-1 pt-2 pb-12 sm:px-4 sm:pt-3 lg:px-6">
@@ -94,32 +100,26 @@ export default function ProductionModule() {
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-3">
         <DashboardCard
           title="Total Projects"
-          value={String(totalProjects)}
+          value={String(totalActiveProjects)}
           description="All production projects"
           icon={ClipboardList}
           color="text-blue-600 dark:text-blue-400"
         />
-        <DashboardCard
-          title="In Production"
-          value={String(inProduction)}
-          description="Projects still in progress"
-          icon={Factory}
-          color="text-primary"
-        />
-        <DashboardCard
-          title="Ready For Delivery"
-          value={String(readyForDelivery)}
-          description="Projects ready for dispatch"
-          icon={Truck}
-          color="text-emerald-600 dark:text-emerald-400"
-        />
-        <DashboardCard
-          title="Completed Stages"
-          value={String(readyForDelivery)}
-          description="Projects at the final stage"
-          icon={CircleCheck}
-          color="text-amber-600 dark:text-amber-400"
-        />
+  <DashboardCard
+    title="Pending Production"
+    value={String(pendingProductionCount)}
+    description="Projects waiting to begin production"
+    icon={Clock}
+    color="text-amber-600 dark:text-amber-400"
+  />
+
+  <DashboardCard
+    title="In Production"
+    value={String(inProductionCount)}
+    description="Projects currently being produced"
+    icon={HammerIcon}
+    color="text-primary"
+  />
       </div>
 
       <div className="space-y-3 rounded-xl border border-border/80 bg-card p-4">
@@ -141,7 +141,7 @@ export default function ProductionModule() {
           <ToggleGroupItem value="assembly">Assembly</ToggleGroupItem>
           <ToggleGroupItem value="finishing">Finishing</ToggleGroupItem>
           <ToggleGroupItem value="quality_check">Quality Check</ToggleGroupItem>
-          <ToggleGroupItem value="ready_for_delivery">Ready</ToggleGroupItem>
+        <ToggleGroupItem value="ready_for_delivery">Ready</ToggleGroupItem>
         </ToggleGroup>
 
         <div className="relative max-w-md">

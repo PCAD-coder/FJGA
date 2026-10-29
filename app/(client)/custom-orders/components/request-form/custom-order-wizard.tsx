@@ -136,6 +136,7 @@ export function CustomOrderWizard({
     }
   }
   const [currentStep, setCurrentStep] = useState(1)
+  const [isEditingReview, setIsEditingReview] = useState(false)
 
   const [projectDetails, setProjectDetails] = useState<ProjectDetailsData>(
     initialProjectDetails
@@ -169,7 +170,7 @@ export function CustomOrderWizard({
   )
 
   const isDeliveryValid =
-    contactNumber.trim() !== "" &&
+    /^[0-9]{11}$/.test(contactNumber) &&
     deliveryAddress.houseBuildingNumber.trim() !== "" &&
     deliveryAddress.street.trim() !== "" &&
     deliveryAddress.regionPsgcCode !== "" &&
@@ -239,16 +240,14 @@ export function CustomOrderWizard({
     return true
   }
   function validateDelivery() {
-    const normalizedContactNumber = contactNumber.replace(/[\s()-]/g, "")
-
     if (!contactNumber.trim()) {
       setError("Please enter your contact number.")
       return false
     }
 
-    if (!/^(\+639|09)\d{9}$/.test(normalizedContactNumber)) {
+    if (!/^[0-9]{11}$/.test(contactNumber)) {
       setError(
-        "Please enter a valid Philippine mobile number, such as 09171234567."
+        "Contact number must contain exactly 11 digits."
       )
       return false
     }
@@ -290,6 +289,27 @@ export function CustomOrderWizard({
   }
 
   function handleContinue() {
+    if (isEditingReview) {
+      const validations = [
+        validateProjectDetails,
+        validateDesignReference,
+        validateSpecifications,
+        validateDelivery,
+      ]
+
+      for (const [index, validate] of validations.entries()) {
+        if (!validate()) {
+          setCurrentStep(index + 1)
+          return
+        }
+      }
+
+      setCurrentStep(5)
+      setIsEditingReview(false)
+      setError(null)
+      return
+    }
+
     if (currentStep === 1 && !validateProjectDetails()) {
       return
     }
@@ -314,6 +334,9 @@ export function CustomOrderWizard({
 
   function handleBack() {
     if (currentStep > 1) {
+      if (currentStep === 5) {
+        setIsEditingReview(true)
+      }
       setCurrentStep((step) => step - 1)
       setError(null)
     }
@@ -470,6 +493,7 @@ export function CustomOrderWizard({
               deliveryAddress={deliveryAddress}
               deliveryZone={deliveryZone}
               onEdit={(step) => {
+                setIsEditingReview(true)
                 setCurrentStep(step)
                 setError(null)
               }}
@@ -502,7 +526,7 @@ export function CustomOrderWizard({
                 onClick={handleContinue}
                 disabled={currentStep === 4 && !isDeliveryValid}
               >
-                Continue
+                {isEditingReview ? "Save and return to review" : "Continue"}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             ) : (

@@ -169,8 +169,8 @@ export async function createCustomOrderRequestServer(
     throw new Error("Project name is required.")
   }
 
-  if (!trustedContactNumber.trim()) {
-    throw new Error("Contact number is required.")
+  if (!/^[0-9]{11}$/.test(trustedContactNumber)) {
+    throw new Error("Contact number must contain exactly 11 digits.")
   }
 
   if (!trustedDeliveryAddress.houseBuildingNumber.trim()) {

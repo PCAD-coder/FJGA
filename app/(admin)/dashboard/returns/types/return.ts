@@ -1,3 +1,7 @@
+export interface ReturnTimelineEntry {
+  status: string
+  createdAt: string
+}
 export interface ReturnRequest {
   id: string
 
@@ -31,6 +35,8 @@ export interface ReturnRequest {
   inspectionId?: string | null
   inspection?: ReturnInspectionDetails | null
   resolution?: ReturnResolutionDetails | null
+
+  timeline: ReturnTimelineEntry[]
 }
 export type ReturnResolutionType = "repair" | "replacement" | "no_action"
 
@@ -91,3 +97,4 @@ export interface ReturnResolutionDetails {
   completedAt: string | null
   items: ReturnResolutionItem[]
 }
+

@@ -16,6 +16,10 @@ export default function OrderPaymentRequirement({
   order,
   onSubmitPayment,
 }: Props) {
+  if (order.status === "Declined") {
+    return null
+  }
+
   /*
    * Keep the payment submission in a local constant.
    * This allows TypeScript to safely narrow the value.
@@ -45,7 +49,7 @@ export default function OrderPaymentRequirement({
                 variant="outline"
                 className="border-blue-300 text-blue-700"
               >
-                Pending Approval
+                Under review
               </Badge>
             </div>
 

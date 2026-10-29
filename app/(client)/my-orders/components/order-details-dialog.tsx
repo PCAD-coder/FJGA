@@ -711,25 +711,29 @@ export default function OrderDetailsDialog({ order }: Props) {
               </div>
             </div>
           </section>
-          <Separator />
+          {order.status !== "Declined" && (
+            <>
+              <Separator />
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-medium">Manage your payments</p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-medium">Manage your payments</p>
 
-              <p className="text-sm text-muted-foreground">
-                View payment details, balances, and available payment options.
-              </p>
-            </div>
+                  <p className="text-sm text-muted-foreground">
+                    View payment details, balances, and available payment options.
+                  </p>
+                </div>
 
-            <Button
-              className="shrink-0"
-              onClick={() => router.push("/payments")}
-            >
-              Go to Payments
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
+                <Button
+                  className="shrink-0"
+                  onClick={() => router.push("/payments")}
+                >
+                  Go to Payments
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </>
+          )}
         </div>
         {order.status === "Completed" && (
           <Button

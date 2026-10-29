@@ -54,7 +54,7 @@ import ScheduleDeliveryDialog from "./schedule-delivery-dialog"
 
 import DeliveryFinalPaymentDialog from "./delivery-final-payment-dialog"
 
-import { completeReturnDelivery } from "../services/delivery-payment-actions"
+import ReturnDeliveryConfirmationDialog from "./return-delivery-confirmation-dialog"
 
 export default function DeliveryModule() {
   const [deliveries, setDeliveries] = useState<Delivery[]>([])
@@ -84,6 +84,9 @@ export default function DeliveryModule() {
   const [currentPage, setCurrentPage] = useState(1)
 
   const [finalPaymentOpen, setFinalPaymentOpen] = useState(false)
+
+  const [returnDeliveryConfirmationOpen, setReturnDeliveryConfirmationOpen] =
+    useState(false)
 
   const deliveriesPerPage = 10
   const loadDeliveries = async () => {
@@ -124,6 +127,8 @@ export default function DeliveryModule() {
   useEffect(() => {
     setCurrentPage(1)
   }, [search, statusFilter])
+  const hasDeliverySchedule = (delivery: Delivery) =>
+    Boolean(delivery.deliveryDate && delivery.deliveryTime)
 
   const filteredDeliveries = useMemo(() => {
     return deliveries.filter((delivery) => {
@@ -132,7 +137,13 @@ export default function DeliveryModule() {
         delivery.clientName.toLowerCase().includes(search.toLowerCase())
 
       const matchesStatus =
-        statusFilter === "all" ? true : delivery.status === statusFilter
+        statusFilter === "all"
+          ? true
+          : statusFilter === "pending_schedule"
+            ? delivery.status === "scheduled" && !hasDeliverySchedule(delivery)
+            : statusFilter === "scheduled"
+              ? delivery.status === "scheduled" && hasDeliverySchedule(delivery)
+              : delivery.status === statusFilter
 
       return matchesSearch && matchesStatus
     })
@@ -183,43 +194,6 @@ export default function DeliveryModule() {
 
   const handleUpdateStatus = async (status: DeliveryStatus, notes: string) => {
     if (!selectedDelivery) {
-      return
-    }
-
-    /*
-     * Return deliveries do not require customer payment.
-     * They use the dedicated return delivery completion RPC.
-     */
-    if (status === "delivered" && selectedDelivery.deliveryType === "return") {
-      try {
-        setError(null)
-
-        await completeReturnDelivery({
-          deliveryId: selectedDelivery.id,
-          deliveryDate: new Date().toISOString().split("T")[0],
-          notes: notes.trim() || null,
-        })
-
-        toast.success("Return delivery completed successfully.")
-        setUpdateOpen(false)
-        setSelectedDelivery(null)
-
-        await loadDeliveries()
-      } catch (error) {
-        console.error("Failed to complete return delivery:", error)
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : "Unable to complete return delivery."
-        )
-
-        setError(
-          error instanceof Error
-            ? error.message
-            : "Failed to complete return delivery"
-        )
-      }
-
       return
     }
 
@@ -283,8 +257,14 @@ export default function DeliveryModule() {
 
   const totalDeliveries = deliveries.length
 
+  const pendingScheduleCount = deliveries.filter(
+    (delivery) =>
+      delivery.status === "scheduled" && !hasDeliverySchedule(delivery)
+  ).length
+
   const scheduledCount = deliveries.filter(
-    (d) => d.status === "scheduled"
+    (delivery) =>
+      delivery.status === "scheduled" && hasDeliverySchedule(delivery)
   ).length
 
   const outForDeliveryCount = deliveries.filter(
@@ -337,11 +317,18 @@ export default function DeliveryModule() {
           color="text-blue-600 dark:text-blue-400"
         />
         <DashboardCard
-          title="Scheduled"
-          value={String(scheduledCount)}
-          description="Deliveries awaiting dispatch"
+          title="Pending Schedule"
+          value={String(pendingScheduleCount)}
+          description="Deliveries waiting to be scheduled"
           icon={CalendarDays}
           color="text-amber-600 dark:text-amber-400"
+        />
+        <DashboardCard
+          title="Scheduled"
+          value={String(scheduledCount)}
+          description="Deliveries with assigned schedules"
+          icon={CalendarDays}
+          color="text-blue-600 dark:text-blue-400"
         />
         <DashboardCard
           title="Out For Delivery"
@@ -371,6 +358,10 @@ export default function DeliveryModule() {
           className="h-auto max-w-full flex-wrap justify-start gap-1"
         >
           <ToggleGroupItem value="all">All</ToggleGroupItem>
+
+          <ToggleGroupItem value="pending_schedule">
+            Pending Schedule
+          </ToggleGroupItem>
 
           <ToggleGroupItem value="scheduled">Scheduled</ToggleGroupItem>
 
@@ -426,6 +417,17 @@ export default function DeliveryModule() {
               }}
               onUpdateStatus={() => {
                 setSelectedDelivery(delivery)
+
+                if (delivery.status === "out_for_delivery") {
+                  if (delivery.deliveryType === "return") {
+                    setReturnDeliveryConfirmationOpen(true)
+                    return
+                  }
+
+                  setFinalPaymentOpen(true)
+                  return
+                }
+
                 setUpdateOpen(true)
               }}
               onSchedule={() => {
@@ -505,6 +507,17 @@ export default function DeliveryModule() {
       <ManageDeliveryZonesDialog
         open={manageZonesOpen}
         onOpenChange={setManageZonesOpen}
+      />
+
+      <ReturnDeliveryConfirmationDialog
+        delivery={selectedDelivery}
+        open={returnDeliveryConfirmationOpen}
+        onOpenChange={setReturnDeliveryConfirmationOpen}
+        onCompleted={async () => {
+          setReturnDeliveryConfirmationOpen(false)
+          setSelectedDelivery(null)
+          await loadDeliveries()
+        }}
       />
     </div>
   )
