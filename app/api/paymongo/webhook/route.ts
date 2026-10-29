@@ -517,6 +517,50 @@ export async function POST(request: Request) {
   }
 
   /*
+ * Notify all active administrators that an online payment
+ * has been successfully received.
+ */
+const { data: adminProfiles, error: adminProfilesError } = await supabase
+  .from("profiles")
+  .select("id")
+  .eq("role", "admin")
+  .eq("status", "Active")
+
+if (adminProfilesError) {
+  console.error(
+    "PAYMONGO WEBHOOK: Failed to load active administrators",
+    adminProfilesError
+  )
+} else if (adminProfiles && adminProfiles.length > 0) {
+  const formattedAmount = new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount)
+
+  for (const admin of adminProfiles) {
+    const { error: adminNotificationError } = await supabase.rpc(
+      "create_notification",
+      {
+        p_recipient_profile_id: admin.id,
+        p_type: "payment",
+        p_title: "Payment Received",
+        p_message: `An online payment of ${formattedAmount} for order ${order.order_number} has been received.`,
+        p_link: "/dashboard/sales",
+      }
+    )
+
+    if (adminNotificationError) {
+      console.error(
+        `PAYMONGO WEBHOOK: Failed to notify administrator ${admin.id}`,
+        adminNotificationError
+      )
+    }
+  }
+}
+
+  /*
    * The payment was successfully recorded.
    *
    * Now record the PayMongo event itself as processed.
