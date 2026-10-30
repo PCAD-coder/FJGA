@@ -21,12 +21,14 @@ export interface ReturnRequest {
 
   reportedDate: string
 
-  status:
-    | "under-review"
-    | "inspection-scheduled"
-    | "approved"
-    | "declined"
-    | "resolved"
+status:
+  | "under-review"
+  | "inspection-scheduled"
+  | "approved"
+  | "repair-processing"
+  | "replacement-processing"
+  | "declined"
+  | "resolved"
 
   declineReason?: string
 

@@ -10,9 +10,8 @@ import {
   declineReturnRequest,
   scheduleReturnInspection,
   completeReturnInspection,
-  createReturnResolution,
   startReturnResolution,
-  completeReturnResolution,
+  archiveReturnRequest,
 } from "../services/return-service"
 
 import ReturnCard from "./return-card"
@@ -25,9 +24,6 @@ import DeclineRepairDialog from "./decline-return-dialog"
 
 import CompleteInspectionDialog from "./complete-inspection-dialog"
 import type { CompleteInspectionData } from "./complete-inspection-dialog"
-
-import ResolutionDialog from "./resolution-dialog"
-import type { ResolutionDialogData } from "./resolution-dialog"
 
 import ResolutionItemsDialog from "./resolution-items-dialog"
 
@@ -115,15 +111,6 @@ export default function Returns() {
 
   const [inspectionDialogOpen, setInspectionDialogOpen] = useState(false)
 
-  const [resolutionRequest, setResolutionRequest] =
-    useState<ReturnRequest | null>(null)
-
-  const [resolutionInspectionId, setResolutionInspectionId] = useState<
-    string | null
-  >(null)
-
-  const [resolutionDialogOpen, setResolutionDialogOpen] = useState(false)
-
   const [resolutionId, setResolutionId] = useState<string | null>(null)
 
   const [resolutionType, setResolutionType] = useState<
@@ -143,80 +130,60 @@ export default function Returns() {
     setInspectionRequest(request)
     setInspectionDialogOpen(true)
   }
-  async function handleInspectionComplete(data: CompleteInspectionData) {
-    if (!inspectionRequest) return
+async function handleInspectionComplete(
+  data: CompleteInspectionData
+) {
+  if (!inspectionRequest) return
 
-    const request = inspectionRequest
+  const result = await notifyReturnAction(
+    () => completeReturnInspection(inspectionRequest.id, data),
+    data.resolutionType === "no_action"
+      ? "Inspection completed. No further action is required."
+      : "Inspection completed and resolution created successfully."
+  )
 
-    const result = await notifyReturnAction(
-      () => completeReturnInspection(request.id, data),
-      "Inspection completed successfully."
-    )
-
-    if (result.error) {
-      throw new Error(result.error)
-    }
-
-    setInspectionDialogOpen(false)
-    setInspectionRequest(null)
-
-    if (
-      data.resolutionType === "repair" ||
-      data.resolutionType === "replacement"
-    ) {
-      if (!request.inspectionId) {
-        throw new Error("The completed inspection could not be identified.")
-      }
-
-      setResolutionRequest(request)
-      setResolutionInspectionId(request.inspectionId)
-      setResolutionDialogOpen(true)
-
-      return
-    }
-
-    await loadReturns()
+  if (result.error) {
+    throw new Error(result.error)
   }
-  async function handleResolutionContinue(data: ResolutionDialogData) {
-    if (!resolutionRequest || !resolutionInspectionId) return
 
-    const result = await notifyReturnAction(
-      () =>
-        createReturnResolution(
-          resolutionRequest.id,
-          resolutionInspectionId,
-          data
-        ),
-      "Return resolution created successfully."
-    )
+  setInspectionDialogOpen(false)
+  setInspectionRequest(null)
 
-    if (result.error) {
-      throw new Error(result.error)
-    }
+  await loadReturns()
+}
 
-    if (!result.data) {
-      throw new Error(
-        "The resolution was created but its ID could not be retrieved."
-      )
-    }
+function handleAddResolutionItems(request: ReturnRequest) {
+  const resolution = request.resolution
 
-    setResolutionId(result.data)
-
-    if (
-      data.resolutionType === "repair" ||
-      data.resolutionType === "replacement"
-    ) {
-      setResolutionType(data.resolutionType)
-    }
-    setResolutionReturnRequestId(resolutionRequest.id)
-
-    setResolutionDialogOpen(false)
-
-    setResolutionRequest(null)
-    setResolutionInspectionId(null)
-
-    setResolutionItemsDialogOpen(true)
+  if (!resolution) {
+    setError("A resolution could not be found for this return request.")
+    return
   }
+
+  if (
+    resolution.resolutionType !== "repair" &&
+    resolution.resolutionType !== "replacement"
+  ) {
+    setError(
+      "This return request does not require repair or replacement items."
+    )
+    return
+  }
+
+  if (resolution.resolutionStatus !== "pending") {
+    setError("Only a pending resolution can have items added.")
+    return
+  }
+
+  setError(null)
+
+  setResolutionId(resolution.id)
+  setResolutionType(resolution.resolutionType)
+  setResolutionReturnRequestId(request.id)
+
+  setResolutionItemsDialogOpen(true)
+}
+
   async function handleResolutionItemsComplete() {
     setResolutionItemsDialogOpen(false)
     setResolutionId(null)
@@ -228,19 +195,6 @@ export default function Returns() {
     const result = await notifyReturnAction(
       () => startReturnResolution(request.id),
       "Return resolution started."
-    )
-
-    if (result.error) {
-      setError(result.error)
-      return
-    }
-
-    await loadReturns()
-  }
-  async function handleCompleteResolution(request: ReturnRequest) {
-    const result = await notifyReturnAction(
-      () => completeReturnResolution(request.id),
-      "Return resolution completed."
     )
 
     if (result.error) {
@@ -379,31 +333,23 @@ export default function Returns() {
     await loadReturns()
   }
 
-  const handleArchive = () => {
-    if (!selectedRequest) return
+async function handleArchive() {
+  if (!selectedRequest) return
 
-    /*
-     * return_requests currently has no archive column.
-     * Keep this as a local UI archive until we decide
-     * how archived requests should be persisted.
-     */
-    setRequests((prev) =>
-      prev.map((request) =>
-        request.id === selectedRequest.id
-          ? {
-              ...request,
-              archived: true,
-            }
-          : request
-      )
-    )
+  const result = await notifyReturnAction(
+    () => archiveReturnRequest(selectedRequest.id),
+    "Return request archived successfully."
+  )
 
-    toast.success(
-      "Request hidden from this list. This archive is temporary and is not saved to the database."
-    )
-    setArchiveOpen(false)
-    setSelectedRequest(null)
+  if (result.error) {
+    return
   }
+
+  setArchiveOpen(false)
+  setSelectedRequest(null)
+
+  await loadReturns()
+}
 
   const totalReturns = requests.filter((request) => !request.archived).length
 
@@ -547,32 +493,32 @@ export default function Returns() {
         <div className="space-y-4">
           {paginatedRequests.map((request) => (
             <ReturnCard
-              key={request.id}
-              request={request}
-              onView={() => {
-                setSelectedRequest(request)
-                setViewOpen(true)
-              }}
-              onApprove={() => {
-                setSelectedRequest(request)
-                setApproveOpen(true)
-              }}
-              onDecline={() => {
-                setSelectedRequest(request)
-                setDeclineOpen(true)
-              }}
-              onSchedule={() => {
-                setSelectedRequest(request)
-                setScheduleOpen(true)
-              }}
-              onArchive={() => {
-                setSelectedRequest(request)
-                setArchiveOpen(true)
-              }}
-              onCompleteInspection={() => handleCompleteInspection(request)}
-              onStartResolution={() => handleStartResolution(request)}
-              onCompleteResolution={() => handleCompleteResolution(request)}
-            />
+  key={request.id}
+  request={request}
+  onView={() => {
+    setSelectedRequest(request)
+    setViewOpen(true)
+  }}
+  onApprove={() => {
+    setSelectedRequest(request)
+    setApproveOpen(true)
+  }}
+  onDecline={() => {
+    setSelectedRequest(request)
+    setDeclineOpen(true)
+  }}
+  onSchedule={() => {
+    setSelectedRequest(request)
+    setScheduleOpen(true)
+  }}
+  onArchive={() => {
+    setSelectedRequest(request)
+    setArchiveOpen(true)
+  }}
+  onCompleteInspection={() => handleCompleteInspection(request)}
+  onAddResolutionItems={() => handleAddResolutionItems(request)}
+  onStartResolution={() => handleStartResolution(request)}
+/>
           ))}
         </div>
       )}
@@ -653,18 +599,6 @@ export default function Returns() {
           setInspectionDialogOpen(open)
         }}
         onComplete={handleInspectionComplete}
-      />
-      <ResolutionDialog
-        open={resolutionDialogOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setResolutionRequest(null)
-            setResolutionInspectionId(null)
-          }
-
-          setResolutionDialogOpen(open)
-        }}
-        onContinue={handleResolutionContinue}
       />
       <ResolutionItemsDialog
         open={resolutionItemsDialogOpen}

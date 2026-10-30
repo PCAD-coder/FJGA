@@ -13,6 +13,27 @@ const STAGE_LABELS: Record<string, ProductionStage> = {
   quality_check: "Quality Check",
   ready_for_delivery: "Ready for Delivery",
 }
+
+const ORDER_PRODUCTION_STAGES: ProductionStage[] = [
+  "Pending",
+  "Material Prep",
+  "Glass Cutting",
+  "Frame Fabrication",
+  "Assembly",
+  "Finishing",
+  "Quality Check",
+  "Ready for Delivery",
+]
+
+function getOrderApplicableStages(
+  requiresGlassCutting: boolean
+): ProductionStage[] {
+  if (requiresGlassCutting) {
+    return ORDER_PRODUCTION_STAGES
+  }
+
+  return ORDER_PRODUCTION_STAGES.filter((stage) => stage !== "Glass Cutting")
+}
 function getReturnApplicableStages(
   resolutionType: "repair" | "replacement" | undefined,
   laborServices: string[]
@@ -134,7 +155,8 @@ export async function getProductionProjects(): Promise<ProductionProject[]> {
           width,
           height,
           depth,
-          dimension_unit
+          dimension_unit,
+          materials_snapshot
         ),
         order_addresses (
           house_building_number,
@@ -160,6 +182,47 @@ export async function getProductionProjects(): Promise<ProductionProject[]> {
 
   for (const order of data ?? []) {
     const item = order.order_items?.[0]
+    const materialSnapshots = Array.isArray(item?.materials_snapshot)
+      ? item.materials_snapshot
+      : []
+
+    const materialIds = materialSnapshots
+      .map((material) => {
+        if (
+          typeof material === "object" &&
+          material !== null &&
+          "material_id" in material &&
+          typeof material.material_id === "string"
+        ) {
+          return material.material_id
+        }
+
+        return null
+      })
+      .filter((id): id is string => Boolean(id))
+
+    let requiresGlassCutting = false
+
+    if (materialIds.length > 0) {
+      const { data: materials, error: materialsError } = await supabase
+        .from("inventory_materials")
+        .select("id, category")
+        .in("id", materialIds)
+
+      if (materialsError) {
+        console.error(
+          "Failed to determine production material categories:",
+          materialsError
+        )
+      } else {
+        requiresGlassCutting =
+          materials?.some(
+            (material) => material.category?.toLowerCase() === "glass"
+          ) ?? false
+      }
+    }
+
+    const applicableStages = getOrderApplicableStages(requiresGlassCutting)
     const address = Array.isArray(order.order_addresses)
       ? (order.order_addresses[0] ?? null)
       : (order.order_addresses ?? null)
@@ -236,6 +299,9 @@ export async function getProductionProjects(): Promise<ProductionProject[]> {
       fullName ||
       "Unknown Client"
 
+    const productionStage =
+      STAGE_LABELS[order.production_stage ?? "pending"] ?? "Pending"
+
     projects.push({
       id: order.id,
       orderNumber: order.order_number,
@@ -244,9 +310,9 @@ export async function getProductionProjects(): Promise<ProductionProject[]> {
       contactNumber: order.customer_contact_number ?? null,
       paymentMethod: order.payment_method ?? null,
       orderItemId: item?.id ?? "",
-      stage: STAGE_LABELS[order.production_stage ?? "pending"] ?? "Pending",
+      stage: productionStage,
       assignedStaff: order.production_assigned_to ?? "Unassigned",
-      progress: stageToProgress(order.production_stage ?? "pending"),
+      progress: applicableStageToProgress(productionStage, applicableStages),
       estimatedCompletion:
         order.estimated_completion_date ??
         new Date().toISOString().split("T")[0],
@@ -270,6 +336,7 @@ export async function getProductionProjects(): Promise<ProductionProject[]> {
           }
         : null,
       projectType: "order",
+      applicableStages,
     })
   }
 
@@ -631,6 +698,25 @@ function stageToProgress(stage: string): number {
   }
 }
 
+function applicableStageToProgress(
+  stage: ProductionStage,
+  applicableStages: ProductionStage[]
+): number {
+  const currentIndex = applicableStages.indexOf(stage)
+
+  if (currentIndex <= 0) {
+    return 0
+  }
+
+  const lastIndex = applicableStages.length - 1
+
+  if (lastIndex <= 0) {
+    return 0
+  }
+
+  return Math.round((currentIndex / lastIndex) * 100)
+}
+
 function formatProductionStage(stage: string | null): string {
   if (!stage) return "Pending"
 
@@ -725,77 +811,72 @@ export async function updateReturnProductionStage(
   }
 
   /*
- * Automatically create the return delivery when
- * return production reaches Ready for Delivery.
- *
- * Check first so moving backward and later returning
- * to Ready for Delivery does not create a duplicate.
- */
-if (
-  stage === "ready_for_delivery" &&
-  currentStage !== "ready_for_delivery"
-) {
-  const { data: existingReturnDelivery, error: deliveryCheckError } =
-    await supabase
-      .from("return_deliveries")
-      .select("id")
-      .eq("production_job_id", productionJobId)
-      .maybeSingle()
+   * Automatically create the return delivery when
+   * return production reaches Ready for Delivery.
+   *
+   * Check first so moving backward and later returning
+   * to Ready for Delivery does not create a duplicate.
+   */
+  if (stage === "ready_for_delivery" && currentStage !== "ready_for_delivery") {
+    const { data: existingReturnDelivery, error: deliveryCheckError } =
+      await supabase
+        .from("return_deliveries")
+        .select("id")
+        .eq("production_job_id", productionJobId)
+        .maybeSingle()
 
-  if (deliveryCheckError) {
-    throw new Error(
-      deliveryCheckError.message ||
-        "Failed to check existing return delivery"
-    )
-  }
-
-  if (!existingReturnDelivery) {
-    const { error: deliveryInsertError } = await supabase
-      .from("return_deliveries")
-      .insert({
-        return_request_id: currentJob.return_request_id,
-        production_job_id: productionJobId,
-        delivery_status: "scheduled",
-      })
-
-    if (deliveryInsertError) {
+    if (deliveryCheckError) {
       throw new Error(
-        deliveryInsertError.message ||
-          "Failed to create return delivery"
+        deliveryCheckError.message || "Failed to check existing return delivery"
       )
     }
+
+    if (!existingReturnDelivery) {
+      const { error: deliveryInsertError } = await supabase
+        .from("return_deliveries")
+        .insert({
+          return_request_id: currentJob.return_request_id,
+          production_job_id: productionJobId,
+          delivery_status: "scheduled",
+        })
+
+      if (deliveryInsertError) {
+        throw new Error(
+          deliveryInsertError.message || "Failed to create return delivery"
+        )
+      }
+    }
   }
-}
 
-const {
-  data: { user },
-} = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-let profileId: string | null = null
+  let profileId: string | null = null
 
-if (user) {
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("auth_user_id", user.id)
-    .single()
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("auth_user_id", user.id)
+      .single()
 
-  profileId = profile?.id ?? null
-}
+    profileId = profile?.id ?? null
+  }
 
-const { error: historyError } = await supabase
-  .from("return_production_history")
-  .insert({
-    production_job_id: productionJobId,
-    from_stage: currentStage,
-    to_stage: stage,
-    changed_by: profileId,
-    notes: notes?.trim() || null,
-  })
+  const { error: historyError } = await supabase
+    .from("return_production_history")
+    .insert({
+      production_job_id: productionJobId,
+      from_stage: currentStage,
+      to_stage: stage,
+      changed_by: profileId,
+      notes: notes?.trim() || null,
+    })
 
-if (historyError) {
-  throw historyError
-}
+  if (historyError) {
+    throw historyError
+  }
   /*
    * Notify the client only for meaningful return-production milestones.
    *
@@ -1074,12 +1155,11 @@ export async function getProductionHistory(orderId: string) {
   return data ?? []
 }
 
-export async function getReturnProductionHistory(
-  productionJobId: string
-) {
+export async function getReturnProductionHistory(productionJobId: string) {
   const { data, error } = await supabase
     .from("return_production_history")
-    .select(`
+    .select(
+      `
       id,
       from_stage,
       to_stage,
@@ -1090,7 +1170,8 @@ export async function getReturnProductionHistory(
         last_name,
         full_name
       )
-    `)
+    `
+    )
     .eq("production_job_id", productionJobId)
     .order("changed_at", { ascending: true })
 

@@ -135,18 +135,18 @@ export default function UpdateStageDialog({
 
   if (!project) return null
   const availableStages =
-    project.projectType === "return" && project.applicableStages?.length
-      ? project.applicableStages
-      : ([
-          "Pending",
-          "Material Prep",
-          "Glass Cutting",
-          "Frame Fabrication",
-          "Assembly",
-          "Finishing",
-          "Quality Check",
-          "Ready for Delivery",
-        ] as ProductionStage[])
+  project.applicableStages?.length
+    ? project.applicableStages
+    : ([
+        "Pending",
+        "Material Prep",
+        "Glass Cutting",
+        "Frame Fabrication",
+        "Assembly",
+        "Finishing",
+        "Quality Check",
+        "Ready for Delivery",
+      ] as ProductionStage[])
 
   const currentStageIndex = availableStages.indexOf(project.stage)
 

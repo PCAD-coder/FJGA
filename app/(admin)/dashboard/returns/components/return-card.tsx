@@ -15,6 +15,7 @@ import {
   Eye,
   XCircle,
   Play,
+  ListPlus,
 } from "lucide-react"
 
 interface Props {
@@ -25,8 +26,8 @@ interface Props {
   onSchedule: () => void
   onArchive: () => void
   onCompleteInspection: () => void
+  onAddResolutionItems: () => void
   onStartResolution: () => void
-  onCompleteResolution: () => void
 }
 
 export default function ReturnCard({
@@ -37,8 +38,8 @@ export default function ReturnCard({
   onSchedule,
   onArchive,
   onCompleteInspection,
+  onAddResolutionItems,
   onStartResolution,
-  onCompleteResolution,
 }: Props) {
   const statusStyles = {
     "under-review": "bg-orange-100 text-orange-700",
@@ -47,9 +48,22 @@ export default function ReturnCard({
 
     approved: "bg-green-100 text-green-700",
 
+    "repair-processing": "bg-violet-100 text-violet-700",
+
+    "replacement-processing": "bg-violet-100 text-violet-700",
+
     declined: "bg-red-100 text-red-700",
 
     resolved: "bg-gray-100 text-gray-700",
+  }
+  const statusLabels = {
+    "under-review": "Under Review",
+    "inspection-scheduled": "Inspection Scheduled",
+    approved: "Approved",
+    "repair-processing": "Repair Processing",
+    "replacement-processing": "Replacement Processing",
+    declined: "Declined",
+    resolved: "Resolved",
   }
   const canApprove = request.status === "under-review"
 
@@ -60,13 +74,21 @@ export default function ReturnCard({
 
   const canCompleteInspection = request.status === "inspection-scheduled"
 
-  const canStartResolution =
-    request.status === "under-review" &&
-    request.resolution?.resolutionStatus === "pending"
+  const isResolutionProcessing =
+    request.status === "repair-processing" ||
+    request.status === "replacement-processing"
 
-  const canCompleteResolution =
-    request.status === "under-review" &&
-    request.resolution?.resolutionStatus === "in_progress"
+  const hasPendingResolution =
+    isResolutionProcessing && request.resolution?.resolutionStatus === "pending"
+
+  const hasResolutionItems = (request.resolution?.items.length ?? 0) > 0
+
+  const canAddResolutionItems = hasPendingResolution && !hasResolutionItems
+
+  const canStartResolution = hasPendingResolution && hasResolutionItems
+
+  const canArchive =
+    request.status === "declined" || request.status === "resolved"
 
   return (
     <Card className="min-w-0 gap-0 overflow-hidden rounded-xl border border-border/80 py-0 shadow-none ring-0">
@@ -85,7 +107,7 @@ export default function ReturnCard({
           <Badge
             className={`rounded-full px-2.5 py-1 text-[11px] ${statusStyles[request.status]}`}
           >
-            {request.status}
+            {statusLabels[request.status]}
           </Badge>
         </div>
 
@@ -184,6 +206,13 @@ export default function ReturnCard({
                   Complete Inspection
                 </Button>
               )}
+
+              {canAddResolutionItems && (
+                <Button onClick={onAddResolutionItems}>
+                  <ListPlus className="mr-2 h-4 w-4" />
+                  Add Resolution Items
+                </Button>
+              )}
               {canStartResolution && (
                 <Button onClick={onStartResolution}>
                   <Play className="mr-2 h-4 w-4" />
@@ -191,17 +220,12 @@ export default function ReturnCard({
                 </Button>
               )}
 
-              {canCompleteResolution && (
-                <Button onClick={onCompleteResolution}>
-                  <CheckCircle2 className="mr-2 h-4 w-4" />
-                  Complete Resolution
+              {canArchive && (
+                <Button variant="outline" onClick={onArchive}>
+                  <Archive className="mr-2 h-4 w-4" />
+                  Archive Request
                 </Button>
               )}
-
-              <Button variant="outline" onClick={onArchive}>
-                <Archive className="mr-2 h-4 w-4" />
-                Archive Request
-              </Button>
             </div>
           </div>
         </div>

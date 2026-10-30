@@ -35,7 +35,13 @@ export default function ProductionCard({
   onView,
   onUpdateStage,
 }: Props) {
-  const currentIndex = stages.indexOf(project.stage)
+
+const availableStages =
+  project.applicableStages?.length
+    ? project.applicableStages
+    : stages
+
+const currentIndex = availableStages.indexOf(project.stage)
 
   return (
     <Card className="min-w-0 gap-0 overflow-hidden rounded-xl border border-border/80 py-0 shadow-none ring-0">
@@ -101,7 +107,7 @@ export default function ProductionCard({
             <div>
               <h4 className="mb-3 text-sm font-medium">Production Stages</h4>
               <div className="flex flex-wrap gap-1.5 [&_[data-slot=badge]]:rounded-full [&_[data-slot=badge]]:px-2 [&_[data-slot=badge]]:text-[10px]">
-                {stages.map((stage, index) => {
+                {availableStages.map((stage, index) => {
                   const completed = index < currentIndex
                   const active = index === currentIndex
                   return (

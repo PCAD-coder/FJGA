@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/client"
 
 import type { ReturnRequest } from "../types/return"
 import type { CompleteInspectionData } from "../components/complete-inspection-dialog"
-import type { ResolutionDialogData } from "../components/resolution-dialog"
 
 const supabase = createClient()
 
@@ -38,7 +37,18 @@ function mapStatus(
     return hasInspection ? "inspection-scheduled" : "approved"
   }
 
-  if (status === "Replacement Delivered" || status === "Repair Delivered") {
+  if (status === "Repair Processing") {
+    return "repair-processing"
+  }
+
+  if (status === "Replacement Processing") {
+    return "replacement-processing"
+  }
+
+  if (
+    status === "Replacement Delivered" ||
+    status === "Repair Delivered"
+  ) {
     return "resolved"
   }
 
@@ -88,6 +98,7 @@ export async function getAdminReturnRequests(): Promise<{
       reviewed_by,
       review_notes,
       created_at,
+      is_archived,
 
       customer:profiles!return_requests_customer_id_fkey (
         id,
@@ -298,6 +309,7 @@ return_resolutions (
       originalAmount: formatAmount(order?.total_amount),
       reportedDate: formatDate(request.submitted_at),
       status: mapStatus(request.status, Boolean(activeInspection)),
+      archived: request.is_archived ?? false,
       inspectionId: inspection?.id ?? null,
       inspection: inspectionDetails,
         timeline: (request.return_request_timeline ?? [])
@@ -431,151 +443,7 @@ export async function completeReturnInspection(
     }
   }
 }
-export async function createReturnResolution(
-  returnRequestId: string,
-  inspectionId: string,
-  data: ResolutionDialogData
-): Promise<{
-  data: string | null
-  error: string | null
-}> {
-  const supabase = createClient()
 
-  try {
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return {
-        data: null,
-        error: "You must be signed in.",
-      }
-    }
-
-    const { data: adminProfile, error: profileError } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("auth_user_id", user.id)
-      .eq("role", "admin")
-      .single()
-
-    if (profileError || !adminProfile) {
-      return {
-        data: null,
-        error: "Admin profile could not be found.",
-      }
-    }
-
-    const { data: returnRequest, error: requestError } = await supabase
-      .from("return_requests")
-      .select("id, status")
-      .eq("id", returnRequestId)
-      .single()
-
-    if (requestError || !returnRequest) {
-      return {
-        data: null,
-        error: "Return request could not be found.",
-      }
-    }
-
-    if (!isResolutionProcessingStatus(returnRequest.status)) {
-      return {
-        data: null,
-        error:
-          "A resolution can only be created for a return that is being processed.",
-      }
-    }
-
-    const { data: inspection, error: inspectionError } = await supabase
-      .from("return_inspections")
-      .select("id, status, inspection_result, resolution_type")
-      .eq("id", inspectionId)
-      .eq("return_request_id", returnRequestId)
-      .single()
-
-    if (inspectionError || !inspection) {
-      return {
-        data: null,
-        error: "Completed inspection could not be found.",
-      }
-    }
-
-    if (inspection.status !== "completed") {
-      return {
-        data: null,
-        error:
-          "The inspection must be completed before a resolution can be created.",
-      }
-    }
-
-    if (inspection.resolution_type !== data.resolutionType) {
-      return {
-        data: null,
-        error:
-          "The selected resolution does not match the completed inspection.",
-      }
-    }
-
-    const { data: existingResolution } = await supabase
-      .from("return_resolutions")
-      .select("id")
-      .eq("return_request_id", returnRequestId)
-      .maybeSingle()
-
-    if (existingResolution) {
-      return {
-        data: null,
-        error: "A resolution already exists for this return request.",
-      }
-    }
-
-    const { data: resolution, error: insertError } = await supabase
-      .from("return_resolutions")
-      .insert({
-        return_request_id: returnRequestId,
-        inspection_id: inspectionId,
-        resolution_type: data.resolutionType,
-        resolution_status: "pending",
-        resolution_notes: data.resolutionNotes.trim(),
-        created_by: adminProfile.id,
-      })
-      .select("id")
-      .single()
-
-    if (insertError) {
-      return {
-        data: null,
-        error: insertError.message,
-      }
-    }
-
-    if (!resolution) {
-      return {
-        data: null,
-        error:
-          "The return resolution was created but its ID could not be retrieved.",
-      }
-    }
-
-    return {
-      data: resolution.id,
-      error: null,
-    }
-  } catch (error) {
-    console.error("Failed to create return resolution:", error)
-
-    return {
-      data: null,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Failed to create the return resolution.",
-    }
-  }
-}
 export async function startReturnResolution(
   returnRequestId: string
 ): Promise<{ error: string | null }> {
@@ -594,65 +462,6 @@ export async function startReturnResolution(
   }
 }
 
-export async function completeReturnResolution(
-  returnRequestId: string
-): Promise<{ error: string | null }> {
-  const { data: resolution, error: resolutionError } = await supabase
-    .from("return_resolutions")
-    .select("resolution_type")
-    .eq("return_request_id", returnRequestId)
-    .single()
-
-  if (resolutionError) {
-    return {
-      error:
-        resolutionError.message ||
-        "Failed to load the return resolution.",
-    }
-  }
-
-  if (!resolution) {
-    return {
-      error: "Return resolution not found.",
-    }
-  }
-
-  if (resolution.resolution_type === "repair") {
-    const { error } = await supabase.rpc("complete_return_repair", {
-      p_return_request_id: returnRequestId,
-    })
-
-    if (error) {
-      return {
-        error: error.message,
-      }
-    }
-
-    return {
-      error: null,
-    }
-  }
-
-  if (resolution.resolution_type === "replacement") {
-    const { error } = await supabase.rpc("complete_return_replacement", {
-      p_return_request_id: returnRequestId,
-    })
-
-    if (error) {
-      return {
-        error: error.message,
-      }
-    }
-
-    return {
-      error: null,
-    }
-  }
-
-  return {
-    error: "Unsupported return resolution type.",
-  }
-}
 export async function getReturnResolutionMaterials(
   returnRequestId: string
 ): Promise<{
@@ -946,4 +755,23 @@ export async function addReturnResolutionItems(
     data: true,
     error: null,
   }
+}
+
+export async function archiveReturnRequest(
+  returnRequestId: string
+) {
+  const { data, error } = await supabase.rpc(
+    "archive_return_request",
+    {
+      p_return_request_id: returnRequestId,
+    }
+  )
+
+  if (error) {
+    throw new Error(
+      error.message || "Failed to archive return request"
+    )
+  }
+
+  return data
 }
