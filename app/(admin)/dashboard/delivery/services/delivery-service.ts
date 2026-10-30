@@ -296,6 +296,7 @@ return {
       delivery_notes,
       created_at,
       updated_at,
+      proof_image_path,
       orders!inner (
         id,
         order_number,
@@ -339,9 +340,33 @@ return {
     throw new Error(error.message || "Failed to load delivery details")
   }
 
-  if (!data) {
-    throw new Error("Delivery record not found")
-  }
+if (!data) {
+  throw new Error("Delivery record not found")
+}
 
-  return data
+let proofImageUrl: string | null = null
+
+if (data.proof_image_path) {
+  const { data: signedUrlData, error: signedUrlError } =
+    await supabase.storage
+      .from("delivery_proofs")
+      .createSignedUrl(
+        data.proof_image_path,
+        60 * 10
+      )
+
+  if (signedUrlError) {
+    console.error(
+      "Failed to create delivery proof signed URL:",
+      signedUrlError
+    )
+  } else {
+    proofImageUrl = signedUrlData.signedUrl
+  }
+}
+
+return {
+  ...data,
+  proof_image_url: proofImageUrl,
+}
 }

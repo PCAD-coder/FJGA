@@ -3,7 +3,7 @@
 import { toast } from "sonner"
 
 import { useState } from "react"
-import { CreditCard, ExternalLink, ShieldCheck } from "lucide-react"
+import { QrCode, ExternalLink, ShieldCheck } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -155,8 +155,8 @@ export default function PaymentDialog({ invoice, onSubmitted }: Props) {
                 </p>
 
                 <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                  <CreditCard className="h-3.5 w-3.5" />
-                  Card, GCash, and QR Ph
+                  <QrCode className="h-3.5 w-3.5" />
+                  GCash and QR Ph
                 </div>
               </div>
             </div>

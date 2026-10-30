@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { useMemo, useState, useEffect } from "react"
 import { DashboardCard } from "@/components/dashboard_cards"
 import DeliverySkeleton from "./delivery-skeleton"
@@ -113,7 +115,7 @@ export default function DeliveryModule() {
       console.error("Failed to load deliveries:", error)
 
       setError(
-        error instanceof Error ? error.message : "Failed to load deliveries"
+        getErrorMessage(error, "Failed to load deliveries")
       )
     } finally {
       setLoading(false)
@@ -183,9 +185,7 @@ export default function DeliveryModule() {
     } catch (error) {
       console.error("Failed to load delivery details:", error)
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to load delivery details."
+        getErrorMessage(error, "Unable to load delivery details.")
       )
     } finally {
       setDetailsLoading(false)
@@ -242,15 +242,11 @@ export default function DeliveryModule() {
     } catch (error) {
       console.error("Failed to update delivery status:", error)
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to update delivery status."
+        getErrorMessage(error, "Unable to update delivery status.")
       )
 
       setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to update delivery status"
+        getErrorMessage(error, "Failed to update delivery status")
       )
     }
   }

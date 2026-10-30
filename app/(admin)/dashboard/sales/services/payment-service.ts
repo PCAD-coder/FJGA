@@ -12,11 +12,11 @@ interface RecordPaymentInput {
   receivedByEmployee?: string | null
   notes?: string | null
 
-  /**
-   * Required when the admin records a cash/COD payment.
-   * The file is uploaded to the private payment-proofs bucket
-   * before record_cash_payment() is called.
-   */
+/**
+ * Required when the admin records a cash payment.
+ * The file is uploaded to the private payment-proofs bucket
+ * before record_cash_payment() is called.
+ */
   proofFile?: File | null
 }
 
@@ -144,14 +144,14 @@ export async function recordPayment(input: RecordPaymentInput) {
     throw new Error("Payment method is required")
   }
 
-  /*
-   * Cash/COD payments use the protected database RPC because
-   * they require an admin-uploaded receipt and authoritative
-   * remaining-balance validation.
-   */
-  if (input.paymentMethod === "cash_on_delivery") {
-    return recordCashPayment(input)
-  }
+/*
+ * Admin-recorded cash payments use the protected database RPC
+ * because they require an employee receiver, payment proof,
+ * and authoritative remaining-balance validation.
+ */
+if (input.paymentMethod === "cash") {
+  return recordCashPayment(input)
+}
 
   /*
    * Preserve the existing behavior for the other payment methods

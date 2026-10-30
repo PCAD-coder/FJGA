@@ -1,5 +1,7 @@
 "use client"
 
+import { WholeNumberInput } from "@/components/ui/whole-number-input"
+
 import { useEffect, useState } from "react"
 import {
   CalendarDays,
@@ -418,13 +420,13 @@ export function RequestSiteVisitDialog({
   }
 
   async function handleSubmit() {
-    if (!/^[0-9]{11}$/.test(contactNumber)) {
-      toast.error("Contact number must contain exactly 11 digits.")
+    if (!/^09[0-9]{9}$/.test(contactNumber)) {
+      toast.error("Contact number must start with 09 and contain exactly 11 digits.")
       return
     }
 
-    if (!address.houseBuildingNumber.trim()) {
-      toast.error("House or building number is required.")
+    if (!/^\d+$/.test(address.houseBuildingNumber)) {
+      toast.error("House or building number must contain whole numbers only.")
       return
     }
 
@@ -558,6 +560,7 @@ export function RequestSiteVisitDialog({
               </Label>
 
               <ContactNumberInput
+            require09Prefix
                 required
                 id="visit-contact"
                 value={contactNumber}
@@ -738,7 +741,7 @@ export function RequestSiteVisitDialog({
                   <span className="ml-1 text-destructive">*</span>
                 </Label>
 
-                <Input
+                <WholeNumberInput
                   id="visit-house"
                   value={address.houseBuildingNumber}
                   onChange={(event) =>

@@ -11,6 +11,7 @@ export async function getCatalogProducts(): Promise<CatalogProduct[]> {
       `
         id,
         product_name,
+        category,
         description,
         width,
         height,
@@ -29,7 +30,16 @@ export async function getCatalogProducts(): Promise<CatalogProduct[]> {
   }
 
   const products = await Promise.all(
-    (data ?? []).map(async (product: any) => {
+    (data ?? []).map(async (product: {
+      id: string
+      product_name: string
+      category: string | null
+      description: string | null
+      width: number
+      height: number
+      depth: number | null
+      product_images: { image_url: string; display_order: number | null }[]
+    }) => {
       const pricing = await getProductPricingForDimensions(product.id, {
         width: product.width,
         height: product.height,
@@ -38,12 +48,13 @@ export async function getCatalogProducts(): Promise<CatalogProduct[]> {
 
       const image =
         [...(product.product_images ?? [])].sort(
-          (a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0)
+          (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
         )[0]?.image_url ?? "/placeholder.jpg"
 
       return {
         id: product.id,
         name: product.product_name,
+        category: product.category?.trim() ?? "",
         description: product.description ?? "",
         image,
         width: Number(product.width ?? 0),

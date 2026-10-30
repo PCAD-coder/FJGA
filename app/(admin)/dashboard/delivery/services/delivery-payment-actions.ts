@@ -20,6 +20,11 @@ interface CompleteDeliveryWithPaymentResult {
   receipt_payment_status: string
   receipt_email_status: string
 }
+interface CompletePaidDeliveryInput {
+  deliveryId: string
+  notes: string | null
+  proofFile: File
+}
 
 function sanitizeFileName(fileName: string) {
   return fileName
@@ -234,6 +239,117 @@ export async function completeDeliveryWithPayment(
     if (cleanupError) {
       console.error(
         "DELIVERY PAYMENT PROOF CLEANUP ERROR:",
+        cleanupError
+      )
+    }
+
+    throw error
+  }
+}
+
+export async function completePaidDelivery(
+  input: CompletePaidDeliveryInput
+): Promise<CompleteDeliveryWithPaymentResult> {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    throw new Error("Authentication required")
+  }
+
+  /*
+   * A fully paid order does not need another payment,
+   * but photographic proof of the actual delivery is required.
+   */
+  if (!input.proofFile) {
+    throw new Error("Delivery proof photo is required")
+  }
+
+  validatePaymentProof(input.proofFile)
+
+  /*
+   * Resolve the authoritative order ID from the delivery.
+   * Do not accept an order ID supplied by the browser.
+   */
+  const { data: delivery, error: deliveryError } = await supabase
+    .from("deliveries")
+    .select("order_id")
+    .eq("id", input.deliveryId)
+    .single()
+
+  if (deliveryError || !delivery?.order_id) {
+    throw new Error(
+      deliveryError?.message ||
+        "Failed to resolve the delivery order"
+    )
+  }
+
+  const safeFileName = sanitizeFileName(input.proofFile.name)
+
+  const uniqueFileName =
+    `${crypto.randomUUID()}-${safeFileName}`
+
+  /*
+   * The RPC verifies that the proof path begins with
+   * the authoritative order ID.
+   *
+   * <order_id>/<filename>
+   */
+  const proofImagePath =
+    `${delivery.order_id}/${uniqueFileName}`
+
+  /*
+   * Storage and PostgreSQL are separate systems.
+   * Upload first, then remove the file if the RPC fails.
+   */
+  const { error: uploadError } = await supabase.storage
+    .from("delivery_proofs")
+    .upload(proofImagePath, input.proofFile, {
+      cacheControl: "3600",
+      upsert: false,
+      contentType: input.proofFile.type,
+    })
+
+  if (uploadError) {
+    throw new Error(
+      uploadError.message ||
+        "Failed to upload delivery proof"
+    )
+  }
+
+  try {
+    const { data, error } = await supabase.rpc(
+      "complete_paid_delivery",
+      {
+        p_delivery_id: input.deliveryId,
+        p_notes: input.notes,
+        p_proof_image_path: proofImagePath,
+      }
+    )
+
+    if (error) {
+      throw new Error(
+        error.message ||
+          "Failed to complete delivery"
+      )
+    }
+
+    return parseCompleteDeliveryResult(data)
+  } catch (error) {
+    /*
+     * The database transaction failed after Storage succeeded.
+     * Remove the uploaded proof so an orphaned file is not left.
+     */
+    const { error: cleanupError } = await supabase.storage
+      .from("delivery_proofs")
+      .remove([proofImagePath])
+
+    if (cleanupError) {
+      console.error(
+        "DELIVERY PROOF CLEANUP ERROR:",
         cleanupError
       )
     }

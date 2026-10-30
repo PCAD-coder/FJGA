@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { toast } from "sonner"
 
 import { useState } from "react"
@@ -51,7 +53,7 @@ export function ManageCategoriesDialog({
       await refresh()
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Unable to save category."
+        getErrorMessage(error, "Unable to save category.")
       )
       console.error(error)
     } finally {
@@ -67,7 +69,7 @@ export function ManageCategoriesDialog({
       await refresh()
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Unable to save category."
+        getErrorMessage(error, "Unable to save category.")
       )
       console.error(error)
     }

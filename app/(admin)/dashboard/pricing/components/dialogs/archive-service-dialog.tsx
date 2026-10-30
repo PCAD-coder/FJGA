@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { toast } from "sonner"
 
 import {
@@ -45,9 +47,7 @@ export default function ArchiveServiceDialog({
       onOpenChange(false)
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to save pricing changes."
+        getErrorMessage(error, "Unable to save pricing changes.")
       )
       console.error(error)
     }

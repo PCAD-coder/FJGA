@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { toast } from "sonner"
 
 import { useState } from "react"
@@ -155,12 +157,12 @@ export default function AddSocialLinkDialog({
       onOpenChange(false)
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Unable to save content."
+        getErrorMessage(error, "Unable to save content.")
       )
       console.error("Failed to create social link:", error)
 
       setError(
-        error instanceof Error ? error.message : "Failed to create social link."
+        getErrorMessage(error, "Failed to create social link.")
       )
     } finally {
       setIsSaving(false)

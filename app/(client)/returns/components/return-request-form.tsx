@@ -70,8 +70,8 @@ export default function ReturnRequestForm({ orders, onSubmitted }: Props) {
       setError("Please provide at least 50 characters describing the issue.")
       return
     }
-    if (contactNumber && !/^[0-9]{11}$/.test(contactNumber)) {
-      setError("Contact number must contain exactly 11 digits.")
+    if (contactNumber && !/^09[0-9]{9}$/.test(contactNumber)) {
+      setError("Contact number must start with 09 and contain exactly 11 digits.")
       return
     }
     if (photos && photos.length > 5) {
@@ -210,6 +210,7 @@ export default function ReturnRequestForm({ orders, onSubmitted }: Props) {
         <Label>5. Contact Number (Optional)</Label>
 
         <ContactNumberInput
+            require09Prefix
           value={contactNumber}
           onChange={(event) => setContactNumber(event.target.value)}
           placeholder="09171234567"

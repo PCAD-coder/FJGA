@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { DashboardCard } from "@/components/dashboard_cards"
 import ActivityLogsSkeleton from "./activity-logs-skeleton"
 import { toast } from "sonner"
@@ -96,7 +98,7 @@ export default function ActivityLogs() {
         })
 
         setError(
-          err instanceof Error ? err.message : "Failed to load activity logs."
+          getErrorMessage(err, "Failed to load activity logs.")
         )
       } finally {
         setLoading(false)

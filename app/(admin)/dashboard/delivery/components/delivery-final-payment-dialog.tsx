@@ -1,5 +1,9 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
+import { UploadedPhotoPreview } from "@/components/ui/uploaded-photo-preview"
+
 import { toast } from "sonner"
 
 import { useEffect, useState } from "react"
@@ -27,6 +31,8 @@ import {
 
 import type { Delivery } from "../types/delivery"
 import type { PaymentMethod } from "@/app/(admin)/dashboard/sales/types/sales"
+import { getActiveEmployees } from "../../user-management/services/personnel.service"
+import type { Employee } from "../../user-management/types/personnel"
 
 interface DeliveryFinalPaymentDialogProps {
   delivery: Delivery | null
@@ -47,6 +53,8 @@ export default function DeliveryFinalPaymentDialog({
   const [paymentDate, setPaymentDate] = useState("")
   const [referenceNumber, setReferenceNumber] = useState("")
   const [receivedByEmployee, setReceivedByEmployee] = useState("")
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [loadingEmployees, setLoadingEmployees] = useState(false)
   const [proofFile, setProofFile] = useState<File | null>(null)
   const [notes, setNotes] = useState("")
 
@@ -77,18 +85,130 @@ export default function DeliveryFinalPaymentDialog({
     setError(null)
   }, [open, delivery])
 
+  useEffect(() => {
+    if (!open) return
+
+    async function loadEmployees() {
+      try {
+        setLoadingEmployees(true)
+
+        const data = await getActiveEmployees()
+        setEmployees(data)
+      } catch (error) {
+        console.error("Failed to load employees:", error)
+        toast.error(getErrorMessage(error, "Unable to load employees."))
+      } finally {
+        setLoadingEmployees(false)
+      }
+    }
+
+    void loadEmployees()
+  }, [open])
+
   if (!delivery) {
     return null
   }
 
-  const requiresReference =
-    paymentMethod === "gcash" || paymentMethod === "card"
+  const requiresReference = paymentMethod === "gcash"
 
   const requiresEmployee = paymentMethod === "cash_on_delivery"
+  const remainingCentavos = Math.round(
+    (delivery.remainingBalance + Number.EPSILON) * 100
+  )
+
+  const isFullyPaid = remainingCentavos <= 0
 
   const handleSubmit = async () => {
     setError(null)
 
+    /*
+     * ============================================================
+     * FULLY PAID BEFORE DELIVERY
+     * ============================================================
+     *
+     * No new payment should be created.
+     * Only delivery proof is required.
+     */
+    if (isFullyPaid) {
+      if (!proofFile) {
+        setError("Please upload a delivery proof photo.")
+        return
+      }
+
+      try {
+        setSaving(true)
+
+        const { completePaidDelivery } =
+          await import("../services/delivery-payment-actions")
+
+        const result = await completePaidDelivery({
+          deliveryId: delivery.id,
+          notes: notes.trim() || null,
+          proofFile,
+        })
+
+        /*
+         * Receipt emailing remains separate from the database
+         * transaction. A failed email must not undo a successfully
+         * completed delivery.
+         */
+        let receiptEmailSent = false
+
+        try {
+          const response = await fetch(
+            `/api/official-receipts/${result.receipt_id}/email`,
+            {
+              method: "POST",
+            }
+          )
+
+          const emailResult = await response.json()
+
+          if (!response.ok || !emailResult.success) {
+            throw new Error(
+              emailResult.error ??
+                "The official receipt email could not be sent."
+            )
+          }
+
+          receiptEmailSent = true
+        } catch (emailError) {
+          console.error(
+            "Official receipt email failed after delivery completion:",
+            emailError
+          )
+        }
+
+        if (receiptEmailSent) {
+          toast.success(
+            `Delivery completed successfully. Official receipt ${result.receipt_number} was emailed to the customer.`
+          )
+        } else {
+          toast.warning(
+            `Delivery completed successfully and official receipt ${result.receipt_number} was created, but the receipt email could not be sent.`
+          )
+        }
+
+        onOpenChange(false)
+        onCompleted()
+      } catch (err) {
+        toast.error(getErrorMessage(err, "Unable to complete delivery."))
+
+        console.error("Failed to complete fully paid delivery:", err)
+
+        setError(getErrorMessage(err, "Failed to complete delivery"))
+      } finally {
+        setSaving(false)
+      }
+
+      return
+    }
+
+    /*
+     * ============================================================
+     * FINAL PAYMENT REQUIRED
+     * ============================================================
+     */
     const paymentAmount = Number(amount)
 
     if (!Number.isFinite(paymentAmount) || paymentAmount <= 0) {
@@ -96,12 +216,11 @@ export default function DeliveryFinalPaymentDialog({
       return
     }
 
-    const paymentCentavos = Math.round(paymentAmount * 100)
-    const remainingCentavos = Math.round(delivery.remainingBalance * 100)
+    const paymentCentavos = Math.round((paymentAmount + Number.EPSILON) * 100)
 
     if (paymentCentavos !== remainingCentavos) {
       setError(
-        `The final payment must be exactly \u20B1${(
+        `The final payment must be exactly ₱${(
           remainingCentavos / 100
         ).toLocaleString("en-PH", {
           minimumFractionDigits: 2,
@@ -112,7 +231,7 @@ export default function DeliveryFinalPaymentDialog({
     }
 
     if (requiresReference && !referenceNumber.trim()) {
-      setError("A reference number is required for GCash or Card payments.")
+      setError("A reference number is required for GCash payments")
       return
     }
 
@@ -122,6 +241,7 @@ export default function DeliveryFinalPaymentDialog({
       )
       return
     }
+
     if (paymentMethod === "cash_on_delivery" && !proofFile) {
       setError("Please upload a payment proof or receipt for the cash payment.")
       return
@@ -130,20 +250,9 @@ export default function DeliveryFinalPaymentDialog({
     try {
       setSaving(true)
 
-      /*
-       * This will call the server action created in the next step.
-       */
-
       const { completeDeliveryWithPayment } =
         await import("../services/delivery-payment-actions")
 
-      /*
-       * STEP 1:
-       * Complete the authoritative payment + delivery transaction.
-       *
-       * Once this succeeds, the payment, delivery, order, and official
-       * receipt have already been committed in the database.
-       */
       const result = await completeDeliveryWithPayment({
         deliveryId: delivery.id,
         amount: paymentCentavos / 100,
@@ -161,14 +270,6 @@ export default function DeliveryFinalPaymentDialog({
         proofFile: paymentMethod === "cash_on_delivery" ? proofFile : null,
       })
 
-      /*
-       * STEP 2:
-       * The database transaction has succeeded.
-       *
-       * Receipt emailing is intentionally handled separately so a
-       * Brevo/network failure can never make the completed payment or
-       * delivery appear to have failed.
-       */
       let receiptEmailSent = false
 
       try {
@@ -195,10 +296,6 @@ export default function DeliveryFinalPaymentDialog({
         )
       }
 
-      /*
-       * STEP 3:
-       * Report the delivery result independently from the email result.
-       */
       if (receiptEmailSent) {
         toast.success(
           `Delivery completed successfully. Official receipt ${result.receipt_number} was emailed to the customer.`
@@ -212,14 +309,11 @@ export default function DeliveryFinalPaymentDialog({
       onOpenChange(false)
       onCompleted()
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Unable to save delivery changes."
-      )
+      toast.error(getErrorMessage(err, "Unable to save delivery changes."))
+
       console.error("Failed to complete delivery payment:", err)
 
-      setError(
-        err instanceof Error ? err.message : "Failed to record final payment"
-      )
+      setError(getErrorMessage(err, "Failed to record final payment"))
     } finally {
       setSaving(false)
     }
@@ -232,13 +326,24 @@ export default function DeliveryFinalPaymentDialog({
           <DialogTitle>Complete Delivery</DialogTitle>
 
           <DialogDescription>
-            Record the customer's remaining payment before completing delivery
-            for order{" "}
-            <span className="font-medium">{delivery.orderNumber}</span>.
+            {isFullyPaid ? (
+              <>
+                Confirm the completed delivery for fully paid order{" "}
+                <span className="font-medium">{delivery.orderNumber}</span>.
+              </>
+            ) : (
+              <>
+                Record the customer&apos;s remaining payment before completing
+                delivery for order{" "}
+                <span className="font-medium">{delivery.orderNumber}</span>.
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
         <div className="rounded-lg border p-4">
-          <p className="text-sm font-medium">Final Payment Required</p>
+          <p className="text-sm font-medium">
+            {isFullyPaid ? "Order Fully Paid" : "Final Payment Required"}
+          </p>
 
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <div>
@@ -278,150 +383,237 @@ export default function DeliveryFinalPaymentDialog({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Payment Amount</label>
+          {isFullyPaid && (
+            <div className="mt-4 rounded-md border bg-muted/30 p-3">
+              <p className="text-sm font-medium">
+                No additional payment is required.
+              </p>
 
-            <Input
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-              placeholder="Enter remaining balance"
-            />
-          </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                This order has already been paid in full. Upload proof of the
+                completed delivery to continue.
+              </p>
+            </div>
+          )}
+          {!isFullyPaid && (
+            <>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Payment Amount</label>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Payment Method</label>
+                <Input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={amount}
+                  onChange={(event) => setAmount(event.target.value)}
+                  placeholder="Enter remaining balance"
+                />
+              </div>
 
-            <Select
-              value={paymentMethod}
-              onValueChange={(value) => {
-                const nextMethod = value as PaymentMethod
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Payment Method</label>
 
-                setPaymentMethod(nextMethod)
-                setError(null)
+                <Select
+                  value={paymentMethod}
+                  onValueChange={(value) => {
+                    const nextMethod = value as PaymentMethod
 
-                if (nextMethod !== "cash_on_delivery") {
-                  setReceivedByEmployee("")
-                  setProofFile(null)
-                }
+                    setPaymentMethod(nextMethod)
+                    setError(null)
 
-                if (nextMethod === "cash_on_delivery") {
-                  setReferenceNumber("")
-                }
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
+                    if (nextMethod !== "cash_on_delivery") {
+                      setReceivedByEmployee("")
+                      setProofFile(null)
+                    }
 
-              <SelectContent>
-                <SelectItem value="cash_on_delivery">Cash</SelectItem>
+                    if (nextMethod === "cash_on_delivery") {
+                      setReferenceNumber("")
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
 
-                <SelectItem value="card">Card</SelectItem>
+                  <SelectContent>
+                    <SelectItem value="cash_on_delivery">Cash</SelectItem>
+                    <SelectItem value="gcash">GCash</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                <SelectItem value="gcash">GCash</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Payment Date</label>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Payment Date</label>
+                <Input
+                  type="date"
+                  value={paymentDate}
+                  onChange={(event) => setPaymentDate(event.target.value)}
+                />
+              </div>
 
-            <Input
-              type="date"
-              value={paymentDate}
-              onChange={(event) => setPaymentDate(event.target.value)}
-            />
-          </div>
+              {requiresReference && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Reference Number
+                    <span className="ml-1 text-destructive">*</span>
+                  </label>
 
-          {requiresReference && (
+                  <Input
+                    value={referenceNumber}
+                    onChange={(event) => setReferenceNumber(event.target.value)}
+                    placeholder="Enter payment reference number"
+                  />
+
+                  <p className="text-xs text-muted-foreground">
+                    Required as proof of the electronic payment.
+                  </p>
+                </div>
+              )}
+
+              {requiresEmployee && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      Received By
+                      <span className="ml-1 text-destructive">*</span>
+                    </label>
+
+                    <Select
+                      value={receivedByEmployee || undefined}
+                      onValueChange={(value) => {
+                        setReceivedByEmployee(value)
+                        setError(null)
+                      }}
+                      disabled={loadingEmployees || saving}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue
+                          placeholder={
+                            loadingEmployees
+                              ? "Loading employees..."
+                              : "Select an employee"
+                          }
+                        />
+                      </SelectTrigger>
+
+                      <SelectContent>
+                        {employees.map((employee) => (
+                          <SelectItem key={employee.id} value={employee.name}>
+                            {employee.position
+                              ? `${employee.name} — ${employee.position}`
+                              : employee.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    {!loadingEmployees && employees.length === 0 ? (
+                      <p className="text-xs text-destructive">
+                        No active employees are available.
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        Select the FJGA employee who received the cash payment.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      Payment Proof / Receipt
+                      <span className="ml-1 text-destructive">*</span>
+                    </label>
+
+                    <Input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      disabled={saving}
+                      onChange={(event) => {
+                        const file = event.target.files?.[0] ?? null
+
+                        setProofFile(file)
+                        setError(null)
+                      }}
+                    />
+
+                    <p className="text-xs text-muted-foreground">
+                      Upload a JPG, PNG, or WebP image of the receipt or other
+                      proof that the cash payment was received. Maximum file
+                      size: 5 MB.
+                    </p>
+
+                    {proofFile && <UploadedPhotoPreview file={proofFile} />}
+
+                    {proofFile && (
+                      <div className="rounded-md border bg-muted/30 px-3 py-2">
+                        <p className="truncate text-sm font-medium">
+                          {proofFile.name}
+                        </p>
+
+                        <p className="text-xs text-muted-foreground">
+                          {(proofFile.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+          {isFullyPaid && (
             <div className="space-y-2">
               <label className="text-sm font-medium">
-                Reference Number
+                Delivery Proof
                 <span className="ml-1 text-destructive">*</span>
               </label>
 
               <Input
-                value={referenceNumber}
-                onChange={(event) => setReferenceNumber(event.target.value)}
-                placeholder="Enter payment reference number"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                disabled={saving}
+                onChange={(event) => {
+                  const file = event.target.files?.[0] ?? null
+
+                  setProofFile(file)
+                  setError(null)
+                }}
               />
 
               <p className="text-xs text-muted-foreground">
-                Required as proof of the electronic payment.
+                Upload a JPG, PNG, or WebP photo confirming that the order was
+                delivered. Maximum file size: 5 MB.
               </p>
-            </div>
-          )}
 
-          {requiresEmployee && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  Received By
-                  <span className="ml-1 text-destructive">*</span>
-                </label>
+              {proofFile && <UploadedPhotoPreview file={proofFile} />}
 
-                <Input
-                  value={receivedByEmployee}
-                  onChange={(event) =>
-                    setReceivedByEmployee(event.target.value)
-                  }
-                  placeholder="Employee who received the cash"
-                />
+              {proofFile && (
+                <div className="rounded-md border bg-muted/30 px-3 py-2">
+                  <p className="truncate text-sm font-medium">
+                    {proofFile.name}
+                  </p>
 
-                <p className="text-xs text-muted-foreground">
-                  Enter the name of the FJGA employee who received the cash
-                  payment.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  Payment Proof / Receipt
-                  <span className="ml-1 text-destructive">*</span>
-                </label>
-
-                <Input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  disabled={saving}
-                  onChange={(event) => {
-                    const file = event.target.files?.[0] ?? null
-
-                    setProofFile(file)
-                    setError(null)
-                  }}
-                />
-
-                <p className="text-xs text-muted-foreground">
-                  Upload a JPG, PNG, or WebP image of the receipt or other proof
-                  that the cash payment was received. Maximum file size: 5 MB.
-                </p>
-
-                {proofFile && (
-                  <div className="rounded-md border bg-muted/30 px-3 py-2">
-                    <p className="truncate text-sm font-medium">
-                      {proofFile.name}
-                    </p>
-
-                    <p className="text-xs text-muted-foreground">
-                      {(proofFile.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
-                )}
-              </div>
+                  <p className="text-xs text-muted-foreground">
+                    {(proofFile.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Notes</label>
+            <label className="text-sm font-medium">
+              {isFullyPaid ? "Delivery Notes" : "Notes"}
+            </label>
 
             <Textarea
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
-              placeholder="Optional payment or delivery notes..."
+              placeholder={
+                isFullyPaid
+                  ? "Optional delivery notes..."
+                  : "Optional payment or delivery notes..."
+              }
               rows={3}
             />
           </div>
@@ -447,14 +639,20 @@ export default function DeliveryFinalPaymentDialog({
             type="button"
             disabled={
               saving ||
-              !amount ||
-              Number(amount) <= 0 ||
-              (paymentMethod === "cash_on_delivery" &&
-                (!receivedByEmployee.trim() || !proofFile))
+              (isFullyPaid
+                ? !proofFile
+                : !amount ||
+                  Number(amount) <= 0 ||
+                  (paymentMethod === "cash_on_delivery" &&
+                    (!receivedByEmployee.trim() || !proofFile)))
             }
             onClick={handleSubmit}
           >
-            {saving ? "Completing..." : "Record Payment & Deliver"}
+            {saving
+              ? "Completing..."
+              : isFullyPaid
+                ? "Complete Delivery"
+                : "Record Payment & Deliver"}
           </Button>
         </DialogFooter>
       </DialogContent>

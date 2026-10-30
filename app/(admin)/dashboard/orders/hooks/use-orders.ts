@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { toast } from "sonner"
 
 import { useCallback, useEffect, useState } from "react"
@@ -27,9 +29,7 @@ async function notifyOrderAction<T>(
     return result
   } catch (error) {
     toast.error(
-      error instanceof Error
-        ? error.message
-        : "Unable to complete the order action."
+      getErrorMessage(error, "Unable to complete the order action.")
     )
     throw error
   }
@@ -130,7 +130,7 @@ export function useOrders() {
       return order
     } catch (err: any) {
       toast.error(
-        err instanceof Error ? err.message : "Failed to create order."
+        getErrorMessage(err, "Failed to create order.")
       )
       console.error("Create Order Error:", err)
       setError(err.message ?? "Failed to create order")

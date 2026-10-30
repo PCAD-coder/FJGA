@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { toast } from "sonner"
 
 import { useEffect, useState } from "react"
@@ -20,6 +22,17 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
+import { getActiveEmployees } from "../../user-management/services/personnel.service"
+import type { Employee } from "../../user-management/types/personnel"
 
 interface ScheduleDeliveryDialogProps {
   delivery: Delivery | null
@@ -61,8 +74,11 @@ export default function ScheduleDeliveryDialog({
 
   const [scheduledDate, setScheduledDate] = useState("")
   const [scheduledTime, setScheduledTime] = useState("")
-  const [assignedDriver, setAssignedDriver] = useState("")
-  const [assignedTruck, setAssignedTruck] = useState("")
+const [assignedDriver, setAssignedDriver] = useState("")
+const [assignedTruck, setAssignedTruck] = useState("")
+
+const [employees, setEmployees] = useState<Employee[]>([])
+const [loadingEmployees, setLoadingEmployees] = useState(false)
   const [deliveryNotes, setDeliveryNotes] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -98,6 +114,26 @@ export default function ScheduleDeliveryDialog({
 
     setError(null)
   }, [delivery, open])
+
+  useEffect(() => {
+  if (!open) return
+
+  async function loadEmployees() {
+    try {
+      setLoadingEmployees(true)
+
+      const data = await getActiveEmployees()
+      setEmployees(data)
+    } catch (error) {
+      console.error("Failed to load employees:", error)
+      toast.error(getErrorMessage(error, "Unable to load employees."))
+    } finally {
+      setLoadingEmployees(false)
+    }
+  }
+
+  void loadEmployees()
+}, [open])
 
   if (!delivery) {
     return null
@@ -138,6 +174,11 @@ export default function ScheduleDeliveryDialog({
       return
     }
 
+    if (!assignedDriver.trim()) {
+  setError("Please select an assigned driver.")
+  return
+}
+
     try {
       setSaving(true)
       setError(null)
@@ -157,14 +198,12 @@ export default function ScheduleDeliveryDialog({
       onSaved()
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to save delivery changes."
+        getErrorMessage(error, "Unable to save delivery changes.")
       )
       console.error("Failed to schedule delivery:", error)
 
       setError(
-        error instanceof Error ? error.message : "Failed to schedule delivery"
+        getErrorMessage(error, "Failed to schedule delivery")
       )
     } finally {
       setSaving(false)
@@ -228,16 +267,59 @@ export default function ScheduleDeliveryDialog({
           </div>
 
           {/* DRIVER */}
-          <div className="space-y-2">
-            <Label htmlFor="assigned-driver">Assigned Driver</Label>
+<div className="space-y-2">
+  <Label htmlFor="assigned-driver">
+  Assigned Driver
+  <span className="ml-1 text-destructive">*</span>
+</Label>
 
-            <Input
-              id="assigned-driver"
-              placeholder="e.g. Juan Dela Cruz"
-              value={assignedDriver}
-              onChange={(event) => setAssignedDriver(event.target.value)}
-            />
-          </div>
+  <Select
+    value={assignedDriver || undefined}
+    onValueChange={setAssignedDriver}
+    disabled={loadingEmployees || saving}
+  >
+    <SelectTrigger
+      id="assigned-driver"
+      className="w-full"
+    >
+      <SelectValue
+        placeholder={
+          loadingEmployees
+            ? "Loading employees..."
+            : "Select a driver"
+        }
+      />
+    </SelectTrigger>
+
+    <SelectContent>
+      {assignedDriver &&
+        !employees.some(
+          (employee) => employee.name === assignedDriver
+        ) && (
+          <SelectItem value={assignedDriver}>
+            {assignedDriver} — Previously assigned
+          </SelectItem>
+        )}
+
+      {employees.map((employee) => (
+        <SelectItem
+          key={employee.id}
+          value={employee.name}
+        >
+          {employee.position
+            ? `${employee.name} — ${employee.position}`
+            : employee.name}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+
+  {!loadingEmployees && employees.length === 0 && (
+    <p className="text-xs text-muted-foreground">
+      No active employees are available.
+    </p>
+  )}
+</div>
 
           {/* NOTES */}
           <div className="space-y-2">
@@ -265,7 +347,10 @@ export default function ScheduleDeliveryDialog({
             Cancel
           </Button>
 
-          <Button onClick={handleSave} disabled={saving}>
+          <Button
+  onClick={handleSave}
+  disabled={saving || loadingEmployees || !assignedDriver}
+>
             {saving ? "Saving..." : "Save Schedule"}
           </Button>
         </DialogFooter>

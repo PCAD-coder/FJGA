@@ -80,6 +80,8 @@ export interface DeliveryQueryResult {
   assigned_truck: string | null
   delivered_at: string | null
   delivery_notes: string | null
+  proof_image_path?: string | null
+proof_image_url?: string | null
   created_at: string
   updated_at: string
 
@@ -431,7 +433,7 @@ export function mapOrderToDeliveryDetails(
 
     deliveredAt: row.delivered_at,
     deliveryNotes: row.delivery_notes,
-    proofImageUrl: null,
+    proofImageUrl: row.proof_image_url ?? null,
 
     deliveryFee: Number(order.delivery_fee ?? 0),
 

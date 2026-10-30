@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { toast } from "sonner"
 
 import { useState } from "react"
@@ -56,7 +58,7 @@ export function ManageThicknessesDialog({
       await loadThicknesses()
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Unable to save thickness."
+        getErrorMessage(error, "Unable to save thickness.")
       )
       console.error(error)
     } finally {
@@ -72,7 +74,7 @@ export function ManageThicknessesDialog({
       await loadThicknesses()
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Unable to save thickness."
+        getErrorMessage(error, "Unable to save thickness.")
       )
       console.error(error)
     }

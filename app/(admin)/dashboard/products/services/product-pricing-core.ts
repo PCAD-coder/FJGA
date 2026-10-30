@@ -76,14 +76,18 @@ export interface ProductPricing {
 export async function getProductPricingForDimensionsCore(
   supabase: SupabaseClient,
   productId: string,
-  dimensions: {
-    width?: number | null
-    height?: number | null
-    depth?: number | null
+dimensions: {
+  width?: number | null
+  height?: number | null
+  depth?: number | null
 
-    aluminumVariantId?: string | null
-    glassVariantId?: string | null
-  }
+  aluminumVariantId?: string | null
+  glassVariantId?: string | null
+  handleVariantId?: string | null
+  lockVariantId?: string | null
+  hingeVariantId?: string | null
+  rollerVariantId?: string | null
+}
 ): Promise<ServiceResult<ProductPricing>> {
   // paste ALL of the pricing logic here
   const { data: productData, error: productError } = await supabase
@@ -110,6 +114,7 @@ export async function getProductPricingForDimensionsCore(
           id,
           material_name,
           category,
+          specification,
           unit,
           unit_cost,
           markup_percentage,
@@ -162,6 +167,47 @@ export async function getProductPricingForDimensionsCore(
 
   const glassVariantId = dimensions.glassVariantId ?? null
 
+  const handleVariantId = dimensions.handleVariantId ?? null
+
+const lockVariantId = dimensions.lockVariantId ?? null
+
+const hingeVariantId = dimensions.hingeVariantId ?? null
+
+const rollerVariantId = dimensions.rollerVariantId ?? null
+
+async function getHardwareVariant(
+  variantId: string,
+  specification: "Handle" | "Lock" | "Hinge" | "Roller"
+) {
+  const { data: variant, error } = await supabase
+    .from("inventory_materials")
+    .select(
+      `
+        id,
+        material_name,
+        category,
+        specification,
+        unit,
+        unit_cost,
+        markup_percentage,
+        color,
+        series,
+        thickness
+      `
+    )
+    .eq("id", variantId)
+    .eq("category", "Accessories")
+    .eq("specification", specification)
+    .eq("is_active", true)
+    .single()
+
+  if (error || !variant) {
+    return null
+  }
+
+  return variant
+}
+
   let materialCost = 0
   let materialSelling = 0
 
@@ -183,7 +229,7 @@ export async function getProductPricingForDimensionsCore(
       const { data: variant } = await supabase
         .from("inventory_materials")
         .select(
-          "id, material_name, category, unit, unit_cost, markup_percentage, color, series, thickness"
+          "id, material_name, category, specification, unit, unit_cost, markup_percentage, color, series, thickness"
         )
         .eq("id", aluminumVariantId)
         .single()
@@ -201,7 +247,7 @@ export async function getProductPricingForDimensionsCore(
       const { data: variant } = await supabase
         .from("inventory_materials")
         .select(
-          "id, material_name, category, unit, unit_cost, markup_percentage, color, series, thickness"
+          "id, material_name, category, specification, unit, unit_cost, markup_percentage, color, series, thickness"
         )
         .eq("id", glassVariantId)
         .single()
@@ -210,6 +256,69 @@ export async function getProductPricingForDimensionsCore(
         material = variant
       }
     }
+    if (
+  material.category === "Accessories" &&
+  material.specification === "Handle" &&
+  handleVariantId &&
+  material.id !== handleVariantId
+) {
+  const variant = await getHardwareVariant(
+    handleVariantId,
+    "Handle"
+  )
+
+  if (variant) {
+    material = variant
+  }
+}
+
+if (
+  material.category === "Accessories" &&
+  material.specification === "Lock" &&
+  lockVariantId &&
+  material.id !== lockVariantId
+) {
+  const variant = await getHardwareVariant(
+    lockVariantId,
+    "Lock"
+  )
+
+  if (variant) {
+    material = variant
+  }
+}
+
+if (
+  material.category === "Accessories" &&
+  material.specification === "Hinge" &&
+  hingeVariantId &&
+  material.id !== hingeVariantId
+) {
+  const variant = await getHardwareVariant(
+    hingeVariantId,
+    "Hinge"
+  )
+
+  if (variant) {
+    material = variant
+  }
+}
+
+if (
+  material.category === "Accessories" &&
+  material.specification === "Roller" &&
+  rollerVariantId &&
+  material.id !== rollerVariantId
+) {
+  const variant = await getHardwareVariant(
+    rollerVariantId,
+    "Roller"
+  )
+
+  if (variant) {
+    material = variant
+  }
+}
 
     const method = Array.isArray(item.calculation_methods)
       ? item.calculation_methods[0]

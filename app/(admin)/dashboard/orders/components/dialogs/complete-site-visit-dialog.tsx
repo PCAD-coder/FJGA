@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
@@ -46,7 +48,7 @@ export default function CompleteSiteVisitDialog({ visit, open, onOpenChange, onC
       toast.success("On-site visit completed and measurements saved.")
       onOpenChange(false)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to complete visit.")
+      toast.error(getErrorMessage(error, "Unable to complete visit."))
     } finally {
       setSaving(false)
     }

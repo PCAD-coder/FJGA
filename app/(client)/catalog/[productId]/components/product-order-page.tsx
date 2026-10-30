@@ -73,7 +73,7 @@ export default function ProductOrderPage({
     contactNumber ?? ""
   )
   const [paymentMethod, setPaymentMethod] =
-    useState<PaymentMethod>("cash_on_delivery")
+  useState<PaymentMethod>("cash")
   const [address, setAddress] = useState<OrderAddressFormInput>({
     houseBuildingNumber: "",
     street: "",
@@ -113,18 +113,37 @@ export default function ProductOrderPage({
   const [selectedGlassVariant, setSelectedGlassVariant] = useState(
     defaultGlassVariantId
   )
+  const [selectedHandleVariant, setSelectedHandleVariant] = useState(
+    variants.handles[0]?.id ?? ""
+  )
+
+  const [selectedLockVariant, setSelectedLockVariant] = useState(
+    variants.locks[0]?.id ?? ""
+  )
+
+  const [selectedHingeVariant, setSelectedHingeVariant] = useState(
+    variants.hinges[0]?.id ?? ""
+  )
+
+  const [selectedRollerVariant, setSelectedRollerVariant] = useState(
+    variants.rollers[0]?.id ?? ""
+  )
   console.log("Catalog variants", variants)
 
   useEffect(() => {
     const timeout = setTimeout(async () => {
       try {
-        const result = await getCustomizedPrice(product.id, {
-          width,
-          height,
-          depth,
-          aluminumVariantId: selectedAluminumVariant,
-          glassVariantId: selectedGlassVariant,
-        })
+const result = await getCustomizedPrice(product.id, {
+  width,
+  height,
+  depth,
+  aluminumVariantId: selectedAluminumVariant,
+  glassVariantId: selectedGlassVariant,
+  handleVariantId: selectedHandleVariant,
+  lockVariantId: selectedLockVariant,
+  hingeVariantId: selectedHingeVariant,
+  rollerVariantId: selectedRollerVariant,
+})
 
         setEstimatedPrice(result.sellingPrice)
       } catch (err) {
@@ -134,13 +153,17 @@ export default function ProductOrderPage({
 
     return () => clearTimeout(timeout)
   }, [
-    width,
-    height,
-    depth,
-    selectedAluminumVariant,
-    selectedGlassVariant,
-    product.id,
-  ])
+  width,
+  height,
+  depth,
+  selectedAluminumVariant,
+  selectedGlassVariant,
+  selectedHandleVariant,
+  selectedLockVariant,
+  selectedHingeVariant,
+  selectedRollerVariant,
+  product.id,
+])
   useEffect(() => {
     if (!address.regionPsgcCode) {
       setLocationCoverage(null)
@@ -254,12 +277,12 @@ export default function ProductOrderPage({
         return
       }
 
-      if (!/^[0-9]{11}$/.test(customerContactNumber)) {
-        toast.error("Contact number must contain exactly 11 digits.")
+      if (!/^09[0-9]{9}$/.test(customerContactNumber)) {
+        toast.error("Contact number must start with 09 and contain exactly 11 digits.")
         return
       }
-      if (!address.houseBuildingNumber.trim()) {
-        toast.error("Please enter your house or building number.")
+      if (!/^\d+$/.test(address.houseBuildingNumber)) {
+        toast.error("House or building number must contain whole numbers only.")
         return
       }
 
@@ -309,18 +332,22 @@ export default function ProductOrderPage({
       setPlacingOrder(true)
 
       await createCustomizedOrder({
-        productId: product.id,
-        width,
-        height,
-        depth,
-        quantity,
-        notes,
-        address,
-        customerContactNumber: customerContactNumber.trim(),
-        paymentMethod,
-        aluminumVariantId: selectedAluminumVariant || undefined,
-        glassVariantId: selectedGlassVariant || undefined,
-      })
+  productId: product.id,
+  width,
+  height,
+  depth,
+  quantity,
+  notes,
+  address,
+  customerContactNumber: customerContactNumber.trim(),
+  paymentMethod,
+  aluminumVariantId: selectedAluminumVariant || undefined,
+  glassVariantId: selectedGlassVariant || undefined,
+  handleVariantId: selectedHandleVariant || undefined,
+  lockVariantId: selectedLockVariant || undefined,
+  hingeVariantId: selectedHingeVariant || undefined,
+  rollerVariantId: selectedRollerVariant || undefined,
+})
 
       router.push("/my-orders?orderCreated=1")
     } catch (error) {
@@ -451,9 +478,10 @@ export default function ProductOrderPage({
               </div>
             </div>
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            {variants.aluminum.length > 0 && (
               <div className="space-y-2">
                 <label className="text-sm font-medium">Aluminum Variant</label>
+
                 <Select
                   value={selectedAluminumVariant}
                   onValueChange={setSelectedAluminumVariant}
@@ -472,9 +500,12 @@ export default function ProductOrderPage({
                   </SelectContent>
                 </Select>
               </div>
+            )}
 
+            {variants.glass.length > 0 && (
               <div className="space-y-2">
                 <label className="text-sm font-medium">Glass Variant</label>
+
                 <Select
                   value={selectedGlassVariant}
                   onValueChange={setSelectedGlassVariant}
@@ -493,7 +524,105 @@ export default function ProductOrderPage({
                   </SelectContent>
                 </Select>
               </div>
-            </div>
+            )}
+            {(variants.handles.length > 0 ||
+              variants.locks.length > 0 ||
+              variants.hinges.length > 0 ||
+              variants.rollers.length > 0) && (
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                {variants.handles.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Handle</label>
+
+                    <Select
+                      value={selectedHandleVariant}
+                      onValueChange={setSelectedHandleVariant}
+                    >
+                      <SelectTrigger className="w-full bg-background">
+                        <SelectValue placeholder="Select handle" />
+                      </SelectTrigger>
+
+                      <SelectContent>
+                        {variants.handles.map((variant) => (
+                          <SelectItem key={variant.id} value={variant.id}>
+                            {variant.material_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {variants.locks.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Lock</label>
+
+                    <Select
+                      value={selectedLockVariant}
+                      onValueChange={setSelectedLockVariant}
+                    >
+                      <SelectTrigger className="w-full bg-background">
+                        <SelectValue placeholder="Select lock" />
+                      </SelectTrigger>
+
+                      <SelectContent>
+                        {variants.locks.map((variant) => (
+                          <SelectItem key={variant.id} value={variant.id}>
+                            {variant.material_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {variants.hinges.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Hinge</label>
+
+                    <Select
+                      value={selectedHingeVariant}
+                      onValueChange={setSelectedHingeVariant}
+                    >
+                      <SelectTrigger className="w-full bg-background">
+                        <SelectValue placeholder="Select hinge" />
+                      </SelectTrigger>
+
+                      <SelectContent>
+                        {variants.hinges.map((variant) => (
+                          <SelectItem key={variant.id} value={variant.id}>
+                            {variant.material_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {variants.rollers.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Roller</label>
+
+                    <Select
+                      value={selectedRollerVariant}
+                      onValueChange={setSelectedRollerVariant}
+                    >
+                      <SelectTrigger className="w-full bg-background">
+                        <SelectValue placeholder="Select roller" />
+                      </SelectTrigger>
+
+                      <SelectContent>
+                        {variants.rollers.map((variant) => (
+                          <SelectItem key={variant.id} value={variant.id}>
+                            {variant.material_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <section
@@ -503,9 +632,9 @@ export default function ProductOrderPage({
             <div className="space-y-2">
               <label className="text-sm font-medium">Quantity</label>
               <Input
-                type="number"
-                min={1}
-                max={50}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]+"
                 value={quantityInput}
                 onChange={(e) => {
                   const value = e.target.value
@@ -550,6 +679,7 @@ export default function ProductOrderPage({
               </label>
 
               <ContactNumberInput
+            require09Prefix
                 required
                 id="customer-contact-number"
                 type="tel"
@@ -569,7 +699,7 @@ export default function ProductOrderPage({
 
             <div className="mt-5 border-t pt-5">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Payment Method</label>
+                <label className="text-sm font-medium">Preferred Payment Method</label>
 
                 <Select
                   value={paymentMethod}
@@ -582,16 +712,18 @@ export default function ProductOrderPage({
                   </SelectTrigger>
 
                   <SelectContent>
-                    <SelectItem value="cash_on_delivery">
-                      Cash on Delivery
-                    </SelectItem>
+<SelectContent>
+  <SelectItem value="cash">Cash</SelectItem>
+  <SelectItem value="gcash">GCash</SelectItem>
+</SelectContent>
                   </SelectContent>
                 </Select>
 
                 <p className="text-xs text-muted-foreground">
-                  Select how you would like to pay for this order. A confirmed
-                  payment of 50% of your order total is required before
-                  production can begin.
+                  Choose your preferred payment method for the required 50%
+                  down payment on your order. Your selection indicates how you
+                  prefer to make this payment. Production will begin once your
+                  down payment is confirmed.
                 </p>
               </div>
             </div>

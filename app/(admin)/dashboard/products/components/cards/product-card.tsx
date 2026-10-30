@@ -27,7 +27,7 @@ export function ProductCard({ product, onEdit, onArchive }: ProductCardProps) {
     (product.pricing?.sellingPrice ?? 0) * (1 + VAT_RATE)
 
   return (
-    <Card className="h-full gap-0 overflow-hidden rounded-xl border border-border/80 py-0 shadow-sm ring-0 transition-shadow hover:shadow-md">
+    <Card className="h-full gap-0 overflow-hidden rounded-xl border border-border/80 py-0 shadow-sm ring-0 transition-[transform,box-shadow,border-color] duration-200 ease-out hover:border-primary/30 hover:shadow-md motion-safe:hover:-translate-y-0.5 motion-reduce:transition-none">
       <div className="relative aspect-[3/2] overflow-hidden border-b border-border/60 bg-muted">
         {thumbnail ? (
           <Image

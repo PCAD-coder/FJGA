@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { toast } from "sonner"
 
 import { useEffect, useMemo, useState } from "react"
@@ -137,9 +139,7 @@ export default function CreateQuotationDialog({
         if (cancelled) return
 
         setLoadError(
-          error instanceof Error
-            ? error.message
-            : "Failed to load quotation options."
+          getErrorMessage(error, "Failed to load quotation options.")
         )
       } finally {
         if (!cancelled) {
@@ -197,9 +197,7 @@ export default function CreateQuotationDialog({
 
         setDeliveryZone(null)
         setDeliveryError(
-          error instanceof Error
-            ? error.message
-            : "Failed to load delivery information."
+          getErrorMessage(error, "Failed to load delivery information.")
         )
       } finally {
         if (!cancelled) {
@@ -323,10 +321,10 @@ export default function CreateQuotationDialog({
       onOpenChange(false)
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to send quotation."
+        getErrorMessage(error, "Failed to send quotation.")
       )
       setSendError(
-        error instanceof Error ? error.message : "Failed to send quotation."
+        getErrorMessage(error, "Failed to send quotation.")
       )
     } finally {
       setSending(false)

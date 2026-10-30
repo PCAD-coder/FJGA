@@ -56,14 +56,12 @@ export async function submitPaymentProof(input: SubmitPaymentProofInput) {
    * ============================================================
    */
 
-  if (
-    input.paymentMethod !== "gcash" &&
-    input.paymentMethod !== "card" &&
-    input.paymentMethod !== "online_banking" &&
-    input.paymentMethod !== "cash"
-  ) {
-    throw new Error("Invalid payment method")
-  }
+if (
+  input.paymentMethod !== "gcash" &&
+  input.paymentMethod !== "cash"
+) {
+  throw new Error("Invalid payment method")
+}
 
   /*
    * ============================================================
@@ -94,10 +92,7 @@ export async function submitPaymentProof(input: SubmitPaymentProofInput) {
    * Cash payments are handled by the admin and do not require one.
    */
 
-  const requiresReference =
-    input.paymentMethod === "gcash" ||
-    input.paymentMethod === "card" ||
-    input.paymentMethod === "online_banking"
+const requiresReference = input.paymentMethod === "gcash"
 
   if (requiresReference && !input.referenceNumber.trim()) {
     throw new Error("A reference number is required for electronic payments")

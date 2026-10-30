@@ -1,5 +1,7 @@
 "use client"
 
+import { WholeNumberInput } from "@/components/ui/whole-number-input"
+
 import { useEffect, useState } from "react"
 import { CheckCircle2, Loader2, MapPin, Truck, XCircle } from "lucide-react"
 
@@ -371,6 +373,7 @@ useEffect(() => {
           </Label>
 
           <ContactNumberInput
+            require09Prefix
             required
             id="contact-number"
             type="tel"
@@ -404,7 +407,7 @@ useEffect(() => {
               <span className="ml-1 text-destructive">*</span>
             </Label>
 
-            <Input
+            <WholeNumberInput
               id="house-building-number"
               value={data.houseBuildingNumber}
               onChange={(event) =>

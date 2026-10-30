@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { toast } from "sonner"
 
 import { useState } from "react"
@@ -66,7 +68,7 @@ export function ManageColorsDialog({ trigger }: ManageColorsDialogProps) {
       await loadColors()
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Unable to save color."
+        getErrorMessage(error, "Unable to save color.")
       )
       console.error(error)
     } finally {
@@ -82,7 +84,7 @@ export function ManageColorsDialog({ trigger }: ManageColorsDialogProps) {
       await loadColors()
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Unable to save color."
+        getErrorMessage(error, "Unable to save color.")
       )
       console.error(error)
     }

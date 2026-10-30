@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { toast } from "sonner"
 
 import { ChangeEvent, useEffect, useState } from "react"
@@ -93,11 +95,11 @@ export default function EditProjectDialog({
       setError(null)
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Unable to save content."
+        getErrorMessage(error, "Unable to save content.")
       )
       event.target.value = ""
 
-      setError(error instanceof Error ? error.message : "Invalid image.")
+      setError(getErrorMessage(error, "Invalid image."))
     }
   }
 
@@ -161,7 +163,7 @@ export default function EditProjectDialog({
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Unable to save content."
+        getErrorMessage(error, "Unable to save content.")
       )
       console.error("Failed to update content project:", error)
 
@@ -182,7 +184,7 @@ export default function EditProjectDialog({
       }
 
       setError(
-        error instanceof Error ? error.message : "Failed to update project."
+        getErrorMessage(error, "Failed to update project.")
       )
     } finally {
       setIsSaving(false)

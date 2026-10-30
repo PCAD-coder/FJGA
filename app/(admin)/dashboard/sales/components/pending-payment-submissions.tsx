@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { toast } from "sonner"
 
 import { useState } from "react"
@@ -93,11 +95,11 @@ export default function PendingPaymentSubmissions({
     } catch (error) {
       console.error("PAYMENT PROOF ERROR:", error)
       toast.error(
-        error instanceof Error ? error.message : "Unable to open payment proof."
+        getErrorMessage(error, "Unable to open payment proof.")
       )
 
       setError(
-        error instanceof Error ? error.message : "Failed to open payment proof."
+        getErrorMessage(error, "Failed to open payment proof.")
       )
     }
   }
@@ -114,11 +116,11 @@ export default function PendingPaymentSubmissions({
     } catch (error) {
       console.error("PAYMENT APPROVAL ERROR:", error)
       toast.error(
-        error instanceof Error ? error.message : "Unable to approve payment."
+        getErrorMessage(error, "Unable to approve payment.")
       )
 
       setError(
-        error instanceof Error ? error.message : "Failed to approve payment."
+        getErrorMessage(error, "Failed to approve payment.")
       )
     } finally {
       setProcessingId(null)
@@ -145,11 +147,11 @@ export default function PendingPaymentSubmissions({
     } catch (error) {
       console.error("PAYMENT REJECTION ERROR:", error)
       toast.error(
-        error instanceof Error ? error.message : "Unable to reject payment."
+        getErrorMessage(error, "Unable to reject payment.")
       )
 
       setError(
-        error instanceof Error ? error.message : "Failed to reject payment."
+        getErrorMessage(error, "Failed to reject payment.")
       )
     } finally {
       setProcessingId(null)

@@ -8,10 +8,8 @@ function formatPaymentMethod(method: string): string {
   switch (method) {
     case "gcash":
       return "GCash"
-    case "online_banking":
-      return "Online Banking"
-    case "card":
-      return "Card"
+    case "qrph":
+      return "QR Ph"
     case "cash":
     case "cash_on_delivery":
       return "Cash"

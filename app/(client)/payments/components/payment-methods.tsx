@@ -1,13 +1,13 @@
-import { CreditCard, QrCode, ShieldCheck, Smartphone } from "lucide-react"
+import { Banknote, QrCode, ShieldCheck, Smartphone } from "lucide-react"
 
 import { Card, CardContent } from "@/components/ui/card"
 
 const methods = [
   {
-    id: "card",
-    name: "Card",
-    description: "Pay securely using a supported debit or credit card.",
-    icon: CreditCard,
+    id: "cash",
+    name: "Cash",
+    description: "Pay in person at 248 Camia St. Bancal, Meycauayan City of Bulacan.",
+    icon: Banknote,
   },
   {
     id: "gcash",
@@ -32,7 +32,7 @@ export default function PaymentMethods() {
         </h2>
 
         <p className="mt-1 text-xs leading-5 text-muted-foreground">
-          Choose your preferred payment method after continuing to
+          Pay with cash in person, or choose GCash or QR Ph through
           PayMongo&apos;s secure checkout.
         </p>
       </div>

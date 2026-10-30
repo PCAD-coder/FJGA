@@ -87,24 +87,27 @@ export function ProductToolbar({
           </SelectContent>
         </Select>
 
-        <Select value={selectedType} onValueChange={onTypeChange}>
-          <SelectTrigger
-            className="h-9 w-full rounded-lg bg-background/50 shadow-none"
-            aria-label="Filter by product type"
-          >
-            <SelectValue placeholder="Product Type" />
-          </SelectTrigger>
+        {/* Keep the product type filter available for future use. */}
+        <div hidden>
+          <Select value={selectedType} onValueChange={onTypeChange}>
+            <SelectTrigger
+              className="h-9 w-full rounded-lg bg-background/50 shadow-none"
+              aria-label="Filter by product type"
+            >
+              <SelectValue placeholder="Product Type" />
+            </SelectTrigger>
 
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
 
-            {PRODUCT_TYPES.map((type) => (
-              <SelectItem key={type.value} value={type.value}>
-                {type.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+              {PRODUCT_TYPES.map((type) => (
+                <SelectItem key={type.value} value={type.value}>
+                  {type.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     </div>
   )

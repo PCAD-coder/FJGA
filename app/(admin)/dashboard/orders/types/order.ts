@@ -133,11 +133,19 @@ export interface CreateOrderItemInput {
 
   dimension_unit?: string
 
-  aluminum_variant_id?: string | null
-  glass_variant_id?: string | null
+aluminum_variant_id?: string | null
+glass_variant_id?: string | null
+
+handle_variant_id?: string | null
+lock_variant_id?: string | null
+hinge_variant_id?: string | null
+roller_variant_id?: string | null
 }
 
-export type PaymentMethod = "cash_on_delivery" | "Card" | "Gcash"
+export type PaymentMethod =
+  | "cash"
+  | "cash_on_delivery"
+  | "gcash"
 
 export interface CreateOrderInput {
   customer_id: string

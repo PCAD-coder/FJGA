@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card"
-import { Wallet, CircleCheck, CreditCard } from "lucide-react"
+import { Wallet, CircleCheck, ReceiptText } from "lucide-react"
 import { PaymentSummary } from "../types/payment"
 
 interface Props {
@@ -25,7 +25,7 @@ export default function PaymentSummaryCards({ summary }: Props) {
     {
       title: "Orders Awaiting Payment",
       value: summary.outstandingInvoices,
-      icon: CreditCard,
+      icon: ReceiptText,
       iconClass: "bg-primary/10 text-primary",
     },
   ]

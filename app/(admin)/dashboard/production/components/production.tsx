@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { useMemo, useState, useEffect } from "react"
 import { useProduction } from "../hooks/use-production"
 import type { ProductionProject } from "../types/production"
@@ -236,7 +238,7 @@ const inProductionCount = activeProjects.filter(
             toast.error("Failed to update stage", {
               id: toastId,
               description:
-                "Please try again. If the problem persists, contact an administrator.",
+                getErrorMessage(error, "Please try again. If the problem persists, contact an administrator."),
             })
             throw error
           }

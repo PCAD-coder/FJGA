@@ -169,12 +169,16 @@ export async function createCustomOrderRequestServer(
     throw new Error("Project name is required.")
   }
 
-  if (!/^[0-9]{11}$/.test(trustedContactNumber)) {
-    throw new Error("Contact number must contain exactly 11 digits.")
+  if (!Number.isInteger(projectDetails.quantity) || projectDetails.quantity < 1 || projectDetails.quantity > 100) {
+    throw new Error("Quantity must be a whole number between 1 and 100.")
   }
 
-  if (!trustedDeliveryAddress.houseBuildingNumber.trim()) {
-    throw new Error("House or building number is required.")
+  if (!/^09[0-9]{9}$/.test(trustedContactNumber)) {
+    throw new Error("Contact number must start with 09 and contain exactly 11 digits.")
+  }
+
+  if (!/^\d+$/.test(trustedDeliveryAddress.houseBuildingNumber)) {
+    throw new Error("House or building number must contain whole numbers only.")
   }
 
   if (!trustedDeliveryAddress.street.trim()) {

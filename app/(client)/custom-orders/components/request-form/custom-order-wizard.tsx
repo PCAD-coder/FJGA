@@ -25,6 +25,8 @@ import type { DeliveryZoneResult } from "@/app/services/delivery/delivery-zone-s
 
 import { SpecificationsData, SpecificationsStep } from "./specifications-step"
 
+import { PaymentMethodsNotice } from "./payment-methods-notice"
+
 import { ReviewStep } from "./review-step"
 import { createCustomOrderRequest } from "../../services/custom-order-request.service"
 
@@ -170,8 +172,8 @@ export function CustomOrderWizard({
   )
 
   const isDeliveryValid =
-    /^[0-9]{11}$/.test(contactNumber) &&
-    deliveryAddress.houseBuildingNumber.trim() !== "" &&
+    /^09[0-9]{9}$/.test(contactNumber) &&
+    /^\d+$/.test(deliveryAddress.houseBuildingNumber) &&
     deliveryAddress.street.trim() !== "" &&
     deliveryAddress.regionPsgcCode !== "" &&
     deliveryAddress.cityPsgcCode !== "" &&
@@ -193,8 +195,8 @@ export function CustomOrderWizard({
       return false
     }
 
-    if (projectDetails.quantity < 1) {
-      setError("Quantity must be at least 1.")
+    if (!Number.isInteger(projectDetails.quantity) || projectDetails.quantity < 1 || projectDetails.quantity > 100) {
+      setError("Quantity must be a whole number between 1 and 100.")
       return false
     }
 
@@ -231,7 +233,7 @@ export function CustomOrderWizard({
       return false
     }
 
-    if (specifications.depth && Number(specifications.depth) <= 0) {
+    if (specifications.depth && (!Number.isFinite(Number(specifications.depth)) || Number(specifications.depth) <= 0)) {
       setError("Depth must be greater than zero when provided.")
       return false
     }
@@ -245,15 +247,15 @@ export function CustomOrderWizard({
       return false
     }
 
-    if (!/^[0-9]{11}$/.test(contactNumber)) {
+    if (!/^09[0-9]{9}$/.test(contactNumber)) {
       setError(
-        "Contact number must contain exactly 11 digits."
+        "Contact number must start with 09 and contain exactly 11 digits."
       )
       return false
     }
 
-    if (!deliveryAddress.houseBuildingNumber.trim()) {
-      setError("Please enter your house or building number.")
+    if (!/^\d+$/.test(deliveryAddress.houseBuildingNumber)) {
+      setError("House or building number must contain whole numbers only.")
       return false
     }
 
@@ -344,6 +346,8 @@ export function CustomOrderWizard({
 
   return (
     <div className="space-y-6">
+      {currentStep === 5 && <PaymentMethodsNotice />}
+
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>

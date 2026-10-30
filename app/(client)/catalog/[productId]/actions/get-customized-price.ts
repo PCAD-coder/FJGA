@@ -9,8 +9,12 @@ export async function getCustomizedPrice(
     height: number
     depth: number
 
-      aluminumVariantId?: string
-  glassVariantId?: string
+    aluminumVariantId?: string
+    glassVariantId?: string
+    handleVariantId?: string
+    lockVariantId?: string
+    hingeVariantId?: string
+    rollerVariantId?: string
   }
 ) {
   const result = await getProductPricingForDimensions(productId, dimensions)

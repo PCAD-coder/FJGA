@@ -13,9 +13,7 @@ import {
 
 import { Badge } from "@/components/ui/badge"
 
-type DeliveryDisplayStatus =
-  | DeliveryDetails["status"]
-  | "pending_schedule"
+type DeliveryDisplayStatus = DeliveryDetails["status"] | "pending_schedule"
 
 interface DeliveryDetailsDialogProps {
   delivery: DeliveryDetails | null
@@ -48,7 +46,6 @@ export default function DeliveryDetailsDialog({
       </Dialog>
     )
   }
-  
 
   if (!delivery) {
     return (
@@ -68,63 +65,61 @@ export default function DeliveryDetailsDialog({
     )
   }
 
-const getStatusColor = (status: DeliveryDisplayStatus) => {
-  switch (status) {
-    case "pending_schedule":
-      return "bg-purple-100 text-purple-700"
+  const getStatusColor = (status: DeliveryDisplayStatus) => {
+    switch (status) {
+      case "pending_schedule":
+        return "bg-purple-100 text-purple-700"
 
-    case "scheduled":
-      return "bg-blue-100 text-blue-700"
+      case "scheduled":
+        return "bg-blue-100 text-blue-700"
 
-    case "out_for_delivery":
-      return "bg-orange-100 text-orange-700"
+      case "out_for_delivery":
+        return "bg-orange-100 text-orange-700"
 
-    case "delivered":
-      return "bg-green-100 text-green-700"
+      case "delivered":
+        return "bg-green-100 text-green-700"
 
-    case "cancelled":
-      return "bg-red-100 text-red-700"
+      case "cancelled":
+        return "bg-red-100 text-red-700"
 
-    default:
-      return ""
+      default:
+        return ""
+    }
   }
-}
 
-const formatStatus = (status: DeliveryDisplayStatus) => {
-  switch (status) {
-    case "pending_schedule":
-      return "Pending Schedule"
+  const formatStatus = (status: DeliveryDisplayStatus) => {
+    switch (status) {
+      case "pending_schedule":
+        return "Pending Schedule"
 
-    case "scheduled":
-      return "Scheduled"
+      case "scheduled":
+        return "Scheduled"
 
-    case "out_for_delivery":
-      return "Out For Delivery"
+      case "out_for_delivery":
+        return "Out For Delivery"
 
-    case "delivered":
-      return "Delivered"
+      case "delivered":
+        return "Delivered"
 
-    case "cancelled":
-      return "Cancelled"
+      case "cancelled":
+        return "Cancelled"
+    }
   }
-}
 
-  const hasSchedule = Boolean(
-  delivery.scheduledDate && delivery.scheduledTime
-)
+  const hasSchedule = Boolean(delivery.scheduledDate && delivery.scheduledTime)
 
-const displayStatus: DeliveryDisplayStatus =
-  delivery.status === "scheduled" && !hasSchedule
-    ? "pending_schedule"
-    : delivery.status
+  const displayStatus: DeliveryDisplayStatus =
+    delivery.status === "scheduled" && !hasSchedule
+      ? "pending_schedule"
+      : delivery.status
 
-const customerName = delivery.customer
-  ? [delivery.customer.firstName, delivery.customer.lastName]
-      .filter(Boolean)
-      .join(" ") ||
-    delivery.customer.fullName?.trim() ||
-    "Unknown Customer"
-  : "Unknown Customer"
+  const customerName = delivery.customer
+    ? [delivery.customer.firstName, delivery.customer.lastName]
+        .filter(Boolean)
+        .join(" ") ||
+      delivery.customer.fullName?.trim() ||
+      "Unknown Customer"
+    : "Unknown Customer"
 
   const formatDate = (date: string | null) => {
     if (!date) return "Not scheduled"
@@ -190,9 +185,9 @@ const customerName = delivery.customer
               </p>
             </div>
 
-<Badge className={getStatusColor(displayStatus)}>
-  {formatStatus(displayStatus)}
-</Badge>
+            <Badge className={getStatusColor(displayStatus)}>
+              {formatStatus(displayStatus)}
+            </Badge>
           </div>
         </DialogHeader>
         {delivery.deliveryType === "return" && (
@@ -421,57 +416,52 @@ const customerName = delivery.customer
 
           {/* RETURN DELIVERY PROOF */}
 
-{delivery.deliveryType === "return" &&
-  delivery.status === "delivered" && (
-    <section className="space-y-3">
-      <div>
-        <h3 className="font-semibold">
-          Delivery Proof
-        </h3>
+          {/* DELIVERY PROOF */}
 
-        <p className="text-sm text-muted-foreground">
-          Photo recorded when the return delivery was completed
-        </p>
-      </div>
+{delivery.status === "delivered" && (
+              <section className="space-y-3">
+                <div>
+                  <h3 className="font-semibold">Delivery Proof</h3>
 
-      <div className="rounded-lg border p-4">
-        {delivery.proofImageUrl ? (
-          <div className="space-y-4">
-            <div className="overflow-hidden rounded-lg border bg-muted/30">
-              <img
-                src={delivery.proofImageUrl}
-                alt="Return delivery proof"
-                className="max-h-80 w-full object-contain"
-              />
-            </div>
+                  <p className="text-sm text-muted-foreground">
+  {delivery.deliveryType === "return"
+    ? "Photo recorded when the return delivery was completed"
+    : "Photo recorded when the delivery was completed"}
+</p>
+                </div>
 
-            <Button
-              type="button"
-              variant="outline"
-              asChild
-            >
-              <a
-                href={delivery.proofImageUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <ExternalLink className="mr-2 h-4 w-4" />
-                View Full Image
-              </a>
-            </Button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <ImageIcon className="h-5 w-5 shrink-0" />
+                <div className="rounded-lg border p-4">
+                  {delivery.proofImageUrl ? (
+                    <div className="space-y-4">
+                      <div className="overflow-hidden rounded-lg border bg-muted/30">
+                        <img
+                          src={delivery.proofImageUrl}
+                          alt="Delivery proof"
+                          className="max-h-80 w-full object-contain"
+                        />
+                      </div>
 
-            <p>
-              No delivery proof photo is available.
-            </p>
-          </div>
-        )}
-      </div>
-    </section>
-  )}
+                      <Button type="button" variant="outline" asChild>
+                        <a
+                          href={delivery.proofImageUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          View Full Image
+                        </a>
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                      <ImageIcon className="h-5 w-5 shrink-0" />
+
+                      <p>No delivery proof photo is available.</p>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
 
           {/* DELIVERY NOTES */}
 

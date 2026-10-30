@@ -199,30 +199,6 @@ function formatCentimeters(value: number) {
     : value.toFixed(2).replace(/\.?0+$/, "")
 }
 
-export function SpecificationsStep({
-  category,
-  data,
-  onChange,
-}: SpecificationsStepProps) {
-  function updateField<K extends keyof SpecificationsData>(
-    field: K,
-    value: SpecificationsData[K]
-  ) {
-    onChange({
-      ...data,
-      [field]: value,
-    })
-  }
-
-  function updateSpecification(key: string, value: string) {
-    onChange({
-      ...data,
-      specifications: {
-        ...data.specifications,
-        [key]: value,
-      },
-    })
-  }
   function DimensionField({
     id,
     label,
@@ -255,11 +231,15 @@ export function SpecificationsStep({
         <div className="relative">
           <Input
             id={id}
-            type="number"
-            min="0"
-            step="0.01"
+            type="text"
+            inputMode="decimal"
             value={value}
-            onChange={(event) => onChange(event.target.value)}
+            onChange={(event) => {
+              const nextValue = event.target.value
+              if (/^\d*(?:\.\d*)?$/.test(nextValue)) {
+                onChange(nextValue)
+              }
+            }}
             placeholder="0"
             className="pr-14"
           />
@@ -698,6 +678,30 @@ export function SpecificationsStep({
     )
   }
 
+export function SpecificationsStep({
+  category,
+  data,
+  onChange,
+}: SpecificationsStepProps) {
+  function updateField<K extends keyof SpecificationsData>(
+    field: K,
+    value: SpecificationsData[K]
+  ) {
+    onChange({
+      ...data,
+      [field]: value,
+    })
+  }
+
+  function updateSpecification(key: string, value: string) {
+    onChange({
+      ...data,
+      specifications: {
+        ...data.specifications,
+        [key]: value,
+      },
+    })
+  }
   return (
     <div className="space-y-10">
       {/* Dimensions */}
@@ -780,7 +784,7 @@ export function SpecificationsStep({
             </Label>
 
             <p className="text-sm leading-5 text-muted-foreground">
-              That's okay. FJGA can verify the final measurements before
+              That&apos;s okay. FJGA can verify the final measurements before
               fabrication.
             </p>
           </div>
@@ -825,7 +829,7 @@ export function SpecificationsStep({
 
           <div className="grid gap-1">
             <Label htmlFor="fjga-recommend" className="cursor-pointer">
-              I'm not sure — let FJGA recommend suitable materials
+              I&apos;m not sure — let FJGA recommend suitable materials
             </Label>
 
             <p className="text-sm leading-5 text-muted-foreground">

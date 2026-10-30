@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { toast } from "sonner"
 
 import { useEffect, useMemo, useState } from "react"
@@ -67,7 +69,7 @@ export default function ManageBarangaysDialog({
         if (!cancelled) {
           setBarangays([])
           setError(
-            error instanceof Error ? error.message : "Failed to load barangays"
+            getErrorMessage(error, "Failed to load barangays")
           )
         }
       } finally {
@@ -143,14 +145,10 @@ export default function ManageBarangaysDialog({
       )
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to update barangay availability."
+        getErrorMessage(error, "Unable to update barangay availability.")
       )
       setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to update barangay availability"
+        getErrorMessage(error, "Failed to update barangay availability")
       )
     } finally {
       setChangingCode(null)

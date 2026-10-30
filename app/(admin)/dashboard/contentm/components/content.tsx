@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { DashboardCard } from "@/components/dashboard_cards"
 import { ContentPanelSkeleton } from "./content-skeleton"
 import ContentPagination from "./content-pagination"
@@ -97,9 +99,7 @@ export default function Content() {
         console.error("Failed to load homepage content:", error)
 
         setHomepageError(
-          error instanceof Error
-            ? error.message
-            : "Failed to load homepage content."
+          getErrorMessage(error, "Failed to load homepage content.")
         )
       } finally {
         setHomepageLoading(false)
@@ -122,7 +122,7 @@ export default function Content() {
         console.error("Failed to load content projects:", error)
 
         setProjectsError(
-          error instanceof Error ? error.message : "Failed to load projects."
+          getErrorMessage(error, "Failed to load projects.")
         )
       } finally {
         setProjectsLoading(false)
@@ -145,7 +145,7 @@ export default function Content() {
         console.error("Failed to load content feedback:", error)
 
         setFeedbackError(
-          error instanceof Error ? error.message : "Failed to load feedback."
+          getErrorMessage(error, "Failed to load feedback.")
         )
       } finally {
         setFeedbackLoading(false)
@@ -168,9 +168,7 @@ export default function Content() {
         console.error("Failed to load social links:", error)
 
         setSocialLinksError(
-          error instanceof Error
-            ? error.message
-            : "Failed to load social links."
+          getErrorMessage(error, "Failed to load social links.")
         )
       } finally {
         setSocialLinksLoading(false)
@@ -310,9 +308,7 @@ export default function Content() {
               } catch (error) {
                 console.error("Failed to update project visibility:", error)
                 toast.error(
-                  error instanceof Error
-                    ? error.message
-                    : "Unable to update content."
+                  getErrorMessage(error, "Unable to update content.")
                 )
               }
             }}
@@ -363,15 +359,11 @@ export default function Content() {
                 } catch (error) {
                   console.error("Failed to update featured feedback:", error)
                   toast.error(
-                    error instanceof Error
-                      ? error.message
-                      : "Unable to update content."
+                    getErrorMessage(error, "Unable to update content.")
                   )
 
                   setFeedbackError(
-                    error instanceof Error
-                      ? error.message
-                      : "Failed to update feedback."
+                    getErrorMessage(error, "Failed to update feedback.")
                   )
                 } finally {
                   setUpdatingFeedbackId(null)
@@ -417,15 +409,11 @@ export default function Content() {
               } catch (error) {
                 console.error("Failed to change social link visibility:", error)
                 toast.error(
-                  error instanceof Error
-                    ? error.message
-                    : "Unable to update content."
+                  getErrorMessage(error, "Unable to update content.")
                 )
 
                 setSocialLinksError(
-                  error instanceof Error
-                    ? error.message
-                    : "Failed to update social link."
+                  getErrorMessage(error, "Failed to update social link.")
                 )
               }
             }}
@@ -602,15 +590,11 @@ export default function Content() {
           } catch (error) {
             console.error("Failed to delete social link:", error)
             toast.error(
-              error instanceof Error
-                ? error.message
-                : "Unable to update content."
+              getErrorMessage(error, "Unable to update content.")
             )
 
             setSocialLinksError(
-              error instanceof Error
-                ? error.message
-                : "Failed to delete social link."
+              getErrorMessage(error, "Failed to delete social link.")
             )
           } finally {
             setDeletingSocialLink(false)

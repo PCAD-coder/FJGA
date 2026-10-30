@@ -208,12 +208,20 @@ export default function EditProductDialog({
   const [variantMaterials, setVariantMaterials] = useState({
     frameMaterials: [] as VariantMaterialOption[],
     glassMaterials: [] as VariantMaterialOption[],
+    handleMaterials: [] as VariantMaterialOption[],
+    lockMaterials: [] as VariantMaterialOption[],
+    hingeMaterials: [] as VariantMaterialOption[],
+    rollerMaterials: [] as VariantMaterialOption[],
   })
 
   const [variantSelections, setVariantSelections] =
     useState<ProductVariantMaterialSelections>({
       frameMaterials: [],
       glassMaterials: [],
+      handleMaterials: [],
+      lockMaterials: [],
+      hingeMaterials: [],
+      rollerMaterials: [],
     })
 
   const [calculationMethods, setCalculationMethods] = useState<
@@ -267,6 +275,22 @@ export default function EditProductDialog({
 
           glassMaterials: selected.data
             .filter((v) => v.variant_group === "glass_material")
+            .map((v) => v.inventory_material_id),
+
+          handleMaterials: selected.data
+            .filter((v) => v.variant_group === "handle")
+            .map((v) => v.inventory_material_id),
+
+          lockMaterials: selected.data
+            .filter((v) => v.variant_group === "lock")
+            .map((v) => v.inventory_material_id),
+
+          hingeMaterials: selected.data
+            .filter((v) => v.variant_group === "hinge")
+            .map((v) => v.inventory_material_id),
+
+          rollerMaterials: selected.data
+            .filter((v) => v.variant_group === "roller")
             .map((v) => v.inventory_material_id),
         })
       }
@@ -345,6 +369,10 @@ export default function EditProductDialog({
     setVariantSelections({
       frameMaterials: [],
       glassMaterials: [],
+      handleMaterials: [],
+      lockMaterials: [],
+      hingeMaterials: [],
+      rollerMaterials: [],
     })
   }
   const formIsValid = useMemo(() => {
@@ -956,6 +984,113 @@ export default function EditProductDialog({
                     ))}
                   </div>
                 </div>
+                <div className="space-y-3">
+  <Label>Allowed Handles</Label>
+
+  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+    {variantMaterials.handleMaterials.map((material) => (
+      <label
+        key={material.id}
+        className="flex cursor-pointer items-center gap-2 rounded-md border p-3 hover:bg-muted"
+      >
+        <Checkbox
+          checked={variantSelections.handleMaterials.includes(material.id)}
+          onCheckedChange={() =>
+            toggleVariantMaterial("handleMaterials", material.id)
+          }
+        />
+
+        <div className="text-sm">
+          <div className="font-medium">{material.material_name}</div>
+          <div className="text-xs text-muted-foreground">
+            {material.specification}
+          </div>
+        </div>
+      </label>
+    ))}
+  </div>
+</div>
+
+<div className="space-y-3">
+  <Label>Allowed Locks</Label>
+
+  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+    {variantMaterials.lockMaterials.map((material) => (
+      <label
+        key={material.id}
+        className="flex cursor-pointer items-center gap-2 rounded-md border p-3 hover:bg-muted"
+      >
+        <Checkbox
+          checked={variantSelections.lockMaterials.includes(material.id)}
+          onCheckedChange={() =>
+            toggleVariantMaterial("lockMaterials", material.id)
+          }
+        />
+
+        <div className="text-sm">
+          <div className="font-medium">{material.material_name}</div>
+          <div className="text-xs text-muted-foreground">
+            {material.specification}
+          </div>
+        </div>
+      </label>
+    ))}
+  </div>
+</div>
+
+<div className="space-y-3">
+  <Label>Allowed Hinges</Label>
+
+  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+    {variantMaterials.hingeMaterials.map((material) => (
+      <label
+        key={material.id}
+        className="flex cursor-pointer items-center gap-2 rounded-md border p-3 hover:bg-muted"
+      >
+        <Checkbox
+          checked={variantSelections.hingeMaterials.includes(material.id)}
+          onCheckedChange={() =>
+            toggleVariantMaterial("hingeMaterials", material.id)
+          }
+        />
+
+        <div className="text-sm">
+          <div className="font-medium">{material.material_name}</div>
+          <div className="text-xs text-muted-foreground">
+            {material.specification}
+          </div>
+        </div>
+      </label>
+    ))}
+  </div>
+</div>
+
+<div className="space-y-3">
+  <Label>Allowed Rollers</Label>
+
+  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+    {variantMaterials.rollerMaterials.map((material) => (
+      <label
+        key={material.id}
+        className="flex cursor-pointer items-center gap-2 rounded-md border p-3 hover:bg-muted"
+      >
+        <Checkbox
+          checked={variantSelections.rollerMaterials.includes(material.id)}
+          onCheckedChange={() =>
+            toggleVariantMaterial("rollerMaterials", material.id)
+          }
+        />
+
+        <div className="text-sm">
+          <div className="font-medium">{material.material_name}</div>
+          <div className="text-xs text-muted-foreground">
+            {material.specification}
+          </div>
+        </div>
+      </label>
+    ))}
+  </div>
+</div>
 
                 {/* ====================================================== */}
                 {/* Product Images */}

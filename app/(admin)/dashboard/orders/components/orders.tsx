@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { DashboardCard } from "@/components/dashboard_cards"
 import OrdersSkeleton, { OrdersListSkeleton } from "./orders-skeleton"
 import OrdersPagination from "./toolbar/orders-pagination"
@@ -257,10 +259,10 @@ export default function OrdersModule() {
       console.error("Failed to load quotation:", error)
 
       toast.error(
-        error instanceof Error ? error.message : "Unable to load quotation."
+        getErrorMessage(error, "Unable to load quotation.")
       )
       setQuotationDetailsError(
-        error instanceof Error ? error.message : "Failed to load quotation."
+        getErrorMessage(error, "Failed to load quotation.")
       )
     } finally {
       setQuotationDetailsLoading(false)
@@ -629,9 +631,7 @@ export default function OrdersModule() {
                 console.error("Deny Custom Request Error:", error)
 
                 toast.error(
-                  error instanceof Error
-                    ? error.message
-                    : "Failed to deny custom request."
+                  getErrorMessage(error, "Failed to deny custom request.")
                 )
               }
             }}

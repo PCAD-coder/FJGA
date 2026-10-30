@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { useEffect, useMemo, useState } from "react"
 
 import { ReturnRequest } from "../types/return"
@@ -56,9 +58,7 @@ async function notifyReturnAction<T extends { error?: string | null }>(
     return result
   } catch (error) {
     toast.error(
-      error instanceof Error
-        ? error.message
-        : "Unable to complete the return action."
+      getErrorMessage(error, "Unable to complete the return action.")
     )
     throw error
   }

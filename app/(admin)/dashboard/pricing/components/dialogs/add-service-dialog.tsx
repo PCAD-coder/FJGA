@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { toast } from "sonner"
 
 import { useMemo, useState } from "react"
@@ -73,9 +75,7 @@ export default function AddServiceDialog({
       setMarkup("")
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to save pricing changes."
+        getErrorMessage(error, "Unable to save pricing changes.")
       )
       console.error("Create Labor Service:", JSON.stringify(error, null, 2))
     } finally {

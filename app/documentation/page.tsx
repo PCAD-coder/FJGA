@@ -84,7 +84,8 @@ const sections = [
     steps: [
       "Check My Orders for approval and payment instructions. Pending orders must first be reviewed by the administrator.",
       "Once approved, follow the displayed down payment requirement. At least 50% of the order total is required before production can begin.",
-      "Open Payments to review pending invoices and payment history. For online payment, continue to PayMongo checkout and select a supported method such as Card, GCash, or QR Ph.",
+      "We accept cash, GCash, and QR Ph only. Open Payments to review pending invoices and payment history. For online payment, continue to PayMongo checkout and choose GCash or QR Ph.",
+      "For cash payments, visit FJGA at 248 Camia St. Bancal, Meycauayan City of Bulacan.",
       "If submitting payment details from an order, complete the information requested by its payment form and wait for verification.",
       "Check the order balance and payment status after confirmation. A submission awaiting verification is not yet a confirmed payment.",
     ],

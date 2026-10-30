@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
@@ -31,7 +33,7 @@ export default function DeclineSiteVisitDialog({ visit, open, onOpenChange, onDe
       toast.success("On-site visit declined.")
       onOpenChange(false)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to decline visit.")
+      toast.error(getErrorMessage(error, "Unable to decline visit."))
     } finally {
       setSaving(false)
     }

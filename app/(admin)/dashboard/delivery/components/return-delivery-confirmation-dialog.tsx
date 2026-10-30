@@ -1,5 +1,9 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
+import { UploadedPhotoPreview } from "@/components/ui/uploaded-photo-preview"
+
 import { useEffect, useState } from "react"
 import { ImageIcon, Loader2, Upload } from "lucide-react"
 import { toast } from "sonner"
@@ -128,9 +132,7 @@ export default function ReturnDeliveryConfirmationDialog({
       )
 
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to complete return delivery."
+        getErrorMessage(error, "Unable to complete return delivery.")
       )
     } finally {
       setSubmitting(false)
@@ -146,7 +148,7 @@ export default function ReturnDeliveryConfirmationDialog({
         }
       }}
     >
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
             Confirm Return Delivery
@@ -192,6 +194,8 @@ export default function ReturnDeliveryConfirmationDialog({
               Upload a JPG, PNG, or WebP image. Maximum file
               size is 5 MB.
             </p>
+
+            {proofFile && <UploadedPhotoPreview file={proofFile} />}
 
             {proofFile && (
               <div className="flex items-center gap-3 rounded-lg border p-3">

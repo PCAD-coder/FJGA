@@ -9,15 +9,22 @@ import type {
 
 const supabase = createClient()
 
+function toCents(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100)
+}
+
 function getPaymentStatus(
   totalAmount: number,
   amountPaid: number
 ): SalesPaymentStatus {
-  if (amountPaid <= 0) {
+  const totalAmountCents = toCents(totalAmount)
+  const amountPaidCents = toCents(amountPaid)
+
+  if (amountPaidCents <= 0) {
     return "unpaid"
   }
 
-  if (amountPaid >= totalAmount) {
+  if (amountPaidCents >= totalAmountCents) {
     return "paid"
   }
 
@@ -170,18 +177,25 @@ const laborCost = orderItems.reduce(
 
 const profit = subtotal - materialCost - laborCost
 
-    const requiredDownPayment = totalAmount * 0.5
+    const requiredDownPayment =
+  Math.round(toCents(totalAmount) * 0.5) / 100
 
     const amountPaid = payments.reduce(
       (total, payment) => total + payment.amount,
       0
     )
 
-    const balance = Math.max(totalAmount - amountPaid, 0)
+    const balance =
+  Math.max(toCents(totalAmount) - toCents(amountPaid), 0) / 100
 
-    const downPaymentRemaining = Math.max(requiredDownPayment - amountPaid, 0)
+    const downPaymentRemaining =
+  Math.max(
+    toCents(requiredDownPayment) - toCents(amountPaid),
+    0
+  ) / 100
 
-    const productionPaymentComplete = amountPaid >= requiredDownPayment
+    const productionPaymentComplete =
+  toCents(amountPaid) >= toCents(requiredDownPayment)
 
     const sortedPayments = [...payments].sort(
       (a, b) =>

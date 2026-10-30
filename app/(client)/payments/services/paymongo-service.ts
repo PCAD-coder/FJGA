@@ -77,7 +77,8 @@ export async function createPayMongoCheckoutSession(
    */
   const { data: order, error: orderError } = await supabase
     .from("orders")
-    .select(`
+    .select(
+      `
       id,
       order_number,
       status,
@@ -89,7 +90,8 @@ export async function createPayMongoCheckoutSession(
       order_payments (
         amount
       )
-    `)
+    `
+    )
     .eq("id", input.orderId)
     .eq("customer_id", profile.id)
     .single()
@@ -141,47 +143,42 @@ export async function createPayMongoCheckoutSession(
 
   const amountInCentavos = Math.round(amountDue * 100)
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-if (!supabaseUrl || !serviceRoleKey) {
-  throw new Error("Supabase server configuration is missing")
-}
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error("Supabase server configuration is missing")
+  }
 
-const adminSupabase = createSupabaseClient(
-  supabaseUrl,
-  serviceRoleKey,
-  {
+  const adminSupabase = createSupabaseClient(supabaseUrl, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
     },
-  }
-)
+  })
 
   /*
    * Check for an existing Checkout Session
    * for this order.
    */
-  const {
-    data: existingSession,
-    error: existingSessionError,
-  } = await adminSupabase
-    .from("paymongo_checkout_sessions")
-    .select(`
+  const { data: existingSession, error: existingSessionError } =
+    await adminSupabase
+      .from("paymongo_checkout_sessions")
+      .select(
+        `
       id,
       checkout_session_id,
       checkout_url,
       amount,
       status
-    `)
-    .eq("order_id", order.id)
-    .in("status", ["creating", "active"])
-    .maybeSingle()
+    `
+      )
+      .eq("order_id", order.id)
+      .in("status", ["creating", "active"])
+      .maybeSingle()
 
   if (existingSessionError) {
     throw new Error(
-      existingSessionError.message ||
-        "Failed to check existing payment session"
+      existingSessionError.message || "Failed to check existing payment session"
     )
   }
 
@@ -189,10 +186,7 @@ const adminSupabase = createSupabaseClient(
    * If an active session already exists for the
    * same amount, reuse it.
    */
-  if (
-    existingSession &&
-    Number(existingSession.amount) === amountDue
-  ) {
+  if (existingSession && Number(existingSession.amount) === amountDue) {
     /*
      * A session marked "creating" means another
      * request is currently creating the PayMongo
@@ -212,9 +206,9 @@ const adminSupabase = createSupabaseClient(
       {
         method: "GET",
         headers: {
-          Authorization: `Basic ${Buffer.from(
-            `${secretKey}:`
-          ).toString("base64")}`,
+          Authorization: `Basic ${Buffer.from(`${secretKey}:`).toString(
+            "base64"
+          )}`,
         },
       }
     )
@@ -223,8 +217,7 @@ const adminSupabase = createSupabaseClient(
       const sessionJson =
         (await sessionResponse.json()) as PayMongoCheckoutSessionResponse
 
-      const sessionStatus =
-        sessionJson.data?.attributes?.status
+      const sessionStatus = sessionJson.data?.attributes?.status
 
       const checkoutUrl =
         sessionJson.data?.attributes?.checkout_url ??
@@ -255,10 +248,7 @@ const adminSupabase = createSupabaseClient(
    * If there is a stale "creating" record,
    * remove it before creating a fresh session.
    */
-  if (
-    existingSession &&
-    existingSession.status === "creating"
-  ) {
+  if (existingSession && existingSession.status === "creating") {
     await adminSupabase
       .from("paymongo_checkout_sessions")
       .delete()
@@ -272,18 +262,17 @@ const adminSupabase = createSupabaseClient(
    * simultaneous requests from creating two local
    * Checkout Session records.
    */
-  const { data: reservation, error: reservationError } =
-    await adminSupabase
-      .from("paymongo_checkout_sessions")
-      .insert({
-        order_id: order.id,
-        checkout_session_id: `creating-${order.id}-${Date.now()}`,
-        checkout_url: "",
-        amount: amountDue,
-        status: "creating",
-      })
-      .select("id")
-      .single()
+  const { data: reservation, error: reservationError } = await adminSupabase
+    .from("paymongo_checkout_sessions")
+    .insert({
+      order_id: order.id,
+      checkout_session_id: `creating-${order.id}-${Date.now()}`,
+      checkout_url: "",
+      amount: amountDue,
+      status: "creating",
+    })
+    .select("id")
+    .single()
 
   if (reservationError) {
     /*
@@ -297,16 +286,13 @@ const adminSupabase = createSupabaseClient(
     }
 
     throw new Error(
-      reservationError.message ||
-        "Failed to reserve payment checkout"
+      reservationError.message || "Failed to reserve payment checkout"
     )
   }
 
   const firstItem = order.order_items?.[0]
 
-  const productName =
-    firstItem?.product_name_snapshot ??
-    "Furniture Order"
+  const productName = firstItem?.product_name_snapshot ?? "Furniture Order"
 
   /*
    * Create PayMongo Checkout Session.
@@ -314,66 +300,56 @@ const adminSupabase = createSupabaseClient(
   let response: Response
 
   try {
-    response = await fetch(
-      "https://api.paymongo.com/v2/checkout_sessions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${Buffer.from(
-            `${secretKey}:`
-          ).toString("base64")}`,
-          "Content-Type": "application/json",
+    response = await fetch("https://api.paymongo.com/v2/checkout_sessions", {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${secretKey}:`).toString(
+          "base64"
+        )}`,
+        "Content-Type": "application/json",
 
-          /*
-           * Protect repeated requests for the same
-           * logical payment operation.
-           */
-          "Idempotency-Key":
-            `fjga-order-${order.id}-${amountInCentavos}`,
-        },
-        body: JSON.stringify({
-          data: {
-            attributes: {
-              line_items: [
-                {
-                  name: productName,
-                  amount: amountInCentavos,
-                  currency: "PHP",
-                  quantity: 1,
-                },
-              ],
-
-              payment_method_types: [
-                "card",
-                "gcash",
-                "qrph",
-              ],
-
-              success_url:
-                `${baseUrl}/payments?payment=success&order=${encodeURIComponent(
-                  order.id
-                )}`,
-
-              cancel_url:
-                `${baseUrl}/payments?payment=cancelled&order=${encodeURIComponent(
-                  order.id
-                )}`,
-
-              reference_number: order.order_number,
-
-              metadata: {
-                order_id: order.id,
-                order_number: order.order_number,
+        /*
+         * Protect repeated requests for the same
+         * logical payment operation.
+         */
+        "Idempotency-Key": `fjga-order-${order.id}-${amountInCentavos}`,
+      },
+      body: JSON.stringify({
+        data: {
+          attributes: {
+            line_items: [
+              {
+                name: productName,
+                amount: amountInCentavos,
+                currency: "PHP",
+                quantity: 1,
               },
+            ],
 
-              billing: {
-                email: user.email ?? undefined,
-              },
+            payment_method_types: ["gcash", "qrph"],
+
+            success_url: `${baseUrl}/payments?payment=success&order=${encodeURIComponent(
+              order.id
+            )}`,
+
+            cancel_url: `${baseUrl}/payments?payment=cancelled&order=${encodeURIComponent(
+              order.id
+            )}`,
+
+            reference_number: order.order_number,
+
+            metadata: {
+              order_id: order.id,
+              order_number: order.order_number,
+            },
+
+            billing: {
+              email: user.email ?? undefined,
             },
           },
-        }),
-      }
-    )
+        },
+      }),
+    })
   } catch (error) {
     /*
      * PayMongo request itself failed.
@@ -391,10 +367,7 @@ const adminSupabase = createSupabaseClient(
   const json = await response.json()
 
   if (!response.ok) {
-    console.error(
-      "PAYMONGO CHECKOUT ERROR:",
-      json
-    )
+    console.error("PAYMONGO CHECKOUT ERROR:", json)
 
     await supabase
       .from("paymongo_checkout_sessions")
@@ -402,14 +375,12 @@ const adminSupabase = createSupabaseClient(
       .eq("id", reservation.id)
 
     throw new Error(
-      json?.errors?.[0]?.detail ||
-        "Failed to create PayMongo checkout session"
+      json?.errors?.[0]?.detail || "Failed to create PayMongo checkout session"
     )
   }
 
   const checkoutSessionId = json?.data?.id
-  const checkoutUrl =
-    json?.data?.attributes?.checkout_url
+  const checkoutUrl = json?.data?.attributes?.checkout_url
 
   if (!checkoutSessionId || !checkoutUrl) {
     await supabase
@@ -417,9 +388,7 @@ const adminSupabase = createSupabaseClient(
       .delete()
       .eq("id", reservation.id)
 
-    throw new Error(
-      "PayMongo did not return a valid checkout session"
-    )
+    throw new Error("PayMongo did not return a valid checkout session")
   }
 
   /*
@@ -437,10 +406,7 @@ const adminSupabase = createSupabaseClient(
     .eq("id", reservation.id)
 
   if (updateError) {
-    console.error(
-      "PAYMONGO CHECKOUT SESSION SAVE ERROR:",
-      updateError
-    )
+    console.error("PAYMONGO CHECKOUT SESSION SAVE ERROR:", updateError)
 
     /*
      * We do not delete the PayMongo session here because
@@ -458,4 +424,3 @@ const adminSupabase = createSupabaseClient(
     checkoutUrl,
   }
 }
-

@@ -8,7 +8,13 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-export default function CategoryFilter() {
+interface CategoryFilterProps {
+  value: string
+  onValueChange: (value: string) => void
+  categories: string[]
+}
+
+export default function CategoryFilter({ value, onValueChange, categories }: CategoryFilterProps) {
   return (
     <div className="flex items-center gap-3">
       <span
@@ -17,7 +23,7 @@ export default function CategoryFilter() {
       >
         Category
       </span>
-      <Select defaultValue="All">
+      <Select value={value} onValueChange={onValueChange}>
         <SelectTrigger
           aria-labelledby="catalog-category-label"
           className="h-10 w-full min-w-0 rounded-md bg-card shadow-none sm:w-[200px]"
@@ -26,12 +32,11 @@ export default function CategoryFilter() {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="All">All Categories</SelectItem>
-          <SelectItem value="Furniture">Furniture</SelectItem>
-          <SelectItem value="Windows">Windows</SelectItem>
-          <SelectItem value="Doors">Doors</SelectItem>
-          <SelectItem value="Partitions">Partitions</SelectItem>
-          <SelectItem value="Bathroom">Bathroom</SelectItem>
-          <SelectItem value="Railings">Railings</SelectItem>
+          {categories.map((category) => (
+            <SelectItem key={category} value={category}>
+              {category}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
     </div>

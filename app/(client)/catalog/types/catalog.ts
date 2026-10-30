@@ -15,6 +15,7 @@ export type StockStatus =
 export interface CatalogProduct {
   id: string
   name: string
+  category: string
   description: string
   image: string
 

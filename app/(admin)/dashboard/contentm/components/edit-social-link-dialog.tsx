@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { toast } from "sonner"
 
 import { useEffect, useState } from "react"
@@ -165,12 +167,12 @@ export default function EditSocialLinkDialog({
       onOpenChange(false)
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Unable to save content."
+        getErrorMessage(error, "Unable to save content.")
       )
       console.error("Failed to update social link:", error)
 
       setError(
-        error instanceof Error ? error.message : "Failed to update social link."
+        getErrorMessage(error, "Failed to update social link.")
       )
     } finally {
       setIsSaving(false)

@@ -1,12 +1,10 @@
 import { createClient } from "@/lib/supabase/client"
 import type { ServiceResult } from "./service-result"
+import type { ProductVariantMaterialSelections } from "./product-variant-material-service"
 
 export async function saveProductVariantMaterials(
   productId: string,
-  variants: {
-    frameMaterials: string[]
-    glassMaterials: string[]
-  }
+  variants: ProductVariantMaterialSelections
 ): Promise<ServiceResult<boolean>> {
   const supabase = createClient()
 
@@ -21,6 +19,30 @@ export async function saveProductVariantMaterials(
       product_id: productId,
       inventory_material_id,
       variant_group: "glass_material",
+    })),
+
+    ...variants.handleMaterials.map((inventory_material_id) => ({
+      product_id: productId,
+      inventory_material_id,
+      variant_group: "handle",
+    })),
+
+    ...variants.lockMaterials.map((inventory_material_id) => ({
+      product_id: productId,
+      inventory_material_id,
+      variant_group: "lock",
+    })),
+
+    ...variants.hingeMaterials.map((inventory_material_id) => ({
+      product_id: productId,
+      inventory_material_id,
+      variant_group: "hinge",
+    })),
+
+    ...variants.rollerMaterials.map((inventory_material_id) => ({
+      product_id: productId,
+      inventory_material_id,
+      variant_group: "roller",
     })),
   ]
 
@@ -79,10 +101,7 @@ export async function getProductVariantMaterials(productId: string) {
 
 export async function replaceProductVariantMaterials(
   productId: string,
-  variants: {
-    frameMaterials: string[]
-    glassMaterials: string[]
-  }
+  variants: ProductVariantMaterialSelections
 ): Promise<ServiceResult<boolean>> {
   const supabase = createClient()
 

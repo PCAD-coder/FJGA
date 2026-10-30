@@ -187,12 +187,21 @@ export default function AddProductDialog({
   const [variantMaterials, setVariantMaterials] = useState({
     frameMaterials: [] as VariantMaterialOption[],
     glassMaterials: [] as VariantMaterialOption[],
+    handleMaterials: [] as VariantMaterialOption[],
+    lockMaterials: [] as VariantMaterialOption[],
+    hingeMaterials: [] as VariantMaterialOption[],
+    rollerMaterials: [] as VariantMaterialOption[],
   })
 
-  const [variantSelections, setVariantSelections] = useState({
-    frameMaterials: [] as string[],
-    glassMaterials: [] as string[],
-  })
+  const [variantSelections, setVariantSelections] =
+    useState<ProductVariantMaterialSelections>({
+      frameMaterials: [],
+      glassMaterials: [],
+      handleMaterials: [],
+      lockMaterials: [],
+      hingeMaterials: [],
+      rollerMaterials: [],
+    })
 
   const [calculationMethods, setCalculationMethods] = useState<
     CalculationMethodOption[]
@@ -260,6 +269,10 @@ export default function AddProductDialog({
     setVariantSelections({
       frameMaterials: [],
       glassMaterials: [],
+      handleMaterials: [],
+      lockMaterials: [],
+      hingeMaterials: [],
+      rollerMaterials: [],
     })
   }
   const formIsValid = useMemo(() => {
@@ -853,6 +866,135 @@ export default function AddProductDialog({
                     </div>
                   </div>
                 </section>
+                <div className="space-y-3">
+                  <Label>Allowed Handles</Label>
+
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                    {variantMaterials.handleMaterials.map((material) => (
+                      <label
+                        key={material.id}
+                        className="flex cursor-pointer items-center gap-2 rounded-md border p-3 hover:bg-muted"
+                      >
+                        <Checkbox
+                          checked={variantSelections.handleMaterials.includes(
+                            material.id
+                          )}
+                          onCheckedChange={() =>
+                            toggleVariantMaterial(
+                              "handleMaterials",
+                              material.id
+                            )
+                          }
+                        />
+
+                        <div className="text-sm">
+                          <div className="font-medium">
+                            {material.material_name}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {material.specification}
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Label>Allowed Locks</Label>
+
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                    {variantMaterials.lockMaterials.map((material) => (
+                      <label
+                        key={material.id}
+                        className="flex cursor-pointer items-center gap-2 rounded-md border p-3 hover:bg-muted"
+                      >
+                        <Checkbox
+                          checked={variantSelections.lockMaterials.includes(
+                            material.id
+                          )}
+                          onCheckedChange={() =>
+                            toggleVariantMaterial("lockMaterials", material.id)
+                          }
+                        />
+
+                        <div className="text-sm">
+                          <div className="font-medium">
+                            {material.material_name}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {material.specification}
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Label>Allowed Hinges</Label>
+
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                    {variantMaterials.hingeMaterials.map((material) => (
+                      <label
+                        key={material.id}
+                        className="flex cursor-pointer items-center gap-2 rounded-md border p-3 hover:bg-muted"
+                      >
+                        <Checkbox
+                          checked={variantSelections.hingeMaterials.includes(
+                            material.id
+                          )}
+                          onCheckedChange={() =>
+                            toggleVariantMaterial("hingeMaterials", material.id)
+                          }
+                        />
+
+                        <div className="text-sm">
+                          <div className="font-medium">
+                            {material.material_name}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {material.specification}
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Label>Allowed Rollers</Label>
+
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                    {variantMaterials.rollerMaterials.map((material) => (
+                      <label
+                        key={material.id}
+                        className="flex cursor-pointer items-center gap-2 rounded-md border p-3 hover:bg-muted"
+                      >
+                        <Checkbox
+                          checked={variantSelections.rollerMaterials.includes(
+                            material.id
+                          )}
+                          onCheckedChange={() =>
+                            toggleVariantMaterial(
+                              "rollerMaterials",
+                              material.id
+                            )
+                          }
+                        />
+
+                        <div className="text-sm">
+                          <div className="font-medium">
+                            {material.material_name}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {material.specification}
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
 
                 {/* Product Images */}
 

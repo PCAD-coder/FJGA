@@ -13,14 +13,18 @@ export async function getProductPricing(
 
 export async function getProductPricingForDimensions(
   productId: string,
-  dimensions: {
-    width?: number | null
-    height?: number | null
-    depth?: number | null
+dimensions: {
+  width?: number | null
+  height?: number | null
+  depth?: number | null
 
   aluminumVariantId?: string | null
   glassVariantId?: string | null
-  }
+  handleVariantId?: string | null
+  lockVariantId?: string | null
+  hingeVariantId?: string | null
+  rollerVariantId?: string | null
+}
 ): Promise<ServiceResult<ProductPricing>> {
   const supabase = createClient()
 

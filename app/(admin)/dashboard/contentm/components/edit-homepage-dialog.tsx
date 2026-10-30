@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { toast } from "sonner"
 
 import { ChangeEvent, useEffect, useState } from "react"
@@ -83,13 +85,11 @@ export default function EditHomepageDialog({
       setError(null)
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to save homepage content."
+        getErrorMessage(error, "Unable to save homepage content.")
       )
       event.target.value = ""
 
-      setError(error instanceof Error ? error.message : "Invalid image.")
+      setError(getErrorMessage(error, "Invalid image."))
     }
   }
 
@@ -136,16 +136,12 @@ export default function EditHomepageDialog({
       })
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to save homepage content."
+        getErrorMessage(error, "Unable to save homepage content.")
       )
       console.error("Failed to save homepage content:", error)
 
       setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to save homepage content."
+        getErrorMessage(error, "Failed to save homepage content.")
       )
     } finally {
       setIsSaving(false)

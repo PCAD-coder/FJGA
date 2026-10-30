@@ -1,5 +1,9 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
+import { UploadedPhotoPreview } from "@/components/ui/uploaded-photo-preview"
+
 import { toast } from "sonner"
 
 import { useEffect, useState } from "react"
@@ -28,6 +32,8 @@ import {
 import { recordPayment } from "../services/payment-service"
 
 import type { PaymentMethod, SalesRecord } from "../types/sales"
+import { getActiveEmployees } from "../../user-management/services/personnel.service"
+import type { Employee } from "../../user-management/types/personnel"
 
 interface RecordPaymentDialogProps {
   sale: SalesRecord | null
@@ -50,11 +56,12 @@ export function RecordPaymentDialog({
   onPaymentRecorded,
 }: RecordPaymentDialogProps) {
   const [amount, setAmount] = useState("")
-  const [paymentMethod, setPaymentMethod] =
-    useState<PaymentMethod>("cash_on_delivery")
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash")
   const [paymentDate, setPaymentDate] = useState("")
   const [referenceNumber, setReferenceNumber] = useState("")
   const [receivedByEmployee, setReceivedByEmployee] = useState("")
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [loadingEmployees, setLoadingEmployees] = useState(false)
   const [proofFile, setProofFile] = useState<File | null>(null)
   const [notes, setNotes] = useState("")
   const [saving, setSaving] = useState(false)
@@ -66,7 +73,7 @@ export function RecordPaymentDialog({
     }
 
     setAmount("")
-    setPaymentMethod(sale?.paymentMethod ?? "cash_on_delivery")
+    setPaymentMethod("cash")
     setPaymentDate(new Date().toISOString().split("T")[0])
     setReferenceNumber("")
     setReceivedByEmployee("")
@@ -74,6 +81,26 @@ export function RecordPaymentDialog({
     setNotes("")
     setError(null)
   }, [open, sale])
+
+  useEffect(() => {
+    if (!open) return
+
+    async function loadEmployees() {
+      try {
+        setLoadingEmployees(true)
+
+        const data = await getActiveEmployees()
+        setEmployees(data)
+      } catch (error) {
+        console.error("Failed to load employees:", error)
+        toast.error(getErrorMessage(error, "Unable to load employees."))
+      } finally {
+        setLoadingEmployees(false)
+      }
+    }
+
+    void loadEmployees()
+  }, [open])
 
   if (!sale) {
     return null
@@ -114,13 +141,11 @@ export function RecordPaymentDialog({
         return
       }
 
-      if (paymentMethod === "cash_on_delivery" && !receivedByEmployee.trim()) {
-        setError(
-          "Please enter the name of the employee who received the cash payment."
-        )
+      if (paymentMethod === "cash" && !receivedByEmployee.trim()) {
+        setError("Please select the employee who received the cash payment.")
         return
       }
-      if (paymentMethod === "cash_on_delivery" && !proofFile) {
+      if (paymentMethod === "cash" && !proofFile) {
         setError(
           "Please upload a payment proof or receipt for the cash payment."
         )
@@ -135,12 +160,12 @@ export function RecordPaymentDialog({
         paymentMethod,
         paymentDate,
         referenceNumber:
-          paymentMethod === "cash_on_delivery" ? null : referenceNumber.trim(),
+          paymentMethod === "cash" ? null : referenceNumber.trim(),
+
         receivedByEmployee:
-          paymentMethod === "cash_on_delivery"
-            ? receivedByEmployee.trim()
-            : null,
-        proofFile: paymentMethod === "cash_on_delivery" ? proofFile : null,
+          paymentMethod === "cash" ? receivedByEmployee.trim() : null,
+
+        proofFile: paymentMethod === "cash" ? proofFile : null,
         notes,
       })
 
@@ -149,11 +174,9 @@ export function RecordPaymentDialog({
       onPaymentRecorded()
     } catch (err) {
       console.error("Failed to record payment:", err)
-      toast.error(
-        err instanceof Error ? err.message : "Failed to record payment."
-      )
+      toast.error(getErrorMessage(err, "Failed to record payment."))
 
-      setError(err instanceof Error ? err.message : "Failed to record payment.")
+      setError(getErrorMessage(err, "Failed to record payment."))
     } finally {
       setSaving(false)
     }
@@ -257,12 +280,12 @@ export function RecordPaymentDialog({
                 setPaymentMethod(nextMethod)
                 setError(null)
 
-                if (nextMethod !== "cash_on_delivery") {
+                if (nextMethod !== "cash") {
                   setReceivedByEmployee("")
                   setProofFile(null)
                 }
 
-                if (nextMethod === "cash_on_delivery") {
+                if (nextMethod === "cash") {
                   setReferenceNumber("")
                 }
               }}
@@ -272,12 +295,7 @@ export function RecordPaymentDialog({
               </SelectTrigger>
 
               <SelectContent>
-                <SelectItem value="cash_on_delivery">
-                  Cash on Delivery
-                </SelectItem>
-
-                <SelectItem value="card">Card</SelectItem>
-
+                <SelectItem value="cash">Cash</SelectItem>
                 <SelectItem value="gcash">GCash</SelectItem>
               </SelectContent>
             </Select>
@@ -293,7 +311,7 @@ export function RecordPaymentDialog({
             />
           </div>
 
-          {(paymentMethod === "gcash" || paymentMethod === "card") && (
+          {paymentMethod === "gcash" && (
             <div className="space-y-2">
               <label className="text-sm font-medium">Reference Number *</label>
 
@@ -308,25 +326,52 @@ export function RecordPaymentDialog({
               </p>
             </div>
           )}
-          {paymentMethod === "cash_on_delivery" && (
+          {paymentMethod === "cash" && (
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">
-                  Received By Employee *
+                  Received By Employee
+                  <span className="ml-1 text-destructive">*</span>
                 </label>
 
-                <Input
-                  value={receivedByEmployee}
-                  onChange={(event) =>
-                    setReceivedByEmployee(event.target.value)
-                  }
-                  placeholder="Enter employee name"
-                />
+                <Select
+                  value={receivedByEmployee || undefined}
+                  onValueChange={(value) => {
+                    setReceivedByEmployee(value)
+                    setError(null)
+                  }}
+                  disabled={loadingEmployees || saving}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue
+                      placeholder={
+                        loadingEmployees
+                          ? "Loading employees..."
+                          : "Select an employee"
+                      }
+                    />
+                  </SelectTrigger>
 
-                <p className="text-xs text-muted-foreground">
-                  Enter the name of the FJGA employee who received the cash
-                  payment.
-                </p>
+                  <SelectContent>
+                    {employees.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.name}>
+                        {employee.position
+                          ? `${employee.name} — ${employee.position}`
+                          : employee.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {!loadingEmployees && employees.length === 0 ? (
+                  <p className="text-xs text-destructive">
+                    No active employees are available.
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Select the FJGA employee who received the cash payment.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -349,6 +394,8 @@ export function RecordPaymentDialog({
                   Upload a JPG, PNG, or WebP image of the receipt or other proof
                   that the cash payment was received. Maximum file size: 5 MB.
                 </p>
+
+                {proofFile && <UploadedPhotoPreview file={proofFile} />}
 
                 {proofFile && (
                   <div className="rounded-md border bg-muted/30 px-3 py-2">
@@ -399,7 +446,7 @@ export function RecordPaymentDialog({
               !amount ||
               paymentAmount <= 0 ||
               remainingBalance <= 0 ||
-              (paymentMethod === "cash_on_delivery" &&
+              (paymentMethod === "cash" &&
                 (!receivedByEmployee.trim() || !proofFile))
             }
             onClick={handleSubmit}

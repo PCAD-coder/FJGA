@@ -1,5 +1,7 @@
 "use client"
 
+import { WholeNumberInput } from "@/components/ui/whole-number-input"
+
 import { useEffect, useState } from "react"
 
 import { Input } from "@/components/ui/input"
@@ -342,7 +344,7 @@ export default function OrderAddressForm({
         <div className="space-y-2">
           <label className="text-sm font-medium">House / Building Number</label>
 
-          <Input
+          <WholeNumberInput
             value={value.houseBuildingNumber}
             onChange={(e) =>
               onChange({

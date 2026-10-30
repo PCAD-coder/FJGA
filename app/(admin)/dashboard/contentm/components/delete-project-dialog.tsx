@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { toast } from "sonner"
 
 import { useState } from "react"
@@ -70,12 +72,12 @@ export default function DeleteProjectDialog({
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Unable to save content."
+        getErrorMessage(error, "Unable to save content.")
       )
       console.error("Failed to delete content project:", error)
 
       setError(
-        error instanceof Error ? error.message : "Failed to delete project."
+        getErrorMessage(error, "Failed to delete project.")
       )
     } finally {
       setIsDeleting(false)

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import {
   Dialog,
@@ -13,6 +13,16 @@ import {
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
+import { getActiveEmployees } from "../../user-management/services/personnel.service"
+import type { Employee } from "../../user-management/types/personnel"
 
 interface Props {
   open: boolean
@@ -40,17 +50,40 @@ export default function ScheduleInspectionDialog({
   const [time, setTime] = useState("")
 
   const [assignedStaff, setAssignedStaff] = useState("")
+  const [employees, setEmployees] = useState<Employee[]>([])
+const [loadingEmployees, setLoadingEmployees] = useState(false)
 
   const [notes, setNotes] = useState("")
 
-  const handleSchedule = () => {
-    onConfirm(date, time, assignedStaff, notes)
+  useEffect(() => {
+  if (!open) return
 
-    setDate("")
-    setTime("")
-    setAssignedStaff("")
-    setNotes("")
+  async function loadEmployees() {
+    try {
+      setLoadingEmployees(true)
+
+      const data = await getActiveEmployees()
+      setEmployees(data)
+    } catch (error) {
+      console.error("Failed to load employees:", error)
+    } finally {
+      setLoadingEmployees(false)
+    }
   }
+
+  void loadEmployees()
+}, [open])
+
+const handleSchedule = () => {
+  if (!date || !time || !assignedStaff) return
+
+  onConfirm(date, time, assignedStaff, notes)
+
+  setDate("")
+  setTime("")
+  setAssignedStaff("")
+  setNotes("")
+}
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -82,11 +115,47 @@ export default function ScheduleInspectionDialog({
             onChange={(e) => setTime(e.target.value)}
           />
 
-          <Input
-            placeholder="Assigned Staff (optional)"
-            value={assignedStaff}
-            onChange={(e) => setAssignedStaff(e.target.value)}
-          />
+<div className="space-y-2">
+  <label className="text-sm font-medium">
+  Assigned Staff
+  <span className="ml-1 text-destructive">*</span>
+</label>
+
+  <Select
+    value={assignedStaff || undefined}
+    onValueChange={setAssignedStaff}
+    disabled={loadingEmployees}
+  >
+    <SelectTrigger className="w-full">
+      <SelectValue
+        placeholder={
+          loadingEmployees
+            ? "Loading employees..."
+            : "Select an employee"
+        }
+      />
+    </SelectTrigger>
+
+    <SelectContent>
+      {employees.map((employee) => (
+        <SelectItem
+          key={employee.id}
+          value={employee.name}
+        >
+          {employee.position
+            ? `${employee.name} — ${employee.position}`
+            : employee.name}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+
+  {!loadingEmployees && employees.length === 0 && (
+    <p className="text-xs text-muted-foreground">
+      No active employees are available.
+    </p>
+  )}
+</div>
 
           <Input
             placeholder="Inspection Notes"
@@ -100,7 +169,12 @@ export default function ScheduleInspectionDialog({
             Cancel
           </Button>
 
-          <Button onClick={handleSchedule}>Schedule</Button>
+          <Button
+  onClick={handleSchedule}
+  disabled={!date || !time || !assignedStaff || loadingEmployees}
+>
+  Schedule
+</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

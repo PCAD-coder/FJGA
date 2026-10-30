@@ -287,7 +287,7 @@ export default function OrderPaymentRequirement({
 
           {!rejectedSubmission && (
             <p className="mt-3 text-xs text-orange-700">
-              GCash and online banking payments require payment proof. Cash
+              GCash payments require payment proof and a reference number. Cash
               payments can be handled directly by the administrator.
             </p>
           )}

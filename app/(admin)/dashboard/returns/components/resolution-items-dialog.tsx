@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { toast } from "sonner"
 
 import { useEffect, useState } from "react"
@@ -277,14 +279,10 @@ export default function ResolutionItemsDialog({
       onOpenChange(false)
     } catch (saveError) {
       toast.error(
-        saveError instanceof Error
-          ? saveError.message
-          : "Failed to save resolution items."
+        getErrorMessage(saveError, "Failed to save resolution items.")
       )
       setError(
-        saveError instanceof Error
-          ? saveError.message
-          : "Failed to save resolution items."
+        getErrorMessage(saveError, "Failed to save resolution items.")
       )
     } finally {
       setSaving(false)

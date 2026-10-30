@@ -186,11 +186,12 @@ export function ProjectDetailsStep({
 
           <Input
             id="quantity"
-            type="number"
-            min={1}
-            max={100}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]+"
             value={data.quantity}
             onChange={(event) => {
+              if (!/^\d*$/.test(event.target.value)) return
               const value = Number(event.target.value)
 
               updateField(

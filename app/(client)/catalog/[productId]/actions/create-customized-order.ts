@@ -44,10 +44,18 @@ export async function createCustomizedOrder(input: {
   customerContactNumber: string
   paymentMethod: PaymentMethod
   aluminumVariantId?: string | null
-  glassVariantId?: string | null
+glassVariantId?: string | null
+handleVariantId?: string | null
+lockVariantId?: string | null
+hingeVariantId?: string | null
+rollerVariantId?: string | null
 }) {
-  if (!/^[0-9]{11}$/.test(input.customerContactNumber)) {
-    throw new Error("Contact number must contain exactly 11 digits.")
+  if (!Number.isInteger(input.quantity) || input.quantity < 1 || input.quantity > 50) {
+    throw new Error("Quantity must be a whole number between 1 and 50.")
+  }
+
+  if (!/^09[0-9]{9}$/.test(input.customerContactNumber)) {
+    throw new Error("Contact number must start with 09 and contain exactly 11 digits.")
   }
   const supabase = await createClient()
 
@@ -84,7 +92,11 @@ if (!user) {
         depth: input.depth,
         dimension_unit: "cm",
         aluminum_variant_id: input.aluminumVariantId ?? null,
-        glass_variant_id: input.glassVariantId ?? null,
+glass_variant_id: input.glassVariantId ?? null,
+handle_variant_id: input.handleVariantId ?? null,
+lock_variant_id: input.lockVariantId ?? null,
+hinge_variant_id: input.hingeVariantId ?? null,
+roller_variant_id: input.rollerVariantId ?? null,
       },
     ],
   })

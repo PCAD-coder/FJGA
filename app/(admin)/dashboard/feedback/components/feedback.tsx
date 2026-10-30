@@ -1,5 +1,7 @@
 "use client"
 
+import { getErrorMessage } from "@/lib/error-message"
+
 import { useEffect, useMemo, useState } from "react"
 
 import type { Feedback } from "../types/feedback"
@@ -69,7 +71,7 @@ export default function FeedbackPage() {
         console.error("Failed to load feedback:", err)
 
         setError(
-          err instanceof Error ? err.message : "Failed to load feedback."
+          getErrorMessage(err, "Failed to load feedback.")
         )
       } finally {
         setLoading(false)
@@ -140,7 +142,7 @@ export default function FeedbackPage() {
     } catch (error) {
       console.error("Failed to approve feedback:", error)
       toast.error(
-        error instanceof Error ? error.message : "Unable to update feedback."
+        getErrorMessage(error, "Unable to update feedback.")
       )
     }
   }
@@ -168,7 +170,7 @@ export default function FeedbackPage() {
     } catch (error) {
       console.error("Failed to archive feedback:", error)
       toast.error(
-        error instanceof Error ? error.message : "Unable to update feedback."
+        getErrorMessage(error, "Unable to update feedback.")
       )
     }
   }
@@ -197,7 +199,7 @@ export default function FeedbackPage() {
     } catch (error) {
       console.error("Failed to update featured status:", error)
       toast.error(
-        error instanceof Error ? error.message : "Unable to update feedback."
+        getErrorMessage(error, "Unable to update feedback.")
       )
     }
   }
@@ -380,9 +382,7 @@ export default function FeedbackPage() {
           } catch (error) {
             console.error("Failed to reply to feedback:", error)
             toast.error(
-              error instanceof Error
-                ? error.message
-                : "Unable to update feedback."
+              getErrorMessage(error, "Unable to update feedback.")
             )
           }
         }}

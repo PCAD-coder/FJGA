@@ -32,13 +32,17 @@ async function buildProductPricingSnapshot(
   supabase: Awaited<ReturnType<typeof createClient>>,
   productId: string,
   dimensions: {
-    width?: number | null
-    height?: number | null
-    depth?: number | null
+  width?: number | null
+  height?: number | null
+  depth?: number | null
 
-    aluminumVariantId?: string | null
-    glassVariantId?: string | null
-  }
+  aluminumVariantId?: string | null
+  glassVariantId?: string | null
+  handleVariantId?: string | null
+  lockVariantId?: string | null
+  hingeVariantId?: string | null
+  rollerVariantId?: string | null
+}
 ): Promise<ProductPricingSnapshot> {
   const { data: product, error: productError } = await supabase
     .from("products")
@@ -112,13 +116,17 @@ export async function createOrderServer(input: CreateOrderInput) {
   const pricingSnapshots = await Promise.all(
     input.items.map((item) =>
       buildProductPricingSnapshot(supabase, item.product_id, {
-        width: item.width,
-        height: item.height,
-        depth: item.depth,
+  width: item.width,
+  height: item.height,
+  depth: item.depth,
 
-        aluminumVariantId: item.aluminum_variant_id ?? null,
-        glassVariantId: item.glass_variant_id ?? null,
-      })
+  aluminumVariantId: item.aluminum_variant_id ?? null,
+  glassVariantId: item.glass_variant_id ?? null,
+  handleVariantId: item.handle_variant_id ?? null,
+  lockVariantId: item.lock_variant_id ?? null,
+  hingeVariantId: item.hinge_variant_id ?? null,
+  rollerVariantId: item.roller_variant_id ?? null,
+})
     )
   )
 
