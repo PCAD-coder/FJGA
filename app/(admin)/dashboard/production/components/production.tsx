@@ -53,6 +53,7 @@ export default function ProductionModule() {
   const filteredProjects = useMemo(() => {
     return projects.filter((project) => {
       const matchesSearch =
+        project.orderNumber.toLowerCase().includes(search.toLowerCase()) ||
         project.projectName.toLowerCase().includes(search.toLowerCase()) ||
         project.clientName.toLowerCase().includes(search.toLowerCase())
 
@@ -150,8 +151,8 @@ const inProductionCount = activeProjects.filter(
           <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 
           <Input
-            placeholder="Search project or client..."
-            aria-label="Search production projects"
+            placeholder="Search order number, project or client..."
+            aria-label="Search production by order number, project or client"
             className="h-9 rounded-lg bg-background/50 pl-9 shadow-none"
             value={search}
             onChange={(e) => setSearch(e.target.value)}

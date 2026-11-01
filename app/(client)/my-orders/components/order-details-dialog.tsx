@@ -711,10 +711,9 @@ export default function OrderDetailsDialog({ order }: Props) {
               </div>
             </div>
           </section>
-          {order.status !== "Declined" && (
+          {order.status === "Approved" && !order.productionPaymentComplete && (
             <>
               <Separator />
-
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm font-medium">Manage your payments</p>
@@ -736,15 +735,27 @@ export default function OrderDetailsDialog({ order }: Props) {
           )}
         </div>
         {order.status === "Completed" && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setIsReceiptOpen(true)}
-          >
-            <ReceiptText className="mr-2 size-4" />
-            View Official Receipt
-          </Button>
-        )}
+  <div className="flex flex-wrap gap-2">
+    {order.orderType === "standard" && order.productId && (
+      <Button
+        type="button"
+        onClick={() => router.push(`/catalog/${order.productId}`)}
+      >
+        <ShoppingCart className="mr-2 size-4" />
+        Buy Again
+      </Button>
+    )}
+
+    <Button
+      type="button"
+      variant="outline"
+      onClick={() => setIsReceiptOpen(true)}
+    >
+      <ReceiptText className="mr-2 size-4" />
+      View Official Receipt
+    </Button>
+  </div>
+)}
       </DialogContent>
     </Dialog>
     <OfficialReceiptDialog

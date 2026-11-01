@@ -9,6 +9,7 @@ import { ShieldCheck } from "lucide-react";
 
 export default function ReturnPolicy() {
   const policies = [
+    "FJGA does not offer refunds. Eligible return requests are resolved through repair or replacement, subject to evaluation and approval.",
     "Items must be reported within 7 days after delivery.",
     "Returned items must include all original parts and accessories.",
     "Products damaged due to misuse are not eligible for replacement.",

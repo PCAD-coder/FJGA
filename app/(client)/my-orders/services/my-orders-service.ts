@@ -642,6 +642,8 @@ const changedBy =
     orders.push({
       id: order.id,
 
+      productId: item.product_id ?? null,
+
       orderNumber: order.order_number,
 
       orderType: order.order_type === "custom" ? "custom" : "standard",

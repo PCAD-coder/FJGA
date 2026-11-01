@@ -41,7 +41,7 @@ interface ProductOrderPageProps {
     id: string
     name: string
     description: string
-    image: string
+    images: string[]
     width: number
     height: number
     depth: number
@@ -65,6 +65,9 @@ export default function ProductOrderPage({
   const [width, setWidth] = useState(product.width)
   const [height, setHeight] = useState(product.height)
   const [depth, setDepth] = useState(product.depth)
+  const [selectedImage, setSelectedImage] = useState(
+  product.images[0] ?? "/placeholder.jpg"
+)
   const [quantityInput, setQuantityInput] = useState("1")
   const router = useRouter()
   const quantity = Number(quantityInput)
@@ -404,12 +407,38 @@ const result = await getCustomizedPrice(product.id, {
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-8 xl:gap-12">
         <div className="overflow-hidden rounded-2xl border bg-card lg:sticky lg:top-6">
           <div className="flex aspect-square items-center justify-center bg-white p-4 sm:p-10">
-            <img
-              src={product.image}
-              alt={product.name}
-              className="h-full w-full object-contain"
-            />
-          </div>
+  <img
+    src={selectedImage}
+    alt={product.name}
+    className="h-full w-full object-contain"
+  />
+</div>
+
+{product.images.length > 1 && (
+  <div className="border-t p-4">
+    <div className="flex gap-3 overflow-x-auto">
+      {product.images.map((image, index) => (
+        <button
+          key={`${image}-${index}`}
+          type="button"
+          onClick={() => setSelectedImage(image)}
+          className={`h-20 w-20 shrink-0 overflow-hidden rounded-lg border bg-white p-1 transition ${
+            selectedImage === image
+              ? "border-primary ring-2 ring-primary/20"
+              : "border-border hover:border-primary/50"
+          }`}
+          aria-label={`View ${product.name} image ${index + 1}`}
+        >
+          <img
+            src={image}
+            alt={`${product.name} ${index + 1}`}
+            className="h-full w-full object-contain"
+          />
+        </button>
+      ))}
+    </div>
+  </div>
+)}
           <div className="border-t px-5 py-4">
             <p className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
               Product dimensions

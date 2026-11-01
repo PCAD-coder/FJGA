@@ -56,6 +56,7 @@ export interface OrderDeliveryAddress {
 
 export interface Order {
   id: string
+  productId: string | null
 
   orderNumber: string
   orderType: "standard" | "custom"

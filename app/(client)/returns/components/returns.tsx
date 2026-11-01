@@ -68,6 +68,18 @@ export default function Returns() {
     <div className="space-y-8">
       <ReturnHeader />
 
+      <aside
+        aria-label="Refund policy"
+        className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm"
+      >
+        <p className="font-semibold">Please note: FJGA does not offer refunds.</p>
+        <p className="mt-1 leading-6 text-muted-foreground">
+          Return requests are evaluated for repair or replacement, subject to
+          approval. If you choose not to proceed with an approved repair or
+          replacement, you may keep your order, but no refund will be issued.
+        </p>
+      </aside>
+
       <Tabs defaultValue="request" className="space-y-5">
         <TabsList className="h-10 rounded-lg border bg-card p-1">
           <TabsTrigger value="request" className="px-4 text-sm">
