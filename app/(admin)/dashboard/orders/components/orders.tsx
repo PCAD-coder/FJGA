@@ -23,6 +23,7 @@ import type { CustomOrder } from "../types/custom-order"
 
 import { useCustomOrderRequests } from "../hooks/use-custom-order-requests"
 import ViewOrderDialog from "./dialogs/view-order-dialog"
+import OrderBreakdownDialog from "./dialogs/order-breakdown-dialog"
 import CreateQuotationDialog from "./dialogs/create-quotation-dialog"
 import QuotationCard from "./quotations/quotation-card"
 import { getQuotationById } from "../services/quotations"
@@ -108,6 +109,7 @@ export default function OrdersModule() {
 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [viewOpen, setViewOpen] = useState(false)
+  const [breakdownOrder, setBreakdownOrder] = useState<Order | null>(null)
   const [orderToDeny, setOrderToDeny] = useState<Order | null>(null)
   const [orderDenyOpen, setOrderDenyOpen] = useState(false)
 
@@ -413,6 +415,10 @@ export default function OrdersModule() {
                     >
                       View
                     </Button>
+                    <Button variant="outline" onClick={() => setBreakdownOrder(order)}>
+                      <FileText className="mr-1 h-4 w-4" />
+                      View Breakdown
+                    </Button>
 
                     {(order.status === "pending" ||
                       order.status === "quoted") && (
@@ -460,6 +466,7 @@ export default function OrdersModule() {
             page={orderPage}
             onPageChange={setOrdersPage}
           />
+          {breakdownOrder && <OrderBreakdownDialog key={breakdownOrder.id} order={breakdownOrder} onClose={() => setBreakdownOrder(null)} />}
           <ViewOrderDialog
             order={selectedOrder}
             open={viewOpen}

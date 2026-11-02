@@ -7,6 +7,7 @@ import {
   getMaterials,
   updateMaterial,
   archiveMaterial,
+  restoreMaterial,
   restockMaterial,
   initializeExpirationStock,
   enableExpirationTracking,
@@ -31,6 +32,13 @@ export function useInventory() {
   const [search, setSearch] = useState("")
 
   const [categoryFilter, setCategoryFilter] = useState("all")
+
+  type MaterialStatusFilter = "active" | "archived"
+
+  const [materialStatusFilter, setMaterialStatusFilter] =
+    useState<MaterialStatusFilter>("active")
+
+  const activeMaterials = materials.filter((material) => material.is_active)
 
   type StockStatusFilter = "all" | "in-stock" | "low-stock" | "out-of-stock"
 
@@ -108,6 +116,21 @@ export function useInventory() {
       throw error
     }
   }
+  async function restoreInventoryMaterial(id: string) {
+    try {
+      await restoreMaterial(id)
+
+      await loadMaterials()
+      toast.success("Material restored successfully.")
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to restore the inventory material."
+      )
+      throw error
+    }
+  }
   async function restockInventoryMaterial(input: {
     materialId: string
     quantity: number
@@ -143,6 +166,11 @@ export function useInventory() {
         !searchValue ||
         material.material_name.toLowerCase().includes(searchValue)
 
+      const matchesMaterialStatus =
+        materialStatusFilter === "active"
+          ? material.is_active
+          : !material.is_active
+
       const matchesCategory =
         categoryFilter === "all"
           ? true
@@ -174,6 +202,7 @@ export function useInventory() {
 
       return (
         matchesSearch &&
+        matchesMaterialStatus &&
         matchesCategory &&
         matchesStockStatus &&
         matchesExpirationStatus
@@ -182,24 +211,25 @@ export function useInventory() {
   }, [
     materials,
     search,
+    materialStatusFilter,
     categoryFilter,
     stockStatusFilter,
     expirationStatusFilter,
   ])
 
-  const totalMaterials = materials.length
+  const totalMaterials = activeMaterials.length
 
-  const lowStockItems = materials.filter(
+  const lowStockItems = activeMaterials.filter(
     (material) =>
       material.stock_quantity <= material.minimum_stock &&
       material.stock_quantity > 0
   ).length
 
-  const outOfStockItems = materials.filter(
+  const outOfStockItems = activeMaterials.filter(
     (material) => material.stock_quantity === 0
   ).length
 
-  const expiringSoonItems = materials.filter(
+  const expiringSoonItems = activeMaterials.filter(
     (material) =>
       material.tracks_expiration && material.expiring_soon_quantity > 0
   ).length
@@ -306,6 +336,10 @@ export function useInventory() {
 
     categoryFilter,
 
+    materialStatusFilter,
+
+    setMaterialStatusFilter,
+
     setCategoryFilter,
 
     stockStatusFilter,
@@ -325,6 +359,7 @@ export function useInventory() {
     addMaterial,
     editMaterial,
     archiveMaterial: archiveInventoryMaterial,
+    restoreMaterial: restoreInventoryMaterial,
 
     refresh: loadMaterials,
     restockInventoryMaterial,

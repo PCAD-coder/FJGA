@@ -149,7 +149,6 @@ export async function getMaterials() {
       )
     `
     )
-    .eq("is_active", true)
     .order("material_name")
 
   if (error) throw error
@@ -282,6 +281,24 @@ export async function archiveMaterial(id: string) {
     module: "Inventory",
     description: `Archived inventory material with ID ${id}.`,
     severity: "warning",
+  })
+}
+
+export async function restoreMaterial(id: string) {
+  const { error } = await supabase
+    .from("inventory_materials")
+    .update({
+      is_active: true,
+    })
+    .eq("id", id)
+
+  if (error) throw error
+
+  await logActivity({
+    action: "Restored Material",
+    module: "Inventory",
+    description: `Restored inventory material with ID ${id}.`,
+    severity: "info",
   })
 }
 

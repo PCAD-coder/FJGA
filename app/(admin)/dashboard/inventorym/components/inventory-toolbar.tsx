@@ -46,6 +46,8 @@ interface InventoryToolbarProps {
 
   categoryFilter: string
   setCategoryFilter: (value: string) => void
+  materialStatusFilter: "active" | "archived"
+setMaterialStatusFilter: (value: "active" | "archived") => void
 
   glassCount: number
   aluminumCount: number
@@ -70,6 +72,8 @@ export function InventoryToolbar({
   setSearch,
   categoryFilter,
   setCategoryFilter,
+  materialStatusFilter,
+setMaterialStatusFilter,
   glassCount,
   aluminumCount,
   lowStockCount,
@@ -118,6 +122,24 @@ export function InventoryToolbar({
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+          <Select
+  value={materialStatusFilter}
+  onValueChange={(value) =>
+    setMaterialStatusFilter(value as "active" | "archived")
+  }
+>
+  <SelectTrigger
+    aria-label="Filter material status"
+    className="h-9 w-full min-w-0 flex-[1_1_150px] rounded-lg bg-background/50"
+  >
+    <SelectValue placeholder="Material status" />
+  </SelectTrigger>
+
+  <SelectContent>
+    <SelectItem value="active">Active Materials</SelectItem>
+    <SelectItem value="archived">Archived Materials</SelectItem>
+  </SelectContent>
+</Select>
 
           <Select
             value={stockStatusFilter}

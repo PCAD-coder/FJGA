@@ -7,16 +7,10 @@ import { ProductCardSkeleton } from "./product-card-skeleton"
 
 interface ProductGridProps {
   products: ProductWithDetails[]
-
-  onEdit: (product: ProductWithDetails) => void
-
-  onArchive: (product: ProductWithDetails) => void
-}
-interface ProductGridProps {
-  products: ProductWithDetails[]
   loading?: boolean
   onEdit: (product: ProductWithDetails) => void
   onArchive: (product: ProductWithDetails) => void
+  onRestore: (product: ProductWithDetails) => void
 }
 
 export function ProductGrid({
@@ -24,6 +18,7 @@ export function ProductGrid({
   loading = false,
   onEdit,
   onArchive,
+  onRestore,
 }: ProductGridProps) {
   if (loading) {
     return (
@@ -43,6 +38,7 @@ export function ProductGrid({
           product={product}
           onEdit={onEdit}
           onArchive={onArchive}
+          onRestore={onRestore}
         />
       ))}
     </div>

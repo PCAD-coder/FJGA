@@ -239,7 +239,11 @@ export default function ActivityLogs() {
           className="flex h-auto max-w-full flex-wrap justify-start gap-1"
         >
           {MODULE_FILTERS.map((module) => (
-            <ToggleGroupItem key={module} value={module}>
+            <ToggleGroupItem
+              key={module}
+              value={module}
+              className={module === "Backup" ? "hidden" : undefined}
+            >
               {module === "all" ? "All" : module}
             </ToggleGroupItem>
           ))}

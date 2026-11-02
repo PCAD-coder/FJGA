@@ -16,6 +16,7 @@ import {
   XCircle,
   Play,
   ListPlus,
+  RotateCcw,
 } from "lucide-react"
 
 interface Props {
@@ -25,6 +26,7 @@ interface Props {
   onDecline: () => void
   onSchedule: () => void
   onArchive: () => void
+  onRestore: () => void
   onCompleteInspection: () => void
   onAddResolutionItems: () => void
   onStartResolution: () => void
@@ -37,6 +39,7 @@ export default function ReturnCard({
   onDecline,
   onSchedule,
   onArchive,
+  onRestore,
   onCompleteInspection,
   onAddResolutionItems,
   onStartResolution,
@@ -65,14 +68,20 @@ export default function ReturnCard({
     declined: "Declined",
     resolved: "Resolved",
   }
-  const canApprove = request.status === "under-review"
+  const canApprove =
+  !request.archived &&
+  request.status === "under-review"
 
-  const canSchedule =
-    request.status === "approved" || request.status === "inspection-scheduled"
+const canSchedule =
+  !request.archived &&
+  (request.status === "approved" ||
+    request.status === "inspection-scheduled")
 
   const isInspectionScheduled = request.status === "inspection-scheduled"
 
-  const canCompleteInspection = request.status === "inspection-scheduled"
+const canCompleteInspection =
+  !request.archived &&
+  request.status === "inspection-scheduled"
 
   const isResolutionProcessing =
     request.status === "repair-processing" ||
@@ -83,12 +92,20 @@ export default function ReturnCard({
 
   const hasResolutionItems = (request.resolution?.items.length ?? 0) > 0
 
-  const canAddResolutionItems = hasPendingResolution && !hasResolutionItems
+const canAddResolutionItems =
+  !request.archived &&
+  hasPendingResolution &&
+  !hasResolutionItems
 
-  const canStartResolution = hasPendingResolution && hasResolutionItems
+const canStartResolution =
+  !request.archived &&
+  hasPendingResolution &&
+  hasResolutionItems
 
-  const canArchive =
-    request.status === "declined" || request.status === "resolved"
+const canArchive =
+  !request.archived &&
+  (request.status === "declined" ||
+    request.status === "resolved")
 
   return (
     <Card className="min-w-0 gap-0 overflow-hidden rounded-xl border border-border/80 py-0 shadow-none ring-0">
@@ -226,6 +243,12 @@ export default function ReturnCard({
                   Archive Request
                 </Button>
               )}
+              {request.archived && (
+  <Button variant="outline" onClick={onRestore}>
+    <RotateCcw className="mr-2 h-4 w-4" />
+    Make Active
+  </Button>
+)}
             </div>
           </div>
         </div>

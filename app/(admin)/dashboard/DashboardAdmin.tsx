@@ -3,6 +3,8 @@ import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 
 import AdminDashboardSkeleton from "./dashboard-skeleton"
+import { getActivityLogs } from "./activity-logs/services/activity-logs.service"
+import type { ActivityLog } from "./activity-logs/types/activity-log"
 
 import { DashboardCard } from "@/components/dashboard_cards"
 
@@ -87,6 +89,9 @@ export default function DashboardClient({ profile }: DashboardClientProps) {
   })
 
   const [loading, setLoading] = useState(true)
+  const [recentActivities, setRecentActivities] = useState<ActivityLog[]>([])
+  const [activitiesLoading, setActivitiesLoading] = useState(true)
+  const [activitiesError, setActivitiesError] = useState<string | null>(null)
   const [revenueData, setRevenueData] = useState<
     { month: string; revenue: number }[]
   >([])
@@ -99,6 +104,27 @@ export default function DashboardClient({ profile }: DashboardClientProps) {
       color: string
     }[]
   >([])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadRecentActivities() {
+      try {
+        const logs = await getActivityLogs(5)
+        if (!cancelled) setRecentActivities(logs)
+      } catch (error) {
+        console.error("Failed to load recent activities:", error)
+        if (!cancelled) setActivitiesError("Unable to load recent activities.")
+      } finally {
+        if (!cancelled) setActivitiesLoading(false)
+      }
+    }
+
+    loadRecentActivities()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     async function loadDashboardStats() {
@@ -864,39 +890,53 @@ export default function DashboardClient({ profile }: DashboardClientProps) {
           </CardTitle>
 
           <CardDescription className="text-sm leading-5">
-            Latest actions performed in the system
+            The 5 latest actions recorded in Activity Logs
           </CardDescription>
         </CardHeader>
 
         <CardContent className="px-4 py-5 sm:px-6">
           <div className="space-y-4">
-            <div className="flex flex-col gap-1 border-b border-border/60 pb-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-              <span>Admin added new aluminum profile</span>
-              <span className="shrink-0 text-sm text-muted-foreground">
-                10 mins ago
-              </span>
-            </div>
-
-            <div className="flex flex-col gap-1 border-b border-border/60 pb-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-              <span>Staff updated inventory stock</span>
-              <span className="shrink-0 text-sm text-muted-foreground">
-                35 mins ago
-              </span>
-            </div>
-
-            <div className="flex flex-col gap-1 border-b border-border/60 pb-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-              <span>New custom order approved</span>
-              <span className="shrink-0 text-sm text-muted-foreground">
-                1 hour ago
-              </span>
-            </div>
-
-            <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
-              <span>Delivery marked as completed</span>
-              <span className="shrink-0 text-sm text-muted-foreground">
-                3 hours ago
-              </span>
-            </div>
+            {activitiesLoading ? (
+              <p className="text-sm text-muted-foreground" role="status">
+                Loading recent activities...
+              </p>
+            ) : activitiesError ? (
+              <p className="text-sm text-destructive" role="alert">
+                {activitiesError}
+              </p>
+            ) : recentActivities.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No activities recorded yet.
+              </p>
+            ) : (
+              recentActivities.map((activity) => (
+                <div
+                  key={activity.id}
+                  className="flex flex-col gap-2 border-b border-border/60 pb-3 text-sm last:border-b-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between"
+                >
+                  <div className="min-w-0 space-y-1">
+                    <p className="font-medium wrap-break-word">{activity.action}</p>
+                    <p className="text-muted-foreground">
+                      {activity.userName} &middot; {activity.module}
+                    </p>
+                    {activity.description && (
+                      <p className="text-muted-foreground wrap-break-word">
+                        {activity.description}
+                      </p>
+                    )}
+                  </div>
+                  <time
+                    dateTime={activity.timestamp}
+                    className="shrink-0 text-sm text-muted-foreground"
+                  >
+                    {new Date(activity.timestamp).toLocaleString("en-PH", {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
+                  </time>
+                </div>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>

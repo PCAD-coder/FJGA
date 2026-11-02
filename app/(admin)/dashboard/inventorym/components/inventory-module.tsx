@@ -6,16 +6,25 @@ import InventorySkeleton from "./inventory-skeleton"
 
 import { useInventory } from "../hooks/use-inventory"
 
-import type { InventoryInsert, InventoryUpdate } from "../types/inventory"
+import type {
+  InventoryInsert,
+  InventoryMaterial,
+} from "../types/inventory"
 
 import { InventoryKPIs } from "./cards/inventory-kpis"
 import { InventoryTable } from "./table/inventory-table"
 import { InventoryToolbar } from "./inventory-toolbar"
+import { RestoreMaterialDialog } from "./dialogs/restore-material-dialog"
 
 const PAGE_SIZE = 10
 
 export default function InventoryModule() {
   const [page, setPage] = useState(1)
+
+  const [restoreMaterialTarget, setRestoreMaterialTarget] =
+    useState<InventoryMaterial | null>(null)
+
+  const [restoreSaving, setRestoreSaving] = useState(false)
   const {
     loading,
     materials,
@@ -24,12 +33,15 @@ export default function InventoryModule() {
     setSearch,
     categoryFilter,
     setCategoryFilter,
+    materialStatusFilter,
+    setMaterialStatusFilter,
     totalMaterials,
     lowStockItems,
     outOfStockItems,
     addMaterial,
     editMaterial,
     archiveMaterial,
+    restoreMaterial,
     restockInventoryMaterial,
     initializeMaterialExpirationStock,
     enableMaterialExpirationTracking,
@@ -46,12 +58,6 @@ export default function InventoryModule() {
       ...form,
       is_active: true,
     })
-  }
-  async function handleEditMaterial(id: string, form: InventoryUpdate) {
-    await editMaterial(id, form)
-  }
-  async function handleArchiveMaterial(id: string) {
-    await archiveMaterial(id)
   }
 
   const totalPages = Math.max(
@@ -99,6 +105,11 @@ export default function InventoryModule() {
           setCategoryFilter(value)
           setPage(1)
         }}
+        materialStatusFilter={materialStatusFilter}
+        setMaterialStatusFilter={(value) => {
+          setMaterialStatusFilter(value)
+          setPage(1)
+        }}
         stockStatusFilter={stockStatusFilter}
         setStockStatusFilter={(value) => {
           setStockStatusFilter(value)
@@ -110,11 +121,33 @@ export default function InventoryModule() {
           setPage(1)
         }}
         materials={filteredMaterials}
-        glassCount={materials.filter((m) => m.category === "Glass").length}
-        aluminumCount={
-          materials.filter((m) => m.category === "Aluminum").length
+        glassCount={
+          materials.filter(
+            (material) =>
+              material.category === "Glass" &&
+              (materialStatusFilter === "active"
+                ? material.is_active
+                : !material.is_active)
+          ).length
         }
-        lowStockCount={lowStockItems}
+        aluminumCount={
+          materials.filter(
+            (material) =>
+              material.category === "Aluminum" &&
+              (materialStatusFilter === "active"
+                ? material.is_active
+                : !material.is_active)
+          ).length
+        }
+        lowStockCount={
+          materials.filter(
+            (material) =>
+              (materialStatusFilter === "active"
+                ? material.is_active
+                : !material.is_active) &&
+              material.stock_quantity <= material.minimum_stock
+          ).length
+        }
         onAddMaterial={handleAddMaterial}
       />
 
@@ -122,11 +155,37 @@ export default function InventoryModule() {
         materials={paginatedMaterials}
         onEditMaterial={editMaterial}
         onArchiveMaterial={archiveMaterial}
+        onRestoreMaterial={(material) => {
+          setRestoreMaterialTarget(material)
+        }}
         onRestock={restockInventoryMaterial}
         onInitializeExpirationStock={initializeMaterialExpirationStock}
         onEnableExpirationTracking={enableMaterialExpirationTracking}
         onDisposeExpiredBatch={disposeExpiredInventoryBatch}
       />
+      {restoreMaterialTarget && (
+        <RestoreMaterialDialog
+          open={Boolean(restoreMaterialTarget)}
+          onOpenChange={(open) => {
+            if (!open && !restoreSaving) {
+              setRestoreMaterialTarget(null)
+            }
+          }}
+          materialName={restoreMaterialTarget.material_name}
+          saving={restoreSaving}
+          onConfirm={async () => {
+            try {
+              setRestoreSaving(true)
+
+              await restoreMaterial(restoreMaterialTarget.id)
+
+              setRestoreMaterialTarget(null)
+            } finally {
+              setRestoreSaving(false)
+            }
+          }}
+        />
+      )}
       {filteredMaterials.length > 0 && (
         <nav
           aria-label="Inventory pagination"

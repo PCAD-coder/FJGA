@@ -14,6 +14,7 @@ import {
   completeReturnInspection,
   startReturnResolution,
   archiveReturnRequest,
+  restoreReturnRequest,
 } from "../services/return-service"
 
 import ReturnCard from "./return-card"
@@ -22,6 +23,7 @@ import ViewReturnDialog from "./view-return-dialog"
 import ApproveRepairDialog from "./approve-repair-dialog"
 import ScheduleInspectionDialog from "./schedule-inspection-dialog"
 import ArchiveRepairDialog from "./archive-return-dialog"
+import RestoreReturnDialog from "./restore-return-dialog"
 import DeclineRepairDialog from "./decline-return-dialog"
 
 import CompleteInspectionDialog from "./complete-inspection-dialog"
@@ -30,6 +32,13 @@ import type { CompleteInspectionData } from "./complete-inspection-dialog"
 import ResolutionItemsDialog from "./resolution-items-dialog"
 
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 import { Card, CardContent } from "@/components/ui/card"
 
@@ -57,9 +66,7 @@ async function notifyReturnAction<T extends { error?: string | null }>(
     else toast.success(message)
     return result
   } catch (error) {
-    toast.error(
-      getErrorMessage(error, "Unable to complete the return action.")
-    )
+    toast.error(getErrorMessage(error, "Unable to complete the return action."))
     throw error
   }
 }
@@ -74,6 +81,11 @@ export default function Returns() {
   const [search, setSearch] = useState("")
 
   const [statusFilter, setStatusFilter] = useState("all")
+
+  type ReturnArchiveFilter = "active" | "archived"
+
+  const [archiveFilter, setArchiveFilter] =
+    useState<ReturnArchiveFilter>("active")
 
   const [currentPage, setCurrentPage] = useState(1)
 
@@ -90,6 +102,11 @@ export default function Returns() {
   const [scheduleOpen, setScheduleOpen] = useState(false)
 
   const [archiveOpen, setArchiveOpen] = useState(false)
+
+  const [restoreRequest, setRestoreRequest] = useState<ReturnRequest | null>(
+    null
+  )
+  const [restoreSaving, setRestoreSaving] = useState(false)
 
   const loadReturns = async () => {
     setLoading(true)
@@ -130,59 +147,57 @@ export default function Returns() {
     setInspectionRequest(request)
     setInspectionDialogOpen(true)
   }
-async function handleInspectionComplete(
-  data: CompleteInspectionData
-) {
-  if (!inspectionRequest) return
+  async function handleInspectionComplete(data: CompleteInspectionData) {
+    if (!inspectionRequest) return
 
-  const result = await notifyReturnAction(
-    () => completeReturnInspection(inspectionRequest.id, data),
-    data.resolutionType === "no_action"
-      ? "Inspection completed. No further action is required."
-      : "Inspection completed and resolution created successfully."
-  )
-
-  if (result.error) {
-    throw new Error(result.error)
-  }
-
-  setInspectionDialogOpen(false)
-  setInspectionRequest(null)
-
-  await loadReturns()
-}
-
-function handleAddResolutionItems(request: ReturnRequest) {
-  const resolution = request.resolution
-
-  if (!resolution) {
-    setError("A resolution could not be found for this return request.")
-    return
-  }
-
-  if (
-    resolution.resolutionType !== "repair" &&
-    resolution.resolutionType !== "replacement"
-  ) {
-    setError(
-      "This return request does not require repair or replacement items."
+    const result = await notifyReturnAction(
+      () => completeReturnInspection(inspectionRequest.id, data),
+      data.resolutionType === "no_action"
+        ? "Inspection completed. No further action is required."
+        : "Inspection completed and resolution created successfully."
     )
-    return
+
+    if (result.error) {
+      throw new Error(result.error)
+    }
+
+    setInspectionDialogOpen(false)
+    setInspectionRequest(null)
+
+    await loadReturns()
   }
 
-  if (resolution.resolutionStatus !== "pending") {
-    setError("Only a pending resolution can have items added.")
-    return
+  function handleAddResolutionItems(request: ReturnRequest) {
+    const resolution = request.resolution
+
+    if (!resolution) {
+      setError("A resolution could not be found for this return request.")
+      return
+    }
+
+    if (
+      resolution.resolutionType !== "repair" &&
+      resolution.resolutionType !== "replacement"
+    ) {
+      setError(
+        "This return request does not require repair or replacement items."
+      )
+      return
+    }
+
+    if (resolution.resolutionStatus !== "pending") {
+      setError("Only a pending resolution can have items added.")
+      return
+    }
+
+    setError(null)
+
+    setResolutionId(resolution.id)
+    setResolutionType(resolution.resolutionType)
+    setResolutionReturnRequestId(request.id)
+
+    setResolutionItemsDialogOpen(true)
   }
-
-  setError(null)
-
-  setResolutionId(resolution.id)
-  setResolutionType(resolution.resolutionType)
-  setResolutionReturnRequestId(request.id)
-
-  setResolutionItemsDialogOpen(true)
-}
 
   async function handleResolutionItemsComplete() {
     setResolutionItemsDialogOpen(false)
@@ -207,8 +222,6 @@ function handleAddResolutionItems(request: ReturnRequest) {
 
   const filteredRequests = useMemo(() => {
     return requests.filter((request) => {
-      if (request.archived) return false
-
       const searchValue = search.toLowerCase()
 
       const matchesSearch =
@@ -219,9 +232,12 @@ function handleAddResolutionItems(request: ReturnRequest) {
       const matchesStatus =
         statusFilter === "all" ? true : request.status === statusFilter
 
-      return matchesSearch && matchesStatus
+      const matchesArchiveStatus =
+        archiveFilter === "active" ? !request.archived : request.archived
+
+      return matchesSearch && matchesStatus && matchesArchiveStatus
     })
-  }, [requests, search, statusFilter])
+  }, [requests, search, statusFilter, archiveFilter])
 
   const perPage = 10
 
@@ -333,22 +349,46 @@ function handleAddResolutionItems(request: ReturnRequest) {
     await loadReturns()
   }
 
-async function handleArchive() {
-  if (!selectedRequest) return
+  async function handleArchive() {
+    if (!selectedRequest) return
 
-  const result = await notifyReturnAction(
-    () => archiveReturnRequest(selectedRequest.id),
-    "Return request archived successfully."
-  )
+    const result = await notifyReturnAction(
+      () => archiveReturnRequest(selectedRequest.id),
+      "Return request archived successfully."
+    )
 
-  if (result.error) {
-    return
+    if (result.error) {
+      return
+    }
+
+    setArchiveOpen(false)
+    setSelectedRequest(null)
+
+    await loadReturns()
   }
+  async function handleRestore() {
+  if (!restoreRequest) return
 
-  setArchiveOpen(false)
-  setSelectedRequest(null)
+  try {
+    setRestoreSaving(true)
 
-  await loadReturns()
+    await restoreReturnRequest(restoreRequest.id)
+
+    toast.success("Return request restored successfully.")
+
+    setRestoreRequest(null)
+
+    await loadReturns()
+  } catch (error) {
+    toast.error(
+      getErrorMessage(
+        error,
+        "Unable to restore the return request."
+      )
+    )
+  } finally {
+    setRestoreSaving(false)
+  }
 }
 
   const totalReturns = requests.filter((request) => !request.archived).length
@@ -441,19 +481,42 @@ async function handleArchive() {
           <ToggleGroupItem value="approved">Approved</ToggleGroupItem>
         </ToggleGroup>
 
-        <div className="relative max-w-md">
-          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-
-          <Input
-            aria-label="Search return requests"
-            className="h-9 rounded-lg bg-background/50 pl-9 shadow-none"
-            placeholder="Search returns..."
-            value={search}
-            onChange={(event) => {
-              setSearch(event.target.value)
+        <div className="flex flex-wrap items-center gap-3">
+          <Select
+            value={archiveFilter}
+            onValueChange={(value) => {
+              setArchiveFilter(value as ReturnArchiveFilter)
               setCurrentPage(1)
             }}
-          />
+          >
+            <SelectTrigger
+              aria-label="Filter archived returns"
+              className="h-9 w-[180px] rounded-lg bg-background/50"
+            >
+              <SelectValue />
+            </SelectTrigger>
+
+            <SelectContent>
+              <SelectItem value="active">Active Returns</SelectItem>
+
+              <SelectItem value="archived">Archived Returns</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <div className="relative w-full max-w-md">
+            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+
+            <Input
+              aria-label="Search return requests"
+              className="h-9 rounded-lg bg-background/50 pl-9 shadow-none"
+              placeholder="Search returns..."
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value)
+                setCurrentPage(1)
+              }}
+            />
+          </div>
         </div>
       </div>
 
@@ -493,32 +556,35 @@ async function handleArchive() {
         <div className="space-y-4">
           {paginatedRequests.map((request) => (
             <ReturnCard
-  key={request.id}
-  request={request}
-  onView={() => {
-    setSelectedRequest(request)
-    setViewOpen(true)
-  }}
-  onApprove={() => {
-    setSelectedRequest(request)
-    setApproveOpen(true)
-  }}
-  onDecline={() => {
-    setSelectedRequest(request)
-    setDeclineOpen(true)
-  }}
-  onSchedule={() => {
-    setSelectedRequest(request)
-    setScheduleOpen(true)
-  }}
-  onArchive={() => {
-    setSelectedRequest(request)
-    setArchiveOpen(true)
-  }}
-  onCompleteInspection={() => handleCompleteInspection(request)}
-  onAddResolutionItems={() => handleAddResolutionItems(request)}
-  onStartResolution={() => handleStartResolution(request)}
-/>
+              key={request.id}
+              request={request}
+              onView={() => {
+                setSelectedRequest(request)
+                setViewOpen(true)
+              }}
+              onApprove={() => {
+                setSelectedRequest(request)
+                setApproveOpen(true)
+              }}
+              onDecline={() => {
+                setSelectedRequest(request)
+                setDeclineOpen(true)
+              }}
+              onSchedule={() => {
+                setSelectedRequest(request)
+                setScheduleOpen(true)
+              }}
+              onArchive={() => {
+                setSelectedRequest(request)
+                setArchiveOpen(true)
+              }}
+              onRestore={() => {
+                setRestoreRequest(request)
+              }}
+              onCompleteInspection={() => handleCompleteInspection(request)}
+              onAddResolutionItems={() => handleAddResolutionItems(request)}
+              onStartResolution={() => handleStartResolution(request)}
+            />
           ))}
         </div>
       )}
@@ -589,6 +655,17 @@ async function handleArchive() {
         title={selectedRequest?.title}
         onConfirm={handleArchive}
       />
+      <RestoreReturnDialog
+  open={Boolean(restoreRequest)}
+  onOpenChange={(open) => {
+    if (!open && !restoreSaving) {
+      setRestoreRequest(null)
+    }
+  }}
+  title={restoreRequest?.title}
+  onConfirm={handleRestore}
+  saving={restoreSaving}
+/>
       <CompleteInspectionDialog
         open={inspectionDialogOpen}
         onOpenChange={(open) => {

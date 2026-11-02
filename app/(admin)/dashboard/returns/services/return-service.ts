@@ -775,3 +775,17 @@ export async function archiveReturnRequest(
 
   return data
 }
+
+export async function restoreReturnRequest(
+  returnRequestId: string
+): Promise<void> {
+  const supabase = createClient()
+
+  const { error } = await supabase.rpc("restore_return_request", {
+    p_return_request_id: returnRequestId,
+  })
+
+  if (error) {
+    throw new Error(error.message)
+  }
+}

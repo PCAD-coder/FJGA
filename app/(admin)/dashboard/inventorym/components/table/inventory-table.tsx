@@ -7,6 +7,7 @@ import {
   MoreVertical,
   PackagePlus,
   Pencil,
+  RotateCcw,
   Trash2,
 } from "lucide-react"
 
@@ -52,6 +53,7 @@ interface InventoryTableProps {
   onEditMaterial: (id: string, form: InventoryUpdate) => Promise<void>
 
   onArchiveMaterial: (id: string) => Promise<void>
+  onRestoreMaterial: (material: InventoryMaterial) => void
 
   onRestock: (input: {
     materialId: string
@@ -98,6 +100,7 @@ export function InventoryTable({
   materials,
   onEditMaterial,
   onArchiveMaterial,
+onRestoreMaterial,
   onRestock,
   onInitializeExpirationStock,
   onEnableExpirationTracking,
@@ -240,96 +243,111 @@ export function InventoryTable({
 
                           <DropdownMenuContent align="end" className="w-60">
                             <DropdownMenuLabel>
-                              Material Actions
-                            </DropdownMenuLabel>
+  Material Actions
+</DropdownMenuLabel>
 
-                            <DropdownMenuSeparator />
+<DropdownMenuSeparator />
 
-                            <RestockMaterialDialog
-                              material={material}
-                              onRestock={onRestock}
-                              trigger={
-                                <DropdownMenuItem
-                                  onSelect={(event) => event.preventDefault()}
-                                >
-                                  <PackagePlus className="mr-2 h-4 w-4" />
-                                  Restock
-                                </DropdownMenuItem>
-                              }
-                            />
+<EditMaterialDialog
+  material={material}
+  onSubmit={onEditMaterial}
+  trigger={
+    <DropdownMenuItem
+      onSelect={(event) => event.preventDefault()}
+    >
+      <Pencil className="mr-2 h-4 w-4" />
+      Edit Material
+    </DropdownMenuItem>
+  }
+/>
 
-                            <EditMaterialDialog
-                              material={material}
-                              onSubmit={onEditMaterial}
-                              trigger={
-                                <DropdownMenuItem
-                                  onSelect={(event) => event.preventDefault()}
-                                >
-                                  <Pencil className="mr-2 h-4 w-4" />
-                                  Edit Material
-                                </DropdownMenuItem>
-                              }
-                            />
+{material.is_active ? (
+  <>
+    <RestockMaterialDialog
+      material={material}
+      onRestock={onRestock}
+      trigger={
+        <DropdownMenuItem
+          onSelect={(event) => event.preventDefault()}
+        >
+          <PackagePlus className="mr-2 h-4 w-4" />
+          Restock
+        </DropdownMenuItem>
+      }
+    />
 
-                            {hasExpirationActions && <DropdownMenuSeparator />}
+    {hasExpirationActions && <DropdownMenuSeparator />}
 
-                            {canEnableExpirationTracking && (
-                              <EnableExpirationTrackingDialog
-                                material={material}
-                                onSubmit={onEnableExpirationTracking}
-                                trigger={
-                                  <DropdownMenuItem
-                                    onSelect={(event) => event.preventDefault()}
-                                  >
-                                    <CalendarClock className="mr-2 h-4 w-4" />
-                                    Enable Expiration Tracking
-                                  </DropdownMenuItem>
-                                }
-                              />
-                            )}
+    {canEnableExpirationTracking && (
+      <EnableExpirationTrackingDialog
+        material={material}
+        onSubmit={onEnableExpirationTracking}
+        trigger={
+          <DropdownMenuItem
+            onSelect={(event) => event.preventDefault()}
+          >
+            <CalendarClock className="mr-2 h-4 w-4" />
+            Enable Expiration Tracking
+          </DropdownMenuItem>
+        }
+      />
+    )}
 
-                            {canInitializeExpirationStock && (
-                              <DropdownMenuItem
-                                onSelect={() => {
-                                  setInitializeMaterial(material)
-                                }}
-                              >
-                                <CalendarClock className="mr-2 h-4 w-4" />
-                                Initialize Expiration Stock
-                              </DropdownMenuItem>
-                            )}
+    {canInitializeExpirationStock && (
+      <DropdownMenuItem
+        onSelect={() => {
+          setInitializeMaterial(material)
+        }}
+      >
+        <CalendarClock className="mr-2 h-4 w-4" />
+        Initialize Expiration Stock
+      </DropdownMenuItem>
+    )}
 
-                            {hasExpiredStock && (
-                              <DisposeExpiredStockDialog
-                                material={material}
-                                onDispose={onDisposeExpiredBatch}
-                                trigger={
-                                  <DropdownMenuItem
-                                    onSelect={(event) => event.preventDefault()}
-                                    className="text-destructive focus:text-destructive"
-                                  >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Dispose Expired Stock
-                                  </DropdownMenuItem>
-                                }
-                              />
-                            )}
+    {hasExpiredStock && (
+      <DisposeExpiredStockDialog
+        material={material}
+        onDispose={onDisposeExpiredBatch}
+        trigger={
+          <DropdownMenuItem
+            onSelect={(event) => event.preventDefault()}
+            className="text-destructive focus:text-destructive"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Dispose Expired Stock
+          </DropdownMenuItem>
+        }
+      />
+    )}
 
-                            <DropdownMenuSeparator />
+    <DropdownMenuSeparator />
 
-                            <ArchiveMaterialDialog
-                              material={material}
-                              onArchive={onArchiveMaterial}
-                              trigger={
-                                <DropdownMenuItem
-                                  onSelect={(event) => event.preventDefault()}
-                                  className="text-destructive focus:text-destructive"
-                                >
-                                  <Archive className="mr-2 h-4 w-4" />
-                                  Archive Material
-                                </DropdownMenuItem>
-                              }
-                            />
+    <ArchiveMaterialDialog
+      material={material}
+      onArchive={onArchiveMaterial}
+      trigger={
+        <DropdownMenuItem
+          onSelect={(event) => event.preventDefault()}
+          className="text-destructive focus:text-destructive"
+        >
+          <Archive className="mr-2 h-4 w-4" />
+          Archive Material
+        </DropdownMenuItem>
+      }
+    />
+  </>
+) : (
+  <>
+    <DropdownMenuSeparator />
+
+    <DropdownMenuItem
+      onSelect={() => onRestoreMaterial(material)}
+    >
+      <RotateCcw className="mr-2 h-4 w-4" />
+      Make Active
+    </DropdownMenuItem>
+  </>
+)}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>

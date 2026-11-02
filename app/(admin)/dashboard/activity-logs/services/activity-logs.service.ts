@@ -20,10 +20,10 @@ interface ActivityLogRow {
     | null
 }
 
-export async function getActivityLogs(): Promise<ActivityLog[]> {
+export async function getActivityLogs(limit?: number): Promise<ActivityLog[]> {
   const supabase = createClient()
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("activity_logs")
     .select(`
       id,
@@ -41,6 +41,13 @@ export async function getActivityLogs(): Promise<ActivityLog[]> {
       )
     `)
     .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+
+  if (limit !== undefined) {
+    query = query.limit(limit)
+  }
+
+  const { data, error } = await query
 
   if (error) {
     console.error("Error fetching activity logs:", error)

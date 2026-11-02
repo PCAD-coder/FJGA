@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { Edit, Archive, Package } from "lucide-react"
+import { Archive, Edit, Package, RotateCcw } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
@@ -15,9 +15,16 @@ interface ProductCardProps {
   onEdit: (product: ProductWithDetails) => void
 
   onArchive: (product: ProductWithDetails) => void
+
+  onRestore: (product: ProductWithDetails) => void
 }
 
-export function ProductCard({ product, onEdit, onArchive }: ProductCardProps) {
+export function ProductCard({
+  product,
+  onEdit,
+  onArchive,
+  onRestore,
+}: ProductCardProps) {
   const thumbnail =
     product.images.length > 0 ? product.images[0].image_url : null
 
@@ -140,16 +147,31 @@ export function ProductCard({ product, onEdit, onArchive }: ProductCardProps) {
           Edit
         </Button>
 
-        <Button
-          variant="destructive"
-          size="sm"
-          className="h-9 flex-1 rounded-lg text-xs shadow-none"
-          onClick={() => onArchive(product)}
-        >
-          <Archive className="mr-2 h-4 w-4" />
-          Archive
-        </Button>
-        {!product.is_active && <Badge variant="destructive">Archived</Badge>}
+        {product.is_active ? (
+          <Button
+            variant="destructive"
+            size="sm"
+            className="h-9 flex-1 rounded-lg text-xs shadow-none"
+            onClick={() => onArchive(product)}
+          >
+            <Archive className="mr-2 h-4 w-4" />
+            Archive
+          </Button>
+        ) : (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 flex-1 rounded-lg text-xs shadow-none"
+              onClick={() => onRestore(product)}
+            >
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Make Active
+            </Button>
+
+            <Badge variant="destructive">Archived</Badge>
+          </>
+        )}
       </CardFooter>
     </Card>
   )

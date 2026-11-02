@@ -269,7 +269,7 @@ export default function FeedbackPage() {
 
           <ToggleGroupItem value="published">Published</ToggleGroupItem>
 
-          <ToggleGroupItem value="archived">Archived</ToggleGroupItem>
+          <ToggleGroupItem value="archived" className="hidden">Archived</ToggleGroupItem>
         </ToggleGroup>
 
         <div className="relative max-w-md">

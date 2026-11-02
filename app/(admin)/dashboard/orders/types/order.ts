@@ -11,6 +11,8 @@ export type OrderStatus =
   | "denied"
 
 export interface MaterialSnapshot {
+  series?: string | null
+  thickness?: string | number | null
   material_id: string
   material_name: string
   quantity: number
@@ -53,6 +55,7 @@ export interface OrderItem {
   height?: number | null
   depth?: number | null
   dimensionUnit?: string | null
+  dimension_unit?: string | null
 }
 
 export interface OrderAddress {
@@ -84,6 +87,8 @@ export interface OrderAddress {
 }
 
 export interface Order {
+  production_assigned_to?: string | null
+  estimated_completion_date?: string | null
   id: string
   order_number: string
 

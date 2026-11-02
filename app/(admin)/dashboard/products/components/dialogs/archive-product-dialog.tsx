@@ -13,16 +13,18 @@ import {
 
 interface Props {
   open: boolean
-  onOpenChange: (
-    open: boolean
-  ) => void
+  onOpenChange: (open: boolean) => void
   productName: string
+  onConfirm: () => void
+  saving: boolean
 }
 
-export default function ArchiveProductDialog({
+export function ArchiveProductDialog({
   open,
   onOpenChange,
   productName,
+  onConfirm,
+  saving,
 }: Props) {
   return (
     <AlertDialog
@@ -30,36 +32,29 @@ export default function ArchiveProductDialog({
       onOpenChange={onOpenChange}
     >
       <AlertDialogContent>
-
         <AlertDialogHeader>
-
           <AlertDialogTitle>
             Archive Product
           </AlertDialogTitle>
 
           <AlertDialogDescription>
-            Are you sure you want
-            to archive{" "}
-            <strong>
-              {productName}
-            </strong>
-            ?
+            Are you sure you want to archive{" "}
+            <strong>{productName}</strong>?
           </AlertDialogDescription>
-
         </AlertDialogHeader>
 
         <AlertDialogFooter>
-
-          <AlertDialogCancel>
+          <AlertDialogCancel disabled={saving}>
             Cancel
           </AlertDialogCancel>
 
-          <AlertDialogAction>
-            Archive
+          <AlertDialogAction
+            onClick={onConfirm}
+            disabled={saving}
+          >
+            {saving ? "Archiving..." : "Archive"}
           </AlertDialogAction>
-
         </AlertDialogFooter>
-
       </AlertDialogContent>
     </AlertDialog>
   )

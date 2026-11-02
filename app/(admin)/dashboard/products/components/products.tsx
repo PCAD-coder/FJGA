@@ -15,7 +15,8 @@ import type { ProductTypeValue } from "../constants/product-options"
 import { getProductPricingForDimensions } from "../services/product-pricing"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-
+import { ArchiveProductDialog } from "./dialogs/archive-product-dialog"
+import { RestoreProductDialog } from "./dialogs/restore-product-dialog"
 export default function Products() {
   const {
     products,
@@ -43,7 +44,7 @@ export default function Products() {
   const [openAddDialog, setOpenAddDialog] = useState(false)
   const [openEditDialog, setOpenEditDialog] = useState(false)
   const [openArchiveDialog, setOpenArchiveDialog] = useState(false)
-
+  const [openRestoreDialog, setOpenRestoreDialog] = useState(false)
   const filteredProducts = products.filter((product) => {
     const matchesSearch =
       product.product_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -86,6 +87,7 @@ export default function Products() {
           products={[]}
           onEdit={() => {}}
           onArchive={() => {}}
+          onRestore={() => {}}
         />
       ) : filteredProducts.length === 0 ? (
         <div className="rounded-xl border border-dashed bg-card px-6 py-16 text-center">
@@ -104,6 +106,10 @@ export default function Products() {
           onArchive={(product) => {
             setSelectedProduct(product)
             setOpenArchiveDialog(true)
+          }}
+          onRestore={(product) => {
+            setSelectedProduct(product)
+            setOpenRestoreDialog(true)
           }}
         />
       )}
@@ -166,6 +172,39 @@ export default function Products() {
           )
         }}
       />
+      {selectedProduct && (
+        <ArchiveProductDialog
+          open={openArchiveDialog}
+          onOpenChange={setOpenArchiveDialog}
+          productName={selectedProduct.product_name}
+          saving={saving}
+          onConfirm={async () => {
+            const result = await archive(selectedProduct.id)
+
+            if (!result.error) {
+              setOpenArchiveDialog(false)
+              setSelectedProduct(null)
+            }
+          }}
+        />
+      )}
+
+      {selectedProduct && (
+        <RestoreProductDialog
+          open={openRestoreDialog}
+          onOpenChange={setOpenRestoreDialog}
+          productName={selectedProduct.product_name}
+          saving={saving}
+          onConfirm={async () => {
+            const result = await restore(selectedProduct.id)
+
+            if (!result.error) {
+              setOpenRestoreDialog(false)
+              setSelectedProduct(null)
+            }
+          }}
+        />
+      )}
     </div>
   )
 }
