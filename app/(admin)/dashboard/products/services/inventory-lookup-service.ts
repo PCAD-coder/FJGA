@@ -5,9 +5,10 @@ import type { ServiceResult } from "./service-result"
 export interface InventoryMaterialOption {
   id: string
   material_name: string
+  category: string
+  specification: string | null
   unit_cost: number | null
   markup_percentage: number | null
-
 }
 
 export async function getActiveMaterials(): Promise<
@@ -17,7 +18,9 @@ export async function getActiveMaterials(): Promise<
 
   const { data, error } = await supabase
     .from("inventory_materials")
-    .select("id, material_name, unit_cost, markup_percentage")
+    .select(
+  "id, material_name, category, specification, unit_cost, markup_percentage"
+)
     .eq("is_active", true)
     .order("material_name")
 
@@ -26,6 +29,8 @@ export async function getActiveMaterials(): Promise<
     data?.map((item) => ({
       id: item.id,
       material_name: item.material_name,
+      category: item.category,
+      specification: item.specification,
       unit_cost: item.unit_cost,
       markup_percentage: item.markup_percentage,
     })) ?? [],

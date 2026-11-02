@@ -134,7 +134,7 @@ export default function Products() {
               success: "Product created successfully.",
               error: (err) => err.message || "Failed to create product.",
             }
-          )
+          ).unwrap()
         }}
       />
       <EditProductDialog
@@ -169,7 +169,7 @@ export default function Products() {
               success: "Changes saved successfully.",
               error: (err) => err.message || "Failed to save changes.",
             }
-          )
+          ).unwrap()
         }}
       />
       {selectedProduct && (

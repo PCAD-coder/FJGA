@@ -367,29 +367,26 @@ export default function Returns() {
     await loadReturns()
   }
   async function handleRestore() {
-  if (!restoreRequest) return
+    if (!restoreRequest) return
 
-  try {
-    setRestoreSaving(true)
+    try {
+      setRestoreSaving(true)
 
-    await restoreReturnRequest(restoreRequest.id)
+      await restoreReturnRequest(restoreRequest.id)
 
-    toast.success("Return request restored successfully.")
+      toast.success("Return request restored successfully.")
 
-    setRestoreRequest(null)
+      setRestoreRequest(null)
 
-    await loadReturns()
-  } catch (error) {
-    toast.error(
-      getErrorMessage(
-        error,
-        "Unable to restore the return request."
+      await loadReturns()
+    } catch (error) {
+      toast.error(
+        getErrorMessage(error, "Unable to restore the return request.")
       )
-    )
-  } finally {
-    setRestoreSaving(false)
+    } finally {
+      setRestoreSaving(false)
+    }
   }
-}
 
   const totalReturns = requests.filter((request) => !request.archived).length
 
@@ -656,16 +653,16 @@ export default function Returns() {
         onConfirm={handleArchive}
       />
       <RestoreReturnDialog
-  open={Boolean(restoreRequest)}
-  onOpenChange={(open) => {
-    if (!open && !restoreSaving) {
-      setRestoreRequest(null)
-    }
-  }}
-  title={restoreRequest?.title}
-  onConfirm={handleRestore}
-  saving={restoreSaving}
-/>
+        open={Boolean(restoreRequest)}
+        onOpenChange={(open) => {
+          if (!open && !restoreSaving) {
+            setRestoreRequest(null)
+          }
+        }}
+        title={restoreRequest?.title}
+        onConfirm={handleRestore}
+        saving={restoreSaving}
+      />
       <CompleteInspectionDialog
         open={inspectionDialogOpen}
         onOpenChange={(open) => {
