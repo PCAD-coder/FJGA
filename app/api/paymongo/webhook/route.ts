@@ -19,6 +19,7 @@ interface PayMongoCheckoutSession {
   id: string
   attributes?: {
     reference_number?: string | null
+    payment_method_used?: string | null
     metadata?: {
       order_id?: string
       order_number?: string
@@ -262,15 +263,20 @@ export async function POST(request: Request) {
 
   const paymentAttributes = payment.attributes
 
-  const paymentMethod = getPayMongoPaymentMethod(
-    paymentAttributes?.source?.type
-  )
+const paymentMethodSource =
+  paymentAttributes?.source?.type ??
+  sessionAttributes?.payment_method_used ??
+  undefined
+
+const paymentMethod = getPayMongoPaymentMethod(
+  paymentMethodSource
+)
 
   if (!paymentMethod) {
-    console.error(
-      "PAYMONGO WEBHOOK: Unsupported payment method",
-      paymentAttributes?.source?.type
-    )
+console.error(
+  "PAYMONGO WEBHOOK: Unsupported payment method",
+  paymentMethodSource
+)
 
     return Response.json(
       { error: "Unsupported payment method" },
@@ -288,18 +294,22 @@ export async function POST(request: Request) {
   const orderNumber =
     metadata?.order_number ?? sessionAttributes?.reference_number
 
-  if (!orderId) {
-    console.error("PAYMONGO WEBHOOK: Missing order_id metadata", {
+if (!orderId) {
+  console.log(
+    "PAYMONGO WEBHOOK: Ignoring checkout session without FJGA order metadata",
+    {
       eventId,
       sessionId: session.id,
-      orderNumber,
-    })
+    }
+  )
 
-    return Response.json(
-      { error: "Missing order information" },
-      { status: 400 }
-    )
-  }
+  return Response.json({
+    received: true,
+    ignored: true,
+    reason: "No FJGA order metadata",
+    eventId,
+  })
+}
 
   /*
    * Convert PayMongo centavos into PHP.
