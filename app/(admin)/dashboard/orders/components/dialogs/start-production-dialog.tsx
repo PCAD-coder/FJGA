@@ -97,7 +97,7 @@ export default function StartProductionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Start Production</DialogTitle>
+          <DialogTitle>Pass to Production</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
