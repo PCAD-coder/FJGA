@@ -314,15 +314,207 @@ if (!orderId) {
   /*
    * Convert PayMongo centavos into PHP.
    */
-  const amountInCentavos = Number(paymentAttributes?.amount ?? 0)
+  // Retrieve the actual payment details directly from PayMongo.
+const paymongoSecretKey = process.env.PAYMONGO_SECRET_KEY
 
-  const amount = amountInCentavos / 100
+if (!paymongoSecretKey) {
+  return Response.json(
+    { error: "PayMongo API configuration missing" },
+    { status: 500 }
+  )
+}
+
+const paymentResponse = await fetch(
+  `https://api.paymongo.com/v1/payments/${encodeURIComponent(payment.id)}`,
+  {
+    method: "GET",
+    headers: {
+      Authorization: `Basic ${Buffer.from(
+        `${paymongoSecretKey}:`
+      ).toString("base64")}`,
+    },
+    cache: "no-store",
+  }
+)
+
+if (!paymentResponse.ok) {
+  console.error(
+    "PAYMONGO WEBHOOK: Payment verification failed",
+    paymentResponse.status
+  )
+
+  return Response.json(
+    { error: "Unable to verify PayMongo payment" },
+    { status: 502 }
+  )
+}
+
+const paymentJson = await paymentResponse.json()
+
+if (
+  paymentJson?.data?.id !== payment.id ||
+  paymentJson?.data?.attributes?.status !== "paid"
+) {
+  return Response.json(
+    { error: "PayMongo payment verification failed" },
+    { status: 409 }
+  )
+}
+
+const verifiedPayment = paymentJson.data.attributes
+
+// Verify that this payment belongs to the FJGA checkout session.
+const checkoutResponse = await fetch(
+  `https://api.paymongo.com/v1/checkout_sessions/${encodeURIComponent(session.id)}`,
+  {
+    method: "GET",
+    headers: {
+      Authorization: `Basic ${Buffer.from(
+        `${paymongoSecretKey}:`
+      ).toString("base64")}`,
+    },
+    cache: "no-store",
+  }
+)
+
+if (!checkoutResponse.ok) {
+  console.error(
+    "PAYMONGO WEBHOOK: Checkout verification failed",
+    checkoutResponse.status
+  )
+
+  return Response.json(
+    { error: "Unable to verify checkout session" },
+    { status: 502 }
+  )
+}
+
+const checkoutJson = await checkoutResponse.json()
+
+const verifiedCheckout = checkoutJson?.data
+
+const checkoutPayments = verifiedCheckout?.attributes?.payments
+
+if (
+  verifiedCheckout?.id !== session.id ||
+  !Array.isArray(checkoutPayments) ||
+  !checkoutPayments.some(
+    (item: { id?: string }) => item.id === payment.id
+  )
+) {
+  console.error(
+    "PAYMONGO WEBHOOK: Payment does not match checkout session",
+    {
+      sessionId: session.id,
+      paymentId: payment.id,
+    }
+  )
+
+  return Response.json(
+    { error: "Payment and checkout session mismatch" },
+    { status: 409 }
+  )
+}
+
+const amountInCentavos = Number(verifiedPayment.amount)
+const amount = amountInCentavos / 100
 
   if (!Number.isFinite(amount) || amount <= 0) {
     console.error("PAYMONGO WEBHOOK: Invalid payment amount", amountInCentavos)
 
     return Response.json({ error: "Invalid payment amount" }, { status: 400 })
   }
+
+  /*
+ * Verify the checkout session belongs to FJGA
+ * and the paid amount matches the expected amount.
+ */
+const { data: savedSession, error: savedSessionError } = await supabase
+  .from("paymongo_checkout_sessions")
+  .select("order_id, amount, status")
+  .eq("checkout_session_id", session.id)
+  .maybeSingle()
+
+if (savedSessionError) {
+  console.error(
+    "PAYMONGO WEBHOOK: Checkout session lookup failed",
+    savedSessionError
+  )
+
+  return Response.json(
+    { error: "Checkout session lookup failed" },
+    { status: 500 }
+  )
+}
+
+if (!savedSession) {
+  console.error(
+    "PAYMONGO WEBHOOK: Unknown checkout session",
+    session.id
+  )
+
+  return Response.json(
+    { error: "Unknown checkout session" },
+    { status: 409 }
+  )
+}
+
+if (savedSession.order_id !== orderId) {
+  console.error("PAYMONGO WEBHOOK: Checkout order mismatch", {
+    sessionId: session.id,
+    orderId,
+  })
+
+  return Response.json(
+    { error: "Checkout order mismatch" },
+    { status: 409 }
+  )
+}
+
+const expectedCentavos = Math.round(Number(savedSession.amount) * 100)
+
+if (
+  !Number.isSafeInteger(expectedCentavos) ||
+  expectedCentavos <= 0 ||
+  amountInCentavos !== expectedCentavos
+) {
+  console.error("PAYMONGO WEBHOOK: Payment amount mismatch", {
+    sessionId: session.id,
+    expectedCentavos,
+    receivedCentavos: amountInCentavos,
+  })
+
+  return Response.json(
+    { error: "Payment amount mismatch" },
+    { status: 409 }
+  )
+}
+
+if (!["active", "paid"].includes(savedSession.status)) {
+  console.error(
+    "PAYMONGO WEBHOOK: Invalid checkout session status",
+    savedSession.status
+  )
+
+  return Response.json(
+    { error: "Invalid checkout session status" },
+    { status: 409 }
+  )
+}
+
+const paymentCurrency = verifiedPayment.currency ?? null
+
+if (paymentCurrency !== "PHP") {
+  console.error(
+    "PAYMONGO WEBHOOK: Missing or unsupported payment currency",
+    paymentCurrency
+  )
+
+  return Response.json(
+    { error: "Payment currency could not be verified" },
+    { status: 409 }
+  )
+}
 
   /*
    * Prevent duplicate payment records.
