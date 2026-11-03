@@ -1,5 +1,6 @@
 "use client"
 
+import { isValidNumericInput } from "@/lib/numeric-input"
 import { useState } from "react"
 import { Plus } from "lucide-react"
 
@@ -340,17 +341,16 @@ export function AddMaterialDialog({ onSubmit }: AddMaterialDialogProps) {
               <Label>Stock Quantity</Label>
 
               <Input
-                type="number"
-                min="0"
-                step="0.0001"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={form.tracks_expiration ? "0" : form.stock_quantity}
                 disabled={form.tracks_expiration}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    stock_quantity: e.target.value,
-                  })
-                }
+                onChange={(e) => {
+                  if (isValidNumericInput(e.target.value, 5000)) {
+                    setForm({ ...form, stock_quantity: e.target.value })
+                  }
+                }}
               />
 
               {form.tracks_expiration && (

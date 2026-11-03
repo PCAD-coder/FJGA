@@ -1,5 +1,7 @@
 "use client"
 
+import { useExporterName } from "@/hooks/use-exporter-name"
+
 import { useEffect, useRef, useState } from "react"
 import { Printer } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -10,6 +12,7 @@ import type { Order } from "../../types/order"
 import { buildOrderBreakdownDocument } from "../../utils/order-breakdown-document"
 
 export default function OrderBreakdownDialog({ order, onClose }: { order: Order | null; onClose: () => void }) {
+  const exporterName = useExporterName()
   const frame = useRef<HTMLIFrameElement>(null)
   const [document, setDocument] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -18,15 +21,15 @@ export default function OrderBreakdownDialog({ order, onClose }: { order: Order 
 
   useEffect(() => {
     let cancelled = false
-    if (order) {
+    if (order && exporterName) {
       getOrderById(order.id).then((detail) => {
-        if (!cancelled) setDocument(buildOrderBreakdownDocument(detail as Order))
+        if (!cancelled) setDocument(buildOrderBreakdownDocument(detail as Order, exporterName))
       }).catch((reason: unknown) => {
         if (!cancelled) setError(getErrorMessage(reason, "Unable to load the order breakdown."))
       })
     }
     return () => { cancelled = true }
-  }, [order, attempt])
+  }, [order, attempt, exporterName])
 
   return <Dialog open={Boolean(order)} onOpenChange={(open) => { if (!open) onClose() }}>
     <DialogContent className="flex h-[90vh] !max-w-5xl flex-col">

@@ -1,5 +1,7 @@
 "use client"
 
+import { useExporterName } from "@/hooks/use-exporter-name"
+
 import { toast } from "sonner"
 
 import { Download, FileSpreadsheet, Printer } from "lucide-react"
@@ -137,6 +139,8 @@ export function SalesExportMenu({
   paymentStatusFilter,
   search,
 }: SalesExportMenuProps) {
+  const exporterName = useExporterName()
+
   function exportCsv() {
     if (sales.length === 0) {
       return
@@ -180,7 +184,7 @@ export function SalesExportMenu({
       formatDate(sale.createdAt),
     ])
 
-    const csvContent = [headers, ...rows]
+    const csvContent = [["Exported by", exporterName], [], headers, ...rows]
       .map((row) => row.map(escapeCsvValue).join(","))
       .join("\r\n")
 
@@ -445,6 +449,7 @@ export function SalesExportMenu({
 
             <div class="generated">
               Generated: ${escapeHtml(generatedAt)}
+              <br />Exported by: ${escapeHtml(exporterName)}
             </div>
           </header>
 
@@ -533,7 +538,7 @@ export function SalesExportMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" disabled={sales.length === 0}>
+        <Button variant="outline" disabled={!exporterName || sales.length === 0}>
           <Download className="mr-2 h-4 w-4" />
           Export
         </Button>

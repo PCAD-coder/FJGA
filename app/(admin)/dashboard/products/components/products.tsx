@@ -1,5 +1,7 @@
 "use client"
 
+import ModuleSkeleton from "./module-skeleton"
+
 import { useState } from "react"
 
 import { useProducts } from "../hooks/use-products"
@@ -58,6 +60,8 @@ export default function Products() {
 
     return matchesSearch && matchesCategory && matchesType
   })
+
+  if (loading) return <ModuleSkeleton />
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-5 px-1 pt-2 pb-12 sm:px-4 sm:pt-3 lg:px-6">

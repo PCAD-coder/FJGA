@@ -1,5 +1,7 @@
 "use client"
 
+import { isValidNumericInput } from "@/lib/numeric-input"
+
 import { getErrorMessage } from "@/lib/error-message"
 
 import { toast } from "sonner"
@@ -41,9 +43,9 @@ export default function EditServiceDialog({
 
   const [unit, setUnit] = useState("")
 
-  const [laborCost, setLaborCost] = useState(0)
+  const [laborCost, setLaborCost] = useState("")
 
-  const [markup, setMarkup] = useState(0)
+  const [markup, setMarkup] = useState("")
 
   const [saving, setSaving] = useState(false)
 
@@ -53,12 +55,12 @@ export default function EditServiceDialog({
     setServiceName(service.service_name)
     setDescription(service.description ?? "")
     setUnit(service.unit)
-    setLaborCost(service.labor_cost)
-    setMarkup(service.markup_percentage)
+    setLaborCost(String(service.labor_cost))
+    setMarkup(String(service.markup_percentage))
   }, [service])
 
   const sellingPrice = useMemo(() => {
-    return laborCost * (1 + markup / 100)
+    return Number(laborCost) * (1 + Number(markup) / 100)
   }, [laborCost, markup])
 
   if (!service) return null
@@ -71,8 +73,8 @@ export default function EditServiceDialog({
       setSaving(true)
 
       await updateLaborPricing(selectedService.id, {
-        labor_cost: laborCost,
-        markup_percentage: markup,
+        labor_cost: Number(laborCost),
+        markup_percentage: Number(markup),
       })
 
       toast.success("Labor pricing updated successfully.")
@@ -123,9 +125,12 @@ export default function EditServiceDialog({
             <label className="mb-2 block text-sm font-medium">Labor Cost</label>
 
             <Input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={laborCost}
-              onChange={(e) => setLaborCost(Number(e.target.value))}
+              onChange={(e) => {
+                if (isValidNumericInput(e.target.value, 50000, 2)) setLaborCost(e.target.value)
+              }}
             />
           </div>
 
@@ -135,9 +140,12 @@ export default function EditServiceDialog({
             </label>
 
             <Input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={markup}
-              onChange={(e) => setMarkup(Number(e.target.value))}
+              onChange={(e) => {
+                if (isValidNumericInput(e.target.value, 200, 2)) setMarkup(e.target.value)
+              }}
             />
           </div>
 

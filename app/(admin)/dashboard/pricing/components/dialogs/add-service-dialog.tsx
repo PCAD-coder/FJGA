@@ -1,5 +1,7 @@
 "use client"
 
+import { isValidNumericInput } from "@/lib/numeric-input"
+
 import { getErrorMessage } from "@/lib/error-message"
 
 import { toast } from "sonner"
@@ -123,9 +125,12 @@ export default function AddServiceDialog({
             <label className="mb-2 block text-sm font-medium">Labor Cost</label>
 
             <Input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={laborCost}
-              onChange={(e) => setLaborCost(e.target.value)}
+              onChange={(e) => {
+                if (isValidNumericInput(e.target.value, 50000, 2)) setLaborCost(e.target.value)
+              }}
             />
           </div>
 
@@ -133,9 +138,12 @@ export default function AddServiceDialog({
             <label className="mb-2 block text-sm font-medium">Markup %</label>
 
             <Input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={markup}
-              onChange={(e) => setMarkup(e.target.value)}
+              onChange={(e) => {
+                if (isValidNumericInput(e.target.value, 200, 2)) setMarkup(e.target.value)
+              }}
             />
           </div>
 

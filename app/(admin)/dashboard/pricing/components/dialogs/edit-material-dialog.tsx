@@ -1,5 +1,7 @@
 "use client"
 
+import { isValidNumericInput } from "@/lib/numeric-input"
+
 import { getErrorMessage } from "@/lib/error-message"
 
 import { toast } from "sonner"
@@ -35,25 +37,25 @@ export default function EditMaterialDialog({
   material,
   refresh,
 }: Props) {
-  const [unitCost, setUnitCost] = useState(0)
+  const [unitCost, setUnitCost] = useState("")
 
-  const [markup, setMarkup] = useState(0)
+  const [markup, setMarkup] = useState("")
 
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (!material) return
 
-    setUnitCost(material.unit_cost ?? 0)
-    setMarkup(material.markup_percentage ?? 0)
+    setUnitCost(String(material.unit_cost ?? 0))
+    setMarkup(String(material.markup_percentage ?? 0))
   }, [material])
 
-  // ✅ Hook stays before any return
+  // âœ… Hook stays before any return
   const sellingPrice = useMemo(() => {
-    return unitCost * (1 + markup / 100)
+    return Number(unitCost) * (1 + Number(markup) / 100)
   }, [unitCost, markup])
 
-  // ✅ Conditional return after all hooks
+  // âœ… Conditional return after all hooks
   if (!material) return null
 
   const selectedMaterial = material
@@ -63,8 +65,8 @@ export default function EditMaterialDialog({
       setSaving(true)
 
       await updateMaterialPricing(selectedMaterial.id, {
-        unit_cost: unitCost,
-        markup_percentage: markup,
+        unit_cost: Number(unitCost),
+        markup_percentage: Number(markup),
       })
 
       toast.success("Material pricing updated successfully.")
@@ -111,9 +113,12 @@ export default function EditMaterialDialog({
             <label className="mb-2 block text-sm font-medium">Unit Cost</label>
 
             <Input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={unitCost}
-              onChange={(e) => setUnitCost(Number(e.target.value))}
+              onChange={(e) => {
+                if (isValidNumericInput(e.target.value, 50000, 2)) setUnitCost(e.target.value)
+              }}
             />
           </div>
 
@@ -123,9 +128,12 @@ export default function EditMaterialDialog({
             </label>
 
             <Input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={markup}
-              onChange={(e) => setMarkup(Number(e.target.value))}
+              onChange={(e) => {
+                if (isValidNumericInput(e.target.value, 200, 2)) setMarkup(e.target.value)
+              }}
             />
           </div>
 

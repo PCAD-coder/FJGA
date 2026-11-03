@@ -67,16 +67,6 @@ export default function SignUp() {
       setError(error.message)
       setLoading(false)
     }
-    const { data: existing } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", email)
-      .maybeSingle()
-
-    if (existing) {
-      setError("This email is already registered. Please sign in instead.")
-      return
-    }
   }
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -109,29 +99,11 @@ export default function SignUp() {
     setLoading(true)
 
     try {
-      //check email if already exists in the profiles table
-      const { data: existingUser, error: lookupError } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("email", email.trim().toLowerCase())
-        .maybeSingle()
-
-      if (lookupError) {
-        setError("Something went wrong. Please try again.")
-        setLoading(false)
-        return
-      }
-
-      if (existingUser) {
-        setError(
-          "An account with this email already exists. Please sign in instead."
-        )
-        setLoading(false)
-        return
-      }
       // Create the authentication account
+      const normalizedEmail = email.trim().toLowerCase()
+
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: normalizedEmail,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
@@ -166,7 +138,7 @@ export default function SignUp() {
         return
       }
 
-      router.push(`/verify-email?email=${encodeURIComponent(email)}`)
+      router.push(`/verify-email?email=${encodeURIComponent(normalizedEmail)}`)
     } catch (err: any) {
       console.error("SIGNUP ERROR:", err)
       console.error("MESSAGE:", err?.message)

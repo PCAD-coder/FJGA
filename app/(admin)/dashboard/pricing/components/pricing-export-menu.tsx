@@ -1,5 +1,7 @@
 "use client"
 
+import { useExporterName } from "@/hooks/use-exporter-name"
+
 import { toast } from "sonner"
 
 import { Download, FileSpreadsheet, Printer } from "lucide-react"
@@ -72,6 +74,8 @@ export default function PricingExportMenu({
   laborServices,
   search,
 }: PricingExportMenuProps) {
+  const exporterName = useExporterName()
+
   function handleExportCsv() {
     const date = new Date().toISOString().slice(0, 10)
 
@@ -99,6 +103,8 @@ export default function PricingExportMenu({
       ])
 
       const csv = [
+        ["Exported by", exporterName].map(escapeCsv).join(","),
+        "",
         headers.map(escapeCsv).join(","),
         ...rows.map((row) => row.map(escapeCsv).join(",")),
       ].join("\n")
@@ -127,7 +133,9 @@ export default function PricingExportMenu({
     ])
 
     const csv = [
-      headers.map(escapeCsv).join(","),
+      ["Exported by", exporterName].map(escapeCsv).join(","),
+        "",
+        headers.map(escapeCsv).join(","),
       ...rows.map((row) => row.map(escapeCsv).join(",")),
     ].join("\n")
 
@@ -401,6 +409,7 @@ export default function PricingExportMenu({
 
             <div class="generated">
               Generated: ${escapeHtml(generatedAt)}
+              <br />Exported by: ${escapeHtml(exporterName)}
             </div>
           </div>
 
@@ -454,7 +463,7 @@ export default function PricingExportMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline">
+        <Button variant="outline" disabled={!exporterName}>
           <Download className="mr-2 h-4 w-4" />
           Export
         </Button>

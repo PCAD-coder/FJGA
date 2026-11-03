@@ -1,5 +1,7 @@
 "use client"
 
+import { useExporterName } from "@/hooks/use-exporter-name"
+
 import { toast } from "sonner"
 
 import { Download, FileSpreadsheet, Printer } from "lucide-react"
@@ -95,6 +97,8 @@ export default function AnalyticsExportMenu({
   topProducts,
   materialsUsage,
 }: AnalyticsExportMenuProps) {
+  const exporterName = useExporterName()
+
   function handleExportCsv() {
     const periodLabel = getPeriodLabel(period)
 
@@ -106,6 +110,7 @@ export default function AnalyticsExportMenu({
 
     const rows: (string | number)[][] = [
       ["FJ Glass and Aluminum"],
+      ["Exported by", exporterName ?? ""],
       [`${periodLabel} Analytics Report`],
       [],
       ["SUMMARY"],
@@ -328,6 +333,7 @@ export default function AnalyticsExportMenu({
 
             <div class="generated">
               Generated: ${escapeHtml(generatedAt)}
+              <br />Exported by: ${escapeHtml(exporterName)}
             </div>
           </div>
 
@@ -465,7 +471,7 @@ export default function AnalyticsExportMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline">
+        <Button variant="outline" disabled={!exporterName}>
           <Download className="mr-2 h-4 w-4" />
           Export
         </Button>

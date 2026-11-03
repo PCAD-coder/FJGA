@@ -1,5 +1,7 @@
 "use client"
 
+import ModuleSkeleton from "./module-skeleton"
+
 import { getErrorMessage } from "@/lib/error-message"
 
 import { useMemo, useState, useEffect } from "react"
@@ -88,6 +90,8 @@ const pendingProductionCount = activeProjects.filter(
 const inProductionCount = activeProjects.filter(
   (project) => project.stage !== "Pending"
 ).length
+
+  if (loading) return <ModuleSkeleton />
 
   return (
     <div className="mx-auto w-full max-w-[1600px] min-w-0 space-y-4 px-1 pt-2 pb-12 sm:px-4 sm:pt-3 lg:px-6">

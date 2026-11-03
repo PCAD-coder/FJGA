@@ -1,5 +1,7 @@
 "use client"
 
+import { useExporterName } from "@/hooks/use-exporter-name"
+
 import { toast } from "sonner"
 
 import { Download, FileSpreadsheet, Printer } from "lucide-react"
@@ -102,6 +104,8 @@ export function InventoryExportMenu({
   expirationStatusFilter,
   search,
 }: InventoryExportMenuProps) {
+  const exporterName = useExporterName()
+
   function handleExportCsv() {
     const headers = [
       "Material",
@@ -142,7 +146,9 @@ export function InventoryExportMenu({
     ])
 
     const csv = [
-      headers.map(escapeCsv).join(","),
+      ["Exported by", exporterName].map(escapeCsv).join(","),
+        "",
+        headers.map(escapeCsv).join(","),
       ...rows.map((row) => row.map(escapeCsv).join(",")),
     ].join("\n")
 
@@ -331,6 +337,7 @@ export function InventoryExportMenu({
             <div class="report-title">Inventory Report</div>
             <div class="generated">
               Generated: ${escapeHtml(generatedAt)}
+              <br />Exported by: ${escapeHtml(exporterName)}
             </div>
           </div>
 
@@ -424,7 +431,7 @@ export function InventoryExportMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline">
+        <Button variant="outline" disabled={!exporterName}>
           <Download className="mr-2 h-4 w-4" />
           Export
         </Button>

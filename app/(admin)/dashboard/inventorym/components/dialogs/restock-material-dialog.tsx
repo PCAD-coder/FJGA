@@ -1,5 +1,7 @@
 "use client"
 
+import { isValidNumericInput } from "@/lib/numeric-input"
+
 import { type ReactNode, useMemo, useState } from "react"
 
 import { PackagePlus } from "lucide-react"
@@ -54,7 +56,9 @@ export function RestockMaterialDialog({
   const isValidQuantity =
     quantity.trim() !== "" &&
     Number.isFinite(quantityNumber) &&
-    quantityNumber > 0
+    quantityNumber > 0 &&
+    Number.isInteger(quantityNumber) &&
+    quantityNumber <= 5000
 
   const requiresExpiration = material.tracks_expiration
 
@@ -93,7 +97,7 @@ export function RestockMaterialDialog({
 
   async function handleRestock() {
     if (!isValidQuantity) {
-      setError("Enter a quantity greater than zero.")
+      setError("Enter a whole number between 1 and 5000.")
       return
     }
 
@@ -196,11 +200,12 @@ export function RestockMaterialDialog({
 
             <Input
               id={`restock-quantity-${material.id}`}
-              type="number"
-              min="0"
-              step="any"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={quantity}
               onChange={(event) => {
+                if (!isValidNumericInput(event.target.value, 5000)) return
                 setQuantity(event.target.value)
                 setError(null)
               }}

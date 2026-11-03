@@ -18,14 +18,14 @@ function table(headers: string[], rows: unknown[][], empty: string) {
   return `<table><thead><tr>${headers.map((header) => `<th>${escape(header)}</th>`).join("")}</tr></thead><tbody>${rows.length ? rows.map((row) => `<tr>${row.map((cell) => `<td>${escape(cell)}</td>`).join("")}</tr>`).join("") : `<tr><td colspan="${headers.length}">${escape(empty)}</td></tr>`}</tbody></table>`
 }
 
-export function buildOrderBreakdownDocument(order: Order) {
+export function buildOrderBreakdownDocument(order: Order, exporterName: string) {
   const address = order.address
   const items = order.items ?? []
   return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>${escape(order.order_number)} - Order Breakdown</title>
   <style>
     *{box-sizing:border-box}body{font:13px/1.5 Arial,sans-serif;color:#17202a;background:#fff;margin:0;padding:32px}h1{font-size:25px;margin:0}h2{font-size:17px;margin:24px 0 8px}h3{font-size:14px;margin:16px 0 6px}p{margin:4px 0;white-space:pre-wrap;overflow-wrap:anywhere}header{border-bottom:2px solid #17202a;padding-bottom:16px;margin-bottom:20px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}.label{color:#536171;font-size:11px;text-transform:uppercase}table{width:100%;border-collapse:collapse;margin:8px 0 16px;table-layout:fixed}th,td{border:1px solid #d6dce2;padding:8px;text-align:left;overflow-wrap:anywhere}th{background:#f1f4f7;font-size:11px}tr{break-inside:avoid}thead{display:table-header-group}.summary{margin-left:auto;max-width:340px}.total{font-weight:bold;border-top:2px solid #17202a;padding-top:8px}h2,h3{break-after:avoid}footer{border-top:1px solid #d6dce2;margin-top:24px;padding-top:10px;color:#536171;font-size:11px}@page{size:A4;margin:15mm}@media print{body{padding:0}}
   </style></head><body>
-  <header><p>FJGA  /  Administrative Order Review</p><h1>Order Breakdown</h1><p>${escape(order.order_number)}</p></header>
+  <header><p>FJGA  /  Administrative Order Review</p><h1>Order Breakdown</h1><p>Exported by: ${escape(exporterName)}</p><p>${escape(order.order_number)}</p></header>
   <div class="meta">
     <div><p class="label">Customer</p><p>${escape(formatCustomerName(order.profiles))}</p><p>${escape(order.customer_contact_number || "No contact number provided")}</p></div>
     <div><p class="label">Order date / status / type</p><p>${escape(date(order.created_at))}</p><p>${escape(order.status.replaceAll("_", " "))}  /  ${escape(order.order_type)}</p></div>
