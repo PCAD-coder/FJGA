@@ -1,5 +1,6 @@
 "use client"
 
+import { getSafeReturnTo } from "@/lib/auth/return-to"
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -17,6 +18,10 @@ export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
+  const next = getSafeReturnTo(searchParams.get("next"))
+  const authDestination = next
+    ? `/auth/redirect?next=${encodeURIComponent(next)}`
+    : "/auth/redirect"
   const passwordResetSuccess = searchParams.get("password-reset") === "success"
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -36,7 +41,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ""}`,
       },
     })
 
@@ -96,7 +101,7 @@ export default function LoginPage() {
       // Redirect Based on Role
       //--------------------------------------
 
-      router.push("/auth/redirect")
+      router.replace(authDestination)
     } catch (err) {
       console.error(err)
       setError("Something went wrong.")
@@ -255,7 +260,7 @@ export default function LoginPage() {
 
         <div className="p-3">
           <p className="text-center text-sm text-accent-foreground">
-            Don't have an account?
+            Don&apos;t have an account?
             <Button asChild variant="link" className="px-2">
               <Link href="/sign-up">Create Account</Link>
             </Button>

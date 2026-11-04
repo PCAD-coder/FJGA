@@ -187,18 +187,11 @@ const totalProfit = useMemo(() => {
 }, [sales])
 
   if (loading) {
-    return <SalesSkeleton />
+    return <SalesSkeleton embedded />
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-4 px-1 pt-2 pb-12 sm:px-4 sm:pt-3 lg:px-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Sales</h1>
-
-        <p className="text-muted-foreground">
-          Monitor orders, payments, and outstanding balances.
-        </p>
-      </div>
+    <div className="space-y-4">
 
       {/* KPI CARDS */}
 

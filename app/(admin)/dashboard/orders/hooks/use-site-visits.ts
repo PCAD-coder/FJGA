@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useState } from "react"
 
 import {
+  acceptClientSiteVisitProposal,
   completeSiteVisit,
   declineSiteVisit,
   getSiteVisits,
+  proposeSiteVisitSchedule,
   scheduleSiteVisit,
 } from "../services/site-visits"
 import type { SiteVisit } from "../types/site-visit"
@@ -36,6 +38,24 @@ export function useSiteVisits() {
     await scheduleSiteVisit(id, scheduledAt, staff)
     await loadVisits()
   }
+  const proposeSchedule = async (
+    id: string,
+    scheduledAt: string,
+    staff: string
+  ) => {
+    await proposeSiteVisitSchedule(id, scheduledAt, staff)
+    await loadVisits()
+  }
+
+  const acceptClientProposal = async (
+    proposalId: string,
+    scheduledAt: string,
+    staff: string
+  ) => {
+    await acceptClientSiteVisitProposal(proposalId, scheduledAt, staff)
+
+    await loadVisits()
+  }
 
   const decline = async (id: string, reason: string) => {
     await declineSiteVisit(id, reason)
@@ -47,11 +67,23 @@ export function useSiteVisits() {
     width: number,
     height: number,
     depth: number | null,
-    notes?: string
+    notes: string,
+    confirmCashPayment: boolean
   ) => {
-    await completeSiteVisit(id, width, height, depth, notes)
+    await completeSiteVisit(id, width, height, depth, notes, confirmCashPayment)
+
     await loadVisits()
   }
 
-  return { visits, loading, error, refresh: loadVisits, schedule, decline, complete }
+  return {
+    visits,
+    loading,
+    error,
+    refresh: loadVisits,
+    schedule,
+    proposeSchedule,
+    acceptClientProposal,
+    decline,
+    complete,
+  }
 }

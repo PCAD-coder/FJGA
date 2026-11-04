@@ -1,11 +1,35 @@
 export type SiteVisitStatus =
   | "pending"
+  | "proposed"
   | "scheduled"
   | "completed"
   | "declined"
   | "cancelled"
 
 export type SiteVisitTimeSlot = "morning" | "afternoon"
+
+export type SiteVisitProposalStatus =
+  | "pending"
+  | "accepted"
+  | "rejected"
+  | "superseded"
+
+export type SiteVisitProposalRole = "admin" | "client"
+
+export interface SiteVisitScheduleProposal {
+  id: string
+  siteVisitRequestId: string
+  proposedBy: string
+  proposedByRole: SiteVisitProposalRole
+  proposedDate: string
+  proposedTimeSlot: SiteVisitTimeSlot
+  proposedScheduledAt: string | null
+  assignedStaff: string | null
+  status: SiteVisitProposalStatus
+  proposedAt: string
+  respondedAt: string | null
+  responseNotes: string | null
+}
 
 export interface SiteVisit {
   id: string
@@ -39,6 +63,7 @@ export interface SiteVisit {
   actualDepth: number | null
   dimensionUnit: string
   measurementNotes: string | null
+  pendingProposal?: SiteVisitScheduleProposal | null
   declineReason: string | null
   createdAt: string
 }

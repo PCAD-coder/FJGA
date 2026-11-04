@@ -1,5 +1,5 @@
-import Sales from "./components/sales"
+import SalesModule from "./components/sales-module"
 
 export default function SalesPage() {
-  return <Sales />
+  return <SalesModule />
 }

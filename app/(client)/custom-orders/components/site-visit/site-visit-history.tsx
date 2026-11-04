@@ -1,12 +1,20 @@
 "use client"
-
-import { CalendarDays, CheckCircle2, MapPin, Ruler, XCircle } from "lucide-react"
+import { useState } from "react"
+import { RequestRescheduleDialog } from "./request-reschedule-dialog"
+import { SiteVisitFeeSummaryDialog } from "./site-visit-fee-summary-dialog"
+import type { ClientSiteVisit, SiteVisitTimeSlot } from "../../types/site-visit"
+import {
+  CalendarClock,
+  CalendarDays,
+  CheckCircle2,
+  MapPin,
+  Ruler,
+  XCircle,
+} from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-
-import type { ClientSiteVisit } from "../../types/site-visit"
 
 interface SiteVisitHistoryProps {
   visits: ClientSiteVisit[]
@@ -14,10 +22,19 @@ interface SiteVisitHistoryProps {
   error: string | null
   onRetry: () => void
   onCreateCustomRequest: (visit: ClientSiteVisit) => void
+  onAcceptSchedule: (proposalId: string) => Promise<void>
+  acceptingProposalId: string | null
+  onRequestReschedule: (
+    proposalId: string,
+    preferredDate: string,
+    preferredTimeSlot: SiteVisitTimeSlot,
+    notes: string
+  ) => Promise<void>
 }
 
 const statusLabel: Record<ClientSiteVisit["status"], string> = {
   pending: "Pending",
+  proposed: "Awaiting Your Confirmation",
   scheduled: "Scheduled",
   completed: "Completed",
   declined: "Declined",
@@ -30,86 +47,299 @@ export function SiteVisitHistory({
   error,
   onRetry,
   onCreateCustomRequest,
+  onAcceptSchedule,
+  acceptingProposalId,
+  onRequestReschedule,
 }: SiteVisitHistoryProps) {
+  const [rescheduleProposalId, setRescheduleProposalId] = useState<
+    string | null
+  >(null)
+  const [selectedFeeVisit, setSelectedFeeVisit] =
+    useState<ClientSiteVisit | null>(null)
   return (
-    <section className="space-y-4">
-      <div>
-        <h2 className="text-xl font-semibold">On-Site Visits</h2>
-        <p className="text-sm text-muted-foreground">
-          Track measurement visits and use completed measurements for a custom request.
-        </p>
-      </div>
+    <>
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold">On-Site Visits</h2>
+          <p className="text-sm text-muted-foreground">
+            Track measurement visits and use completed measurements for a custom
+            request.
+          </p>
+        </div>
 
-      {isLoading ? (
-        <Card><CardContent className="p-6 text-sm text-muted-foreground">Loading on-site visits...</CardContent></Card>
-      ) : error ? (
-        <Card className="border-destructive/50">
-          <CardContent className="flex items-center justify-between gap-4 p-6">
-            <p className="text-sm text-destructive">{error}</p>
-            <Button variant="outline" size="sm" onClick={onRetry}>Try Again</Button>
-          </CardContent>
-        </Card>
-      ) : visits.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="p-6 text-sm text-muted-foreground">
-            No on-site visit requests yet.
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          {visits.map((visit) => (
-            <Card key={visit.id}>
-              <CardContent className="space-y-4 p-5">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold">{visit.visitNumber}</p>
-                      <Badge variant="outline">{statusLabel[visit.status]}</Badge>
+        {isLoading ? (
+          <Card>
+            <CardContent className="p-6 text-sm text-muted-foreground">
+              Loading on-site visits...
+            </CardContent>
+          </Card>
+        ) : error ? (
+          <Card className="border-destructive/50">
+            <CardContent className="flex items-center justify-between gap-4 p-6">
+              <p className="text-sm text-destructive">{error}</p>
+              <Button variant="outline" size="sm" onClick={onRetry}>
+                Try Again
+              </Button>
+            </CardContent>
+          </Card>
+        ) : visits.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="p-6 text-sm text-muted-foreground">
+              No on-site visit requests yet.
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {visits.map((visit) => (
+              <Card key={visit.id}>
+                <CardContent className="space-y-4 p-5">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold">{visit.visitNumber}</p>
+                        <Badge variant="outline">
+                          {statusLabel[visit.status]}
+                        </Badge>
+                      </div>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {visit.serviceName}
+                      </p>
                     </div>
-                    <p className="mt-1 text-sm text-muted-foreground">{visit.serviceName}</p>
+                    <p className="font-semibold">
+                      ₱
+                      {visit.totalFee.toLocaleString("en-PH", {
+                        minimumFractionDigits: 2,
+                      })}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedFeeVisit(visit)}
+                    >
+                      {visit.paymentStatus === "paid"
+                        ? "View Payment Receipt"
+                        : "View Fee Summary"}
+                    </Button>
                   </div>
-                  <p className="font-semibold">₱{visit.totalFee.toLocaleString("en-PH", { minimumFractionDigits: 2 })}</p>
-                </div>
 
-                <div className="grid gap-3 text-sm md:grid-cols-3">
-                  <div className="flex gap-2"><CalendarDays className="mt-0.5 h-4 w-4 text-muted-foreground" /><span>{visit.scheduledAt ? formatDateTime(visit.scheduledAt) : `${formatDate(visit.preferredDate)} · ${capitalize(visit.preferredTimeSlot)}`}</span></div>
-                  <div className="flex gap-2"><MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" /><span>{visit.address.barangayName}, {visit.address.cityName}</span></div>
-                  {visit.status === "completed" && visit.actualWidth != null && visit.actualHeight != null && (
-                    <div className="flex gap-2"><Ruler className="mt-0.5 h-4 w-4 text-muted-foreground" /><span>{formatMeasurements(visit)}</span></div>
-                  )}
-                </div>
-
-                {visit.status === "declined" && visit.declineReason && (
-                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
-                    <div className="flex gap-2"><XCircle className="mt-0.5 h-4 w-4 text-destructive" /><div><p className="font-medium">Decline Reason</p><p className="text-muted-foreground">{visit.declineReason}</p></div></div>
-                  </div>
-                )}
-
-                {visit.status === "completed" && (
-                  <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="grid gap-3 text-sm md:grid-cols-3">
                     <div className="flex gap-2">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600" />
-                      <div>
-                        <p className="text-sm font-medium">Confirmed by FJGA</p>
-                        <p className="text-sm text-muted-foreground">{formatMeasurements(visit)}</p>
-                        {visit.measurementNotes && <p className="mt-1 text-xs text-muted-foreground">{visit.measurementNotes}</p>}
+                      <CalendarDays className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                      <span>
+                        {visit.scheduledAt
+                          ? formatDateTime(visit.scheduledAt)
+                          : `${formatDate(visit.preferredDate)} · ${capitalize(visit.preferredTimeSlot)}`}
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                      <span>
+                        {visit.address.barangayName}, {visit.address.cityName}
+                      </span>
+                    </div>
+                    {visit.status === "completed" &&
+                      visit.actualWidth != null &&
+                      visit.actualHeight != null && (
+                        <div className="flex gap-2">
+                          <Ruler className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                          <span>{formatMeasurements(visit)}</span>
+                        </div>
+                      )}
+                  </div>
+                  {visit.status === "proposed" &&
+                    visit.pendingProposal?.proposedByRole === "admin" && (
+                      <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-4">
+                        <div className="flex items-start gap-2">
+                          <CalendarClock className="mt-0.5 h-5 w-5 text-primary" />
+
+                          <div className="space-y-1">
+                            <p className="text-sm font-semibold">
+                              FJGA Proposed a Schedule
+                            </p>
+
+                            <p className="text-sm text-muted-foreground">
+                              Please review the proposed appointment before
+                              confirming your on-site visit.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="grid gap-3 rounded-lg border bg-background p-3 text-sm sm:grid-cols-2">
+                          <div>
+                            <p className="text-xs text-muted-foreground">
+                              Proposed Date
+                            </p>
+
+                            <p className="font-medium">
+                              {formatDate(visit.pendingProposal.proposedDate)}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-muted-foreground">
+                              Proposed Time
+                            </p>
+
+                            <p className="font-medium">
+                              {visit.pendingProposal.proposedScheduledAt
+                                ? formatDateTime(
+                                    visit.pendingProposal.proposedScheduledAt
+                                  )
+                                : capitalize(
+                                    visit.pendingProposal.proposedTimeSlot
+                                  )}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-muted-foreground">
+                              Assigned Staff
+                            </p>
+
+                            <p className="font-medium">
+                              {visit.pendingProposal.assignedStaff ||
+                                "To be assigned"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-muted-foreground">
+                              Confirmation Status
+                            </p>
+
+                            <p className="font-medium">
+                              Awaiting Your Response
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Accept Schedule Button */}
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          {/* Accept Schedule */}
+                          <Button
+                            type="button"
+                            className="w-full sm:w-auto"
+                            disabled={acceptingProposalId !== null}
+                            onClick={() => {
+                              const proposalId = visit.pendingProposal?.id
+
+                              if (proposalId) {
+                                void onAcceptSchedule(proposalId)
+                              }
+                            }}
+                          >
+                            <CheckCircle2 className="mr-2 h-4 w-4" />
+
+                            {acceptingProposalId === visit.pendingProposal?.id
+                              ? "Confirming..."
+                              : "Accept Schedule"}
+                          </Button>
+
+                          {/* Request Another Schedule */}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full sm:w-auto"
+                            disabled={acceptingProposalId !== null}
+                            onClick={() => {
+                              if (visit.pendingProposal) {
+                                setRescheduleProposalId(
+                                  visit.pendingProposal.id
+                                )
+                              }
+                            }}
+                          >
+                            <CalendarClock className="mr-2 h-4 w-4" />
+                            Request Another Schedule
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                  {visit.status === "declined" && visit.declineReason && (
+                    <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                      <div className="flex gap-2">
+                        <XCircle className="mt-0.5 h-4 w-4 text-destructive" />
+                        <div>
+                          <p className="font-medium">Decline Reason</p>
+                          <p className="text-muted-foreground">
+                            {visit.declineReason}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                    {visit.customRequestId ? (
-                      <Button type="button" variant="outline" disabled>
-                        {visit.customRequestNumber ?? "Custom Request Created"}
-                      </Button>
-                    ) : (
-                      <Button type="button" onClick={() => onCreateCustomRequest(visit)}>Create Custom Request</Button>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </section>
+                  )}
+
+                  {visit.status === "completed" && (
+                    <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex gap-2">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600" />
+                        <div>
+                          <p className="text-sm font-medium">
+                            Confirmed by FJGA
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatMeasurements(visit)}
+                          </p>
+                          {visit.measurementNotes && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {visit.measurementNotes}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      {visit.customRequestId ? (
+                        <Button type="button" variant="outline" disabled>
+                          {visit.customRequestNumber ??
+                            "Custom Request Created"}
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          onClick={() => onCreateCustomRequest(visit)}
+                        >
+                          Create Custom Request
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <RequestRescheduleDialog
+        key={rescheduleProposalId ?? "closed"}
+        open={rescheduleProposalId !== null}
+        onOpenChange={(open) => {
+          if (!open) setRescheduleProposalId(null)
+        }}
+        onSubmit={async (preferredDate, preferredTimeSlot, notes) => {
+          if (!rescheduleProposalId) {
+            throw new Error("No schedule proposal selected.")
+          }
+
+          await onRequestReschedule(
+            rescheduleProposalId,
+            preferredDate,
+            preferredTimeSlot,
+            notes
+          )
+
+          setRescheduleProposalId(null)
+        }}
+      />
+      <SiteVisitFeeSummaryDialog
+        visit={selectedFeeVisit}
+        open={selectedFeeVisit !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedFeeVisit(null)
+        }}
+      />
+    </>
   )
 }
 
@@ -121,11 +351,23 @@ function formatMeasurements(visit: ClientSiteVisit) {
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-PH", { month: "short", day: "numeric", year: "numeric", timeZone: "Asia/Manila" }).format(new Date(`${value}T00:00:00+08:00`))
+  return new Intl.DateTimeFormat("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "Asia/Manila",
+  }).format(new Date(`${value}T00:00:00+08:00`))
 }
 
 function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("en-PH", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Manila" }).format(new Date(value))
+  return new Intl.DateTimeFormat("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "Asia/Manila",
+  }).format(new Date(value))
 }
 
 function capitalize(value: string) {

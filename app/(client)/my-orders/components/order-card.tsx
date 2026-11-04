@@ -13,6 +13,7 @@ import type { Order } from "../types/order"
 
 interface Props {
   order: Order
+  onOrderCancelled: (orderId: string) => void
 }
 
 function formatCurrency(value: number) {
@@ -23,7 +24,7 @@ function formatCurrency(value: number) {
   }).format(value)
 }
 
-export default function OrderCard({ order }: Props) {
+export default function OrderCard({ order, onOrderCancelled, }: Props) {
   const isCustomOrder = order.orderType === "custom"
 
   return (
@@ -126,7 +127,10 @@ export default function OrderCard({ order }: Props) {
             </div>
 
             <div className="flex items-center gap-2">
-              <OrderDetailsDialog order={order} />
+              <OrderDetailsDialog
+  order={order}
+  onOrderCancelled={onOrderCancelled}
+/>
 
               <ArrowRight className="hidden size-3.5 text-muted-foreground xl:block" />
             </div>

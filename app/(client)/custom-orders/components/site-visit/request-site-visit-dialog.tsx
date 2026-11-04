@@ -1006,14 +1006,26 @@ export function RequestSiteVisitDialog({
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">
-                      Travel Fee
-                    </span>
+  <span className="text-muted-foreground">
+    VAT (12% - Measurement Service)
+  </span>
 
-                    <span>
-                      {formatCurrency(feePreview.travelFee)}
-                    </span>
-                  </div>
+  <span>
+    {formatCurrency(
+      Math.round(feePreview.serviceFee * 0.12 * 100) / 100
+    )}
+  </span>
+</div>
+
+<div className="flex items-center justify-between">
+  <span className="text-muted-foreground">
+    Travel Fee
+  </span>
+
+  <span>
+    {formatCurrency(feePreview.travelFee)}
+  </span>
+</div>
 
                   <div className="flex items-center justify-between border-t pt-3 text-base font-semibold">
                     <span>Estimated Total</span>

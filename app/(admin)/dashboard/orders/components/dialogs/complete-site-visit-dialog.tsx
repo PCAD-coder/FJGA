@@ -1,7 +1,7 @@
 "use client"
 
 import { getErrorMessage } from "@/lib/error-message"
-
+import { Checkbox } from "@/components/ui/checkbox"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
@@ -17,7 +17,14 @@ interface Props {
   visit: SiteVisit | null
   open: boolean
   onOpenChange: (open: boolean) => void
-  onComplete: (id: string, width: number, height: number, depth: number | null, notes?: string) => Promise<void>
+  onComplete: (
+  id: string,
+  width: number,
+  height: number,
+  depth: number | null,
+  notes: string,
+  confirmCashPayment: boolean
+) => Promise<void>
 }
 
 export default function CompleteSiteVisitDialog({ visit, open, onOpenChange, onComplete }: Props) {
@@ -26,6 +33,7 @@ export default function CompleteSiteVisitDialog({ visit, open, onOpenChange, onC
   const [depth, setDepth] = useState("")
   const [notes, setNotes] = useState("")
   const [saving, setSaving] = useState(false)
+  const [confirmCashPayment, setConfirmCashPayment] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -33,18 +41,39 @@ export default function CompleteSiteVisitDialog({ visit, open, onOpenChange, onC
     setHeight(visit?.actualHeight?.toString() ?? "")
     setDepth(visit?.actualDepth?.toString() ?? "")
     setNotes(visit?.measurementNotes ?? "")
+    setConfirmCashPayment(false)
   }, [open, visit])
 
-  async function handleSubmit() {
-    if (!visit) return
-    const parsedWidth = Number(width)
+async function handleSubmit() {
+  if (!visit) return
+
+  if (
+    visit.status !== "scheduled" ||
+    !visit.scheduledAt ||
+    Number.isNaN(new Date(visit.scheduledAt).getTime()) ||
+    new Date(visit.scheduledAt).getTime() > Date.now()
+  ) {
+    toast.error(
+      "This visit cannot be completed before its scheduled appointment."
+    )
+    return
+  }
+
+  const parsedWidth = Number(width)
     const parsedHeight = Number(height)
     const parsedDepth = depth.trim() ? Number(depth) : null
     if (!Number.isFinite(parsedWidth) || parsedWidth <= 0 || !Number.isFinite(parsedHeight) || parsedHeight <= 0) return toast.error("Confirmed width and height must be greater than zero.")
     if (parsedDepth !== null && (!Number.isFinite(parsedDepth) || parsedDepth <= 0)) return toast.error("Depth must be greater than zero when provided.")
     try {
       setSaving(true)
-      await onComplete(visit.id, parsedWidth, parsedHeight, parsedDepth, notes)
+      await onComplete(
+  visit.id,
+  parsedWidth,
+  parsedHeight,
+  parsedDepth,
+  notes,
+  confirmCashPayment
+)
       toast.success("On-site visit completed and measurements saved.")
       onOpenChange(false)
     } catch (error) {
@@ -54,6 +83,7 @@ export default function CompleteSiteVisitDialog({ visit, open, onOpenChange, onC
     }
   }
 
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl">
@@ -64,7 +94,32 @@ export default function CompleteSiteVisitDialog({ visit, open, onOpenChange, onC
           <div className="space-y-2"><Label htmlFor="visit-height">Height (cm) *</Label><Input id="visit-height" type="number" min="0" step="0.01" value={height} onChange={(e) => setHeight(e.target.value)} /></div>
           <div className="space-y-2"><Label htmlFor="visit-depth">Depth (cm)</Label><Input id="visit-depth" type="number" min="0" step="0.01" value={depth} onChange={(e) => setDepth(e.target.value)} /></div>
         </div>
+        
         <div className="space-y-2"><Label htmlFor="visit-measurement-notes">Measurement notes</Label><Textarea id="visit-measurement-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={5} placeholder="Additional measurements, site conditions, allowances, or installation notes..." /></div>
+        <div className="flex items-start gap-3 rounded-lg border p-4">
+  <Checkbox
+    id="confirm-cash-payment"
+    checked={confirmCashPayment}
+    onCheckedChange={(checked) =>
+      setConfirmCashPayment(checked === true)
+    }
+    disabled={saving}
+  />
+
+  <div className="space-y-1">
+    <Label
+      htmlFor="confirm-cash-payment"
+      className="cursor-pointer font-medium"
+    >
+      Cash Payment Received
+    </Label>
+
+    <p className="text-xs text-muted-foreground">
+      Check this only if the customer has already paid the
+      on-site measurement and travel fees in cash.
+    </p>
+  </div>
+</div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
           <Button onClick={handleSubmit} disabled={saving || !width || !height}>{saving ? "Saving..." : "Complete Visit"}</Button>

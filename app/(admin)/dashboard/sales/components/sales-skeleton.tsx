@@ -31,19 +31,29 @@ function TableSkeleton({ rows }: { rows: number }) {
   )
 }
 
-export default function SalesSkeleton() {
+export default function SalesSkeleton({
+  embedded = false,
+}: {
+  embedded?: boolean
+}) {
   return (
     <div
       role="status"
       aria-label="Loading sales"
-      className="mx-auto w-full max-w-[1600px] space-y-4 px-1 pt-2 pb-12 sm:px-4 sm:pt-3 lg:px-6"
+      className={
+        embedded
+          ? "space-y-4"
+          : "mx-auto w-full max-w-[1600px] space-y-4 px-1 pt-2 pb-12 sm:px-4 sm:pt-3 lg:px-6"
+      }
     >
       <span className="sr-only">Loading sales records...</span>
       <div aria-hidden="true" className="space-y-4">
-        <div className="space-y-2">
-          <Placeholder className="h-8 w-32" />
-          <Placeholder className="h-5 w-96 max-w-full" />
-        </div>
+        {!embedded && (
+          <div className="space-y-2">
+            <Placeholder className="h-8 w-32" />
+            <Placeholder className="h-5 w-96 max-w-full" />
+          </div>
+        )}
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }, (_, i) => (
             <div

@@ -4,6 +4,7 @@ import type {
   CreateSiteVisitRequestInput,
   SiteVisitFeePreview,
   ClientSiteVisit,
+  ClientSiteVisitProposal,
 } from "../types/site-visit"
 
 const supabase = createClient()
@@ -172,6 +173,55 @@ export async function getClientSiteVisits(): Promise<ClientSiteVisit[]> {
 
   const visitIds = visits.map((visit) => visit.id)
 
+const { data: proposalRows, error: proposalError } = await supabase
+  .from("site_visit_schedule_proposals")
+  .select(`
+    id,
+    site_visit_request_id,
+    proposed_by,
+    proposed_by_role,
+    proposed_date,
+    proposed_time_slot,
+    proposed_scheduled_at,
+    assigned_staff,
+    status,
+    proposed_at,
+    responded_at,
+    response_notes
+  `)
+  .in("site_visit_request_id", visitIds)
+  .eq("status", "pending")
+
+if (proposalError) {
+  throw new Error(proposalError.message)
+}
+
+const pendingProposals = new Map<string, ClientSiteVisitProposal>()
+
+for (const row of proposalRows ?? []) {
+  if (
+    row.proposed_by_role !== "admin" &&
+    row.proposed_by_role !== "client"
+  ) {
+    throw new Error("Invalid site visit proposal owner role.")
+  }
+
+  pendingProposals.set(row.site_visit_request_id, {
+    id: row.id,
+    siteVisitRequestId: row.site_visit_request_id,
+    proposedBy: row.proposed_by,
+    proposedByRole: row.proposed_by_role,
+    proposedDate: row.proposed_date,
+    proposedTimeSlot: row.proposed_time_slot,
+    proposedScheduledAt: row.proposed_scheduled_at ?? null,
+    assignedStaff: row.assigned_staff ?? null,
+    status: row.status as ClientSiteVisitProposal["status"],
+    proposedAt: row.proposed_at,
+    respondedAt: row.responded_at ?? null,
+    responseNotes: row.response_notes ?? null,
+  })
+}
+
   const { data: linkedRequests, error: linkedError } = await supabase
     .from("custom_order_requests")
     .select("id, request_number, site_visit_request_id")
@@ -220,8 +270,13 @@ export async function getClientSiteVisits(): Promise<ClientSiteVisit[]> {
       serviceFee: Number(visit.service_fee),
       travelFee: Number(visit.travel_fee),
       totalFee: Number(visit.total_fee),
+      paymentStatus: visit.payment_status as "unpaid" | "paid",
+paymentMethod: visit.payment_method ?? null,
+paidAt: visit.paid_at ?? null,
+paymentReceivedBy: visit.payment_received_by ?? null,
       scheduledAt: visit.scheduled_at,
       assignedStaff: visit.assigned_staff,
+      pendingProposal: pendingProposals.get(visit.id) ?? null,
       actualWidth:
         visit.actual_width == null ? null : Number(visit.actual_width),
       actualHeight:
@@ -236,4 +291,57 @@ export async function getClientSiteVisits(): Promise<ClientSiteVisit[]> {
       customRequestNumber: linkedRequest?.request_number ?? null,
     } satisfies ClientSiteVisit
   })
+}
+export async function acceptSiteVisitScheduleProposal(
+  proposalId: string
+): Promise<void> {
+  if (!proposalId.trim()) {
+    throw new Error("Schedule proposal ID is required.")
+  }
+
+  const { error } = await supabase.rpc(
+    "accept_site_visit_proposal",
+    {
+      p_proposal_id: proposalId,
+    }
+  )
+
+  if (error) {
+    throw new Error(error.message)
+  }
+}
+export async function requestSiteVisitReschedule(
+  proposalId: string,
+  preferredDate: string,
+  preferredTimeSlot: "morning" | "afternoon",
+  notes?: string
+): Promise<void> {
+  if (!proposalId.trim()) {
+    throw new Error("Schedule proposal ID is required.")
+  }
+
+  if (!preferredDate) {
+    throw new Error("Please select your preferred date.")
+  }
+
+  if (
+    preferredTimeSlot !== "morning" &&
+    preferredTimeSlot !== "afternoon"
+  ) {
+    throw new Error("Please select a valid time slot.")
+  }
+
+  const { error } = await supabase.rpc(
+    "request_site_visit_reschedule",
+    {
+      p_proposal_id: proposalId,
+      p_preferred_date: preferredDate,
+      p_preferred_time_slot: preferredTimeSlot,
+      p_notes: notes?.trim() || null,
+    }
+  )
+
+  if (error) {
+    throw new Error(error.message)
+  }
 }

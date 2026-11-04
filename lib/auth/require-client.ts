@@ -1,26 +1,27 @@
-import { redirect } from "next/navigation";
-import { getUser } from "./get-user";
-import { getProfile } from "./get-profile";
+import { redirect } from "next/navigation"
+import { redirectToLogin } from "./redirect-to-login"
+import { getUser } from "./get-user"
+import { getProfile } from "./get-profile"
 
 export async function requireClient() {
   // Check if the user is authenticated
-  const { user } = await getUser();
+  const { user } = await getUser()
 
   if (!user) {
-    redirect("/login");
+    return await redirectToLogin()
   }
 
   // Get the user's profile
-  const { profile, error } = await getProfile(user.id);
+  const { profile, error } = await getProfile(user.id)
 
   if (error || !profile) {
-    redirect("/auth/unauthorized");
+    redirect("/auth/unauthorized")
   }
 
   // Check role
   if (profile.role !== "client") {
-    redirect("/auth/unauthorized");
+    redirect("/auth/unauthorized")
   }
 
-  return profile;
+  return profile
 }

@@ -19,10 +19,34 @@ export interface SiteVisitFeePreview {
 
 export type ClientSiteVisitStatus =
   | "pending"
+  | "proposed"
   | "scheduled"
   | "completed"
   | "declined"
   | "cancelled"
+
+export type SiteVisitProposalStatus =
+  | "pending"
+  | "accepted"
+  | "rejected"
+  | "superseded"
+
+export type SiteVisitProposalRole = "admin" | "client"
+
+export interface ClientSiteVisitProposal {
+  id: string
+  siteVisitRequestId: string
+  proposedBy: string
+  proposedByRole: SiteVisitProposalRole
+  proposedDate: string
+  proposedTimeSlot: SiteVisitTimeSlot
+  proposedScheduledAt: string | null
+  assignedStaff: string | null
+  status: SiteVisitProposalStatus
+  proposedAt: string
+  respondedAt: string | null
+  responseNotes: string | null
+}
 
 export interface ClientSiteVisit {
   id: string
@@ -40,6 +64,7 @@ export interface ClientSiteVisit {
   totalFee: number
   scheduledAt: string | null
   assignedStaff: string | null
+  pendingProposal: ClientSiteVisitProposal | null
   actualWidth: number | null
   actualHeight: number | null
   actualDepth: number | null
@@ -49,4 +74,9 @@ export interface ClientSiteVisit {
   createdAt: string
   customRequestId: string | null
   customRequestNumber: string | null
+
+  paymentStatus: "unpaid" | "paid"
+  paymentMethod: string | null
+  paidAt: string | null
+  paymentReceivedBy: string | null
 }

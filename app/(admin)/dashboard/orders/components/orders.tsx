@@ -94,6 +94,8 @@ export default function OrdersModule() {
     loading: siteVisitsLoading,
     error: siteVisitsError,
     schedule: scheduleVisit,
+    proposeSchedule: proposeVisitSchedule,
+    acceptClientProposal,
     decline: declineVisit,
     complete: completeVisit,
   } = useSiteVisits()
@@ -260,9 +262,7 @@ export default function OrdersModule() {
     } catch (error) {
       console.error("Failed to load quotation:", error)
 
-      toast.error(
-        getErrorMessage(error, "Unable to load quotation.")
-      )
+      toast.error(getErrorMessage(error, "Unable to load quotation."))
       setQuotationDetailsError(
         getErrorMessage(error, "Failed to load quotation.")
       )
@@ -415,7 +415,10 @@ export default function OrdersModule() {
                     >
                       View
                     </Button>
-                    <Button variant="outline" onClick={() => setBreakdownOrder(order)}>
+                    <Button
+                      variant="outline"
+                      onClick={() => setBreakdownOrder(order)}
+                    >
                       <FileText className="mr-1 h-4 w-4" />
                       View Breakdown
                     </Button>
@@ -466,7 +469,13 @@ export default function OrdersModule() {
             page={orderPage}
             onPageChange={setOrdersPage}
           />
-          {breakdownOrder && <OrderBreakdownDialog key={breakdownOrder.id} order={breakdownOrder} onClose={() => setBreakdownOrder(null)} />}
+          {breakdownOrder && (
+            <OrderBreakdownDialog
+              key={breakdownOrder.id}
+              order={breakdownOrder}
+              onClose={() => setBreakdownOrder(null)}
+            />
+          )}
           <ViewOrderDialog
             order={selectedOrder}
             open={viewOpen}
@@ -489,28 +498,28 @@ export default function OrdersModule() {
             onStartProduction={startProduction}
           />
           <DenyRequestDialog
-  open={orderDenyOpen}
-  onOpenChange={(open) => {
-    setOrderDenyOpen(open)
+            open={orderDenyOpen}
+            onOpenChange={(open) => {
+              setOrderDenyOpen(open)
 
-    if (!open) {
-      setOrderToDeny(null)
-    }
-  }}
-  projectName={orderToDeny?.order_number}
-  onConfirm={async (reason) => {
-    if (!orderToDeny) return
+              if (!open) {
+                setOrderToDeny(null)
+              }
+            }}
+            projectName={orderToDeny?.order_number}
+            onConfirm={async (reason) => {
+              if (!orderToDeny) return
 
-    try {
-      await deny(orderToDeny.id, reason)
+              try {
+                await deny(orderToDeny.id, reason)
 
-      setOrderDenyOpen(false)
-      setOrderToDeny(null)
-    } catch (error) {
-      console.error("Deny Order Error:", error)
-    }
-  }}
-/>
+                setOrderDenyOpen(false)
+                setOrderToDeny(null)
+              } catch (error) {
+                console.error("Deny Order Error:", error)
+              }
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="custom-requests" className="space-y-4">
@@ -759,6 +768,9 @@ export default function OrdersModule() {
                   <SelectContent>
                     <SelectItem value="all">All Statuses</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="proposed">
+                      Awaiting Client Confirmation
+                    </SelectItem>
                     <SelectItem value="scheduled">Scheduled</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
                     <SelectItem value="declined">Declined</SelectItem>
@@ -815,6 +827,15 @@ export default function OrdersModule() {
               await scheduleVisit(id, scheduledAt, staff)
               setSiteVisitDetailsOpen(false)
             }}
+            onProposeSchedule={async (id, scheduledAt, staff) => {
+              await proposeVisitSchedule(id, scheduledAt, staff)
+              setSiteVisitDetailsOpen(false)
+            }}
+            onAcceptClientProposal={async (proposalId, scheduledAt, staff) => {
+              await acceptClientProposal(proposalId, scheduledAt, staff)
+
+              setSiteVisitDetailsOpen(false)
+            }}
           />
           <DeclineSiteVisitDialog
             visit={selectedSiteVisit}
@@ -829,8 +850,23 @@ export default function OrdersModule() {
             visit={selectedSiteVisit}
             open={completeVisitOpen}
             onOpenChange={setCompleteVisitOpen}
-            onComplete={async (id, width, height, depth, notes) => {
-              await completeVisit(id, width, height, depth, notes)
+            onComplete={async (
+              id,
+              width,
+              height,
+              depth,
+              notes,
+              confirmCashPayment
+            ) => {
+              await completeVisit(
+                id,
+                width,
+                height,
+                depth,
+                notes,
+                confirmCashPayment
+              )
+
               setSiteVisitDetailsOpen(false)
             }}
           />

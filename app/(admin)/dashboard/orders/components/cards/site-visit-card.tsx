@@ -15,6 +15,7 @@ interface Props {
 
 const statusLabels: Record<SiteVisitStatus, string> = {
   pending: "Pending",
+  proposed: "Awaiting Client Confirmation",
   scheduled: "Scheduled",
   completed: "Completed",
   declined: "Declined",
@@ -37,8 +38,67 @@ function formatPreferredDate(value: string) {
     timeZone: "Asia/Manila",
   }).format(new Date(`${value}T00:00:00+08:00`))
 }
+function formatScheduledDate(value: string) {
+  return new Intl.DateTimeFormat("en-PH", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Manila",
+  }).format(new Date(value))
+}
 
 export default function SiteVisitCard({ visit, onView }: Props) {
+  const pendingProposal = visit.pendingProposal
+
+  let scheduleLabel = "Preferred Visit"
+
+  let scheduleText = `${
+    formatPreferredDate(visit.preferredDate)
+  } · ${
+    visit.preferredTimeSlot === "morning"
+      ? "Morning"
+      : "Afternoon"
+  }`
+
+  if (
+    (visit.status === "scheduled" || visit.status === "completed") &&
+    visit.scheduledAt
+  ) {
+    scheduleLabel =
+      visit.status === "completed"
+        ? "Visit Schedule"
+        : "Confirmed Schedule"
+
+    scheduleText = formatScheduledDate(visit.scheduledAt)
+  } else if (
+    visit.status === "proposed" &&
+    pendingProposal?.proposedByRole === "admin"
+  ) {
+    scheduleLabel = "Proposed Schedule"
+
+    if (pendingProposal.proposedScheduledAt) {
+      scheduleText = formatScheduledDate(
+        pendingProposal.proposedScheduledAt
+      )
+    }
+  } else if (
+    visit.status === "pending" &&
+    pendingProposal?.proposedByRole === "client"
+  ) {
+    scheduleLabel = "Client Requested Schedule"
+
+    scheduleText = `${
+      formatPreferredDate(pendingProposal.proposedDate)
+    } · ${
+      pendingProposal.proposedTimeSlot === "morning"
+        ? "Morning"
+        : "Afternoon"
+    }`
+  }
+
   return (
     <Card className="min-w-0 overflow-hidden rounded-xl border border-border/80 shadow-none ring-0">
       <CardHeader className="pb-3">
@@ -67,15 +127,18 @@ export default function SiteVisitCard({ visit, onView }: Props) {
               <p className="text-sm font-medium">{visit.clientName}</p>
             </div>
           </div>
-          <div className="flex gap-3">
-            <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-            <div>
-              <p className="text-xs text-muted-foreground">Preferred Visit</p>
-              <p className="text-sm font-medium">
-                {formatPreferredDate(visit.preferredDate)} · {visit.preferredTimeSlot === "morning" ? "Morning" : "Afternoon"}
-              </p>
-            </div>
-          </div>
+<div className="flex gap-3">
+  <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+  <div>
+    <p className="text-xs text-muted-foreground">
+      {scheduleLabel}
+    </p>
+
+    <p className="text-sm font-medium">
+      {scheduleText}
+    </p>
+  </div>
+</div>
           <div className="flex gap-3">
             <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
             <div>

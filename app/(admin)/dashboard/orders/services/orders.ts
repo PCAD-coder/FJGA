@@ -198,6 +198,7 @@ export async function updateOrderStatus(
     .from("orders")
     .update(updateData)
     .eq("id", orderId)
+    .neq("status", "cancelled")
     .select()
     .single()
 
@@ -219,6 +220,7 @@ export async function saveOrderQuotation(
       updated_at: new Date().toISOString(),
     })
     .eq("id", orderId)
+    .neq("status", "cancelled")
     .select()
     .single()
 

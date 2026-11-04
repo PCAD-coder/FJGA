@@ -31,6 +31,18 @@ export default function MyOrders() {
   const [search, setSearch] = useState("")
   const [sort, setSort] = useState<OrderSort>("newest")
   const [orders, setOrders] = useState<Order[]>([])
+  function handleOrderCancelled(orderId: string) {
+  setOrders((previousOrders) =>
+    previousOrders.map((order) =>
+      order.id === orderId
+        ? {
+            ...order,
+            status: "Cancelled" as const,
+          }
+        : order
+    )
+  )
+}
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -246,8 +258,12 @@ export default function MyOrders() {
           </div>
         ) : (
           paginatedOrders.map((order) => (
-            <OrderCard key={order.id} order={order} />
-          ))
+  <OrderCard
+    key={order.id}
+    order={order}
+    onOrderCancelled={handleOrderCancelled}
+  />
+))
         )}
       </div>
       {filteredOrders.length > 0 && (

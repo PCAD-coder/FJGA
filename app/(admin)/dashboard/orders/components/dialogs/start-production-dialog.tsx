@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { toast } from "sonner"
 
 import {
   Dialog,
@@ -39,6 +40,19 @@ interface Props {
   ) => Promise<void>
 }
 
+function getTodayInManila() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date())
+  const year = parts.find((part) => part.type === "year")!.value
+  const month = parts.find((part) => part.type === "month")!.value
+  const day = parts.find((part) => part.type === "day")!.value
+  return `${year}-${month}-${day}`
+}
+
 export default function StartProductionDialog({
   open,
   onOpenChange,
@@ -51,6 +65,9 @@ export default function StartProductionDialog({
   const [loadingPersonnel, setLoadingPersonnel] = useState(false)
   const [estimatedCompletionDate, setEstimatedCompletionDate] = useState("")
   const [saving, setSaving] = useState(false)
+  const minimumCompletionDate = getTodayInManila()
+  const isPastCompletionDate =
+    !!estimatedCompletionDate && estimatedCompletionDate < minimumCompletionDate
 
   useEffect(() => {
     if (!open) return
@@ -78,6 +95,10 @@ export default function StartProductionDialog({
 
   const handleConfirm = async () => {
     if (!assignedTo || !estimatedCompletionDate) return
+    if (estimatedCompletionDate < getTodayInManila()) {
+      toast.error("Estimated completion date must be today or a future date.")
+      return
+    }
 
     try {
       setSaving(true)
@@ -173,20 +194,51 @@ export default function StartProductionDialog({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label
+              htmlFor="estimated-completion-date"
+              className="text-sm font-medium"
+            >
               Estimated Completion Date
             </label>
             <Input
+              id="estimated-completion-date"
               type="date"
+              min={minimumCompletionDate}
               value={estimatedCompletionDate}
-              onChange={(e) => setEstimatedCompletionDate(e.target.value)}
+              onChange={(event) => {
+                const date = event.target.value
+                if (date && date < getTodayInManila()) {
+                  event.currentTarget.value = estimatedCompletionDate
+                  toast.error("Choose today or a future date.")
+                  return
+                }
+                setEstimatedCompletionDate(date)
+              }}
+              aria-invalid={isPastCompletionDate}
+              aria-describedby={
+                isPastCompletionDate ? "completion-date-error" : undefined
+              }
             />
+            {isPastCompletionDate && (
+              <p
+                id="completion-date-error"
+                role="alert"
+                className="text-xs text-destructive"
+              >
+                Choose today or a future date.
+              </p>
+            )}
           </div>
 
           <Button
             className="w-full"
             onClick={handleConfirm}
-            disabled={saving || !assignedTo || !estimatedCompletionDate}
+            disabled={
+              saving ||
+              !assignedTo ||
+              !estimatedCompletionDate ||
+              isPastCompletionDate
+            }
           >
             {saving ? "Starting Production..." : "Start Production"}
           </Button>

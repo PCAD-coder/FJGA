@@ -40,7 +40,11 @@ import type {
 import { CustomOrderDetailsDialog } from "./request-details/custom-order-details-dialog"
 import { RequestSiteVisitDialog } from "./site-visit/request-site-visit-dialog"
 import { SiteVisitHistory } from "./site-visit/site-visit-history"
-import { getClientSiteVisits } from "../services/site-visit.service"
+import {
+  acceptSiteVisitScheduleProposal,
+  getClientSiteVisits,
+  requestSiteVisitReschedule,
+} from "../services/site-visit.service"
 import type { ClientSiteVisit } from "../types/site-visit"
 
 const statusConfig: Record<
@@ -267,10 +271,14 @@ const PAGE_SIZE = 10
 export default function CustomOrder() {
   const [page, setPage] = useState(1)
   const [isCreatingRequest, setIsCreatingRequest] = useState(false)
-  const [sourceSiteVisit, setSourceSiteVisit] = useState<ClientSiteVisit | null>(null)
+  const [sourceSiteVisit, setSourceSiteVisit] =
+    useState<ClientSiteVisit | null>(null)
   const [siteVisits, setSiteVisits] = useState<ClientSiteVisit[]>([])
   const [siteVisitsLoading, setSiteVisitsLoading] = useState(true)
   const [siteVisitsError, setSiteVisitsError] = useState<string | null>(null)
+  const [acceptingProposalId, setAcceptingProposalId] = useState<string | null>(
+    null
+  )
   const [isSiteVisitOpen, setIsSiteVisitOpen] = useState(false)
   const [requests, setRequests] = useState<CustomOrderRequestListItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -366,10 +374,70 @@ export default function CustomOrder() {
     } catch (error) {
       console.error("Failed to load on-site visits:", error)
       setSiteVisitsError(
-        error instanceof Error ? error.message : "Failed to load on-site visits."
+        error instanceof Error
+          ? error.message
+          : "Failed to load on-site visits."
       )
     } finally {
       setSiteVisitsLoading(false)
+    }
+  }
+
+  async function handleAcceptSiteVisitSchedule(
+    proposalId: string
+  ): Promise<void> {
+    if (acceptingProposalId) return
+
+    try {
+      setAcceptingProposalId(proposalId)
+
+      await acceptSiteVisitScheduleProposal(proposalId)
+
+      toast.success("Your on-site visit schedule has been confirmed.")
+
+      await loadSiteVisits()
+    } catch (error) {
+      console.error("Failed to accept site visit schedule:", error)
+
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to confirm the schedule. Please try again."
+      )
+    } finally {
+      setAcceptingProposalId(null)
+    }
+  }
+
+  async function handleRequestSiteVisitReschedule(
+    proposalId: string,
+    preferredDate: string,
+    preferredTimeSlot: "morning" | "afternoon",
+    notes: string
+  ): Promise<void> {
+    try {
+      await requestSiteVisitReschedule(
+        proposalId,
+        preferredDate,
+        preferredTimeSlot,
+        notes
+      )
+
+      toast.success(
+        "Your preferred schedule has been submitted to FJGA for review."
+      )
+
+      await loadSiteVisits()
+    } catch (error) {
+      console.error("Failed to request another schedule:", error)
+
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to submit your preferred schedule."
+      )
+
+      throw error
     }
   }
 
@@ -428,28 +496,28 @@ export default function CustomOrder() {
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row">
-  <Button
-    type="button"
-    size="lg"
-    variant="outline"
-    onClick={() => setIsSiteVisitOpen(true)}
-  >
-    <MapPin className="mr-2 h-4 w-4" />
-    Request On-Site Visit
-  </Button>
+          <Button
+            type="button"
+            size="lg"
+            variant="outline"
+            onClick={() => setIsSiteVisitOpen(true)}
+          >
+            <MapPin className="mr-2 h-4 w-4" />
+            Request On-Site Visit
+          </Button>
 
-  <Button
-    type="button"
-    size="lg"
-    onClick={() => {
-      setSourceSiteVisit(null)
-      setIsCreatingRequest(true)
-    }}
-  >
-    <Plus className="mr-2 h-4 w-4" />
-    New Custom Request
-  </Button>
-</div>
+          <Button
+            type="button"
+            size="lg"
+            onClick={() => {
+              setSourceSiteVisit(null)
+              setIsCreatingRequest(true)
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            New Custom Request
+          </Button>
+        </div>
       </div>
 
       {/* Small Summary */}
@@ -500,8 +568,15 @@ export default function CustomOrder() {
         isLoading={siteVisitsLoading}
         error={siteVisitsError}
         onRetry={() => void loadSiteVisits()}
+        onAcceptSchedule={handleAcceptSiteVisitSchedule}
+        acceptingProposalId={acceptingProposalId}
+        onRequestReschedule={handleRequestSiteVisitReschedule}
         onCreateCustomRequest={(visit) => {
-          if (visit.actualWidth == null || visit.actualHeight == null) {
+          if (
+            visit.status !== "completed" ||
+            visit.actualWidth == null ||
+            visit.actualHeight == null
+          ) {
             toast.error("This visit does not have confirmed measurements yet.")
             return
           }
