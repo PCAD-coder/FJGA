@@ -853,6 +853,7 @@ export default function EditProductDialog({
 
                       <Select
                         value={form.product_type}
+                        disabled
                         onValueChange={(value) =>
                           updateProduct("product_type", value as ProductType)
                         }

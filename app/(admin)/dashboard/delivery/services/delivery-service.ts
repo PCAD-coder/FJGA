@@ -344,16 +344,20 @@ if (!data) {
   throw new Error("Delivery record not found")
 }
 
+
 let proofImageUrl: string | null = null
 
 if (data.proof_image_path) {
+  // COD proof images are stored in payment-proofs.
+  // Other delivery proofs are stored in delivery_proofs.
+  const proofBucket = data.proof_image_path.includes("/cash/")
+    ? "payment-proofs"
+    : "delivery_proofs"
+
   const { data: signedUrlData, error: signedUrlError } =
     await supabase.storage
-      .from("delivery_proofs")
-      .createSignedUrl(
-        data.proof_image_path,
-        60 * 10
-      )
+      .from(proofBucket)
+      .createSignedUrl(data.proof_image_path, 60 * 10)
 
   if (signedUrlError) {
     console.error(
@@ -364,6 +368,7 @@ if (data.proof_image_path) {
     proofImageUrl = signedUrlData.signedUrl
   }
 }
+
 
 return {
   ...data,

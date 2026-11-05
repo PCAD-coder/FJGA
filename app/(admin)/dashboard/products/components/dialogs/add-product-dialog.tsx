@@ -724,6 +724,7 @@ const formIsValid = useMemo(() => {
 
                         <Select
                           value={product.product_type}
+                          disabled
                           onValueChange={(value) =>
                             updateProduct("product_type", value as ProductType)
                           }

@@ -239,7 +239,7 @@ export default function Analytics() {
 
         <DashboardCard
           title="Customer Satisfaction"
-          value={loading ? "Loading..." : `${summary.customerSatisfaction} / 5`}
+          value={loading ? "Loading..." : `${summary.customerSatisfaction.toFixed(1)} / 5`}
           description="Based on client feedback"
           icon={Star}
           color="text-yellow-600 dark:text-yellow-400"

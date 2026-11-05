@@ -840,6 +840,10 @@ const result = await getCustomizedPrice(product.id, {
                           ? "FJGA currently does not have delivery coverage within this province. Please select another province."
                           : "FJGA currently does not deliver to this city or municipality. Please select another city or municipality."}
                     </p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      If delivery is unavailable for your selected address, please
+                      contact FJGA for assistance.
+                    </p>
                   </div>
                 ) : locationCoverage?.isAvailable ? (
                   <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">

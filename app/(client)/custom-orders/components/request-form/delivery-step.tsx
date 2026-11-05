@@ -734,6 +734,10 @@ useEffect(() => {
                 ? "FJGA currently does not have delivery coverage within this province. Please select another province."
                 : "FJGA currently does not deliver to this city or municipality. Please select another city or municipality."}
           </p>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            If delivery is unavailable for your selected address, please contact
+            FJGA for assistance.
+          </p>
         </div>
       </div>
     ) : locationCoverage?.isAvailable ? (
