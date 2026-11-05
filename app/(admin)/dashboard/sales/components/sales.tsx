@@ -5,7 +5,7 @@ import { DashboardCard } from "@/components/dashboard_cards"
 
 import { useEffect, useMemo, useState } from "react"
 
-import { CreditCard, DollarSign, Eye, Search, WalletCards } from "lucide-react"
+import { CreditCard, DollarSign, Search, WalletCards } from "lucide-react"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -35,11 +35,8 @@ import { RecordPaymentDialog } from "./record-payment-dialog"
 
 import { getSalesRecords } from "../services/sales-service"
 
-import type { PaymentSubmission, SalesRecord } from "../types/sales"
+import type { SalesRecord } from "../types/sales"
 
-import { getPendingPaymentSubmissions } from "../services/payment-verification-service"
-import PendingPaymentSubmissions from "./pending-payment-submissions"
-import { approvePaymentSubmission } from "../services/payment-service"
 import { SalesExportMenu } from "./sales-export-menu"
 
 function formatCurrency(value: number) {
@@ -93,9 +90,6 @@ const PAGE_SIZE = 10
 export default function Sales() {
   const [page, setPage] = useState(1)
   const [sales, setSales] = useState<SalesRecord[]>([])
-  const [pendingPayments, setPendingPayments] = useState<PaymentSubmission[]>(
-    []
-  )
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [paymentStatusFilter, setPaymentStatusFilter] =
@@ -113,11 +107,9 @@ export default function Sales() {
         setError(null)
 
         const data = await getSalesRecords()
-        const pendingPayments = await getPendingPaymentSubmissions()
 
         if (!cancelled) {
           setSales(data)
-          setPendingPayments(pendingPayments)
         }
       } catch (err) {
         console.error("Failed to load sales:", err)
@@ -225,25 +217,6 @@ const totalProfit = useMemo(() => {
           color="text-primary"
         />
       </div>
-      {/* PENDING PAYMENT SUBMISSIONS */}
-
-      <PendingPaymentSubmissions
-        submissions={pendingPayments}
-        onUpdated={async () => {
-          try {
-            const [salesData, pendingData] = await Promise.all([
-              getSalesRecords(),
-              getPendingPaymentSubmissions(),
-            ])
-
-            setSales(salesData)
-            setPendingPayments(pendingData)
-          } catch (error) {
-            console.error("Failed to refresh payment submissions:", error)
-          }
-        }}
-      />
-
       {/* FILTERS & SEARCH */}
 
       <Card>
@@ -486,13 +459,9 @@ const totalProfit = useMemo(() => {
           setPaymentSale(null)
 
           try {
-            const [salesData, pendingData] = await Promise.all([
-              getSalesRecords(),
-              getPendingPaymentSubmissions(),
-            ])
+            const salesData = await getSalesRecords()
 
             setSales(salesData)
-            setPendingPayments(pendingData)
           } catch (error) {
             console.error("Failed to refresh sales after payment:", error)
           }
