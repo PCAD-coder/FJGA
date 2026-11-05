@@ -102,6 +102,12 @@ function getMeasurementValue(
   }
 }
 
+function serializeVariants(selections: ProductVariantMaterialSelections): string {
+  return JSON.stringify(
+    Object.entries(selections).map(([group, ids]) => [group, [...ids].sort()])
+  )
+}
+
 interface SelectedMaterial {
   inventory_material_id: string
   quantity: number
@@ -183,6 +189,8 @@ export default function EditProductDialog({
   const isSaving = saving || isSubmitting
 
   const [form, setForm] = useState<ProductInsert>(defaultProduct)
+  const [initialValues, setInitialValues] = useState<string | null>(null)
+  const [initialVariants, setInitialVariants] = useState<string | null>(null)
 
   const [images, setImages] = useState<File[]>([])
 
@@ -288,18 +296,23 @@ export default function EditProductDialog({
     loadOptions()
   }, [])
   useEffect(() => {
-    if (!product) return
+    if (!open || !product) return
+
+    let cancelled = false
+    setInitialVariants(null)
 
     async function loadVariants() {
       if (!product) return
 
       const options = await getAllVariantMaterials()
+      if (cancelled) return
       setVariantMaterials(options)
 
       const selected = await getProductVariantMaterials(product.id)
+      if (cancelled) return
 
       if (selected.data) {
-        setVariantSelections({
+        const selections = {
           frameMaterials: selected.data
             .filter((v) => v.variant_group === "frame_material")
             .map((v) => v.inventory_material_id),
@@ -323,11 +336,13 @@ export default function EditProductDialog({
           rollerMaterials: selected.data
             .filter((v) => v.variant_group === "roller")
             .map((v) => v.inventory_material_id),
-        })
+        }
+        setVariantSelections(selections)
+        setInitialVariants(serializeVariants(selections))
       }
     }
 
-    setForm({
+    const initialForm: ProductInsert = {
       product_code: product.product_code,
       product_name: product.product_name,
       category: product.category,
@@ -341,30 +356,47 @@ export default function EditProductDialog({
       is_customizable: product.is_customizable,
       is_active: product.is_active,
       is_depth_customizable: product.is_depth_customizable,
-    })
+    }
+    setForm(initialForm)
 
-    setMaterials(
+    const initialMaterials =
       product.materials.map((item) => ({
         inventory_material_id: item.inventory_material_id,
         quantity: item.quantity,
         is_fixed: item.is_fixed,
         calculation_method_id: item.calculation_method_id,
       }))
-    )
+    setMaterials(initialMaterials)
 
-    setLabor(
+    const initialLabor =
       product.labor.map((item) => ({
         pricing_service_id: item.pricing_service_id,
         quantity: item.quantity,
       }))
-    )
+    setLabor(initialLabor)
+    setInitialValues(JSON.stringify({
+      form: initialForm,
+      materials: initialMaterials,
+      labor: initialLabor,
+      existingImages: product.images,
+    }))
 
     // Existing images are already stored.
     // New uploads will be added separately.
     setExistingImages(product.images)
     setImages([])
     loadVariants()
-  }, [product])
+
+    return () => {
+      cancelled = true
+    }
+  }, [open, product])
+
+  const hasChanges = initialValues !== null && initialVariants !== null && (
+    images.length > 0 ||
+    JSON.stringify({ form, materials, labor, existingImages }) !== initialValues ||
+    serializeVariants(variantSelections) !== initialVariants
+  )
 
   function updateProduct<K extends keyof ProductInsert>(
     key: K,
@@ -570,7 +602,7 @@ export default function EditProductDialog({
     setLabor((prev) => prev.filter((_, i) => i !== index))
   }
   async function handleSave() {
-    if (saving || submittingRef.current) return
+    if (saving || submittingRef.current || !hasChanges) return
 
     if (!product) return
 
@@ -1586,7 +1618,7 @@ export default function EditProductDialog({
 
                   <Button
                     type="button"
-                    disabled={isSaving || !formIsValid}
+                    disabled={isSaving || !formIsValid || !hasChanges}
                     onClick={handleSave}
                   >
                     {isSaving ? "Saving..." : "Save Changes"}

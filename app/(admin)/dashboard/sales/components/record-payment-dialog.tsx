@@ -90,7 +90,13 @@ export function RecordPaymentDialog({
         setLoadingEmployees(true)
 
         const data = await getActiveEmployees()
-        setEmployees(data)
+        setEmployees(
+          data.filter(
+            (employee) =>
+              employee.position?.trim().replace(/\s+/g, " ").toLowerCase() ===
+              "general staff"
+          )
+        )
       } catch (error) {
         console.error("Failed to load employees:", error)
         toast.error(getErrorMessage(error, "Unable to load employees."))
@@ -365,11 +371,11 @@ export function RecordPaymentDialog({
 
                 {!loadingEmployees && employees.length === 0 ? (
                   <p className="text-xs text-destructive">
-                    No active employees are available.
+                    No active General staff employees are available.
                   </p>
                 ) : (
                   <p className="text-xs text-muted-foreground">
-                    Select the FJGA employee who received the cash payment.
+                    Select the FJGA General staff employee who received the cash payment.
                   </p>
                 )}
               </div>

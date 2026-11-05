@@ -123,7 +123,11 @@ const [loadingEmployees, setLoadingEmployees] = useState(false)
       setLoadingEmployees(true)
 
       const data = await getActiveEmployees()
-      setEmployees(data)
+      setEmployees(
+        data.filter(
+          (employee) => employee.position?.trim().toLowerCase() === "driver"
+        )
+      )
     } catch (error) {
       console.error("Failed to load employees:", error)
       toast.error(getErrorMessage(error, "Unable to load employees."))
@@ -174,7 +178,7 @@ const [loadingEmployees, setLoadingEmployees] = useState(false)
       return
     }
 
-    if (!assignedDriver.trim()) {
+    if (!assignedDriver.trim() || !employees.some((employee) => employee.name === assignedDriver)) {
   setError("Please select an assigned driver.")
   return
 }
@@ -285,7 +289,7 @@ const [loadingEmployees, setLoadingEmployees] = useState(false)
       <SelectValue
         placeholder={
           loadingEmployees
-            ? "Loading employees..."
+            ? "Loading drivers..."
             : "Select a driver"
         }
       />
@@ -296,7 +300,7 @@ const [loadingEmployees, setLoadingEmployees] = useState(false)
         !employees.some(
           (employee) => employee.name === assignedDriver
         ) && (
-          <SelectItem value={assignedDriver}>
+          <SelectItem value={assignedDriver} disabled>
             {assignedDriver} — Previously assigned
           </SelectItem>
         )}
@@ -316,7 +320,7 @@ const [loadingEmployees, setLoadingEmployees] = useState(false)
 
   {!loadingEmployees && employees.length === 0 && (
     <p className="text-xs text-muted-foreground">
-      No active employees are available.
+      No active drivers are available.
     </p>
   )}
 </div>

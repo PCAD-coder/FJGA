@@ -173,7 +173,13 @@ export default function ScheduleSiteVisitDialog({
       try {
         setLoadingEmployees(true)
         const data = await getActiveEmployees()
-        setEmployees(data)
+        setEmployees(
+          data.filter(
+            (employee) =>
+              employee.position?.trim().replace(/\s+/g, " ").toLowerCase() ===
+              "on-site measurement staff"
+          )
+        )
       } catch (error) {
         console.error("Failed to load employees:", error)
         toast.error(
@@ -347,7 +353,7 @@ export default function ScheduleSiteVisitDialog({
 
             {!loadingEmployees && employees.length === 0 && (
               <p className="text-xs text-muted-foreground">
-                No active employees are available.
+                No active On-Site Measurement Staff employees are available.
               </p>
             )}
           </div>

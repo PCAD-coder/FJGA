@@ -23,12 +23,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import {
-  getActiveEmployees,
-  getActiveTeams,
-} from "../../../user-management/services/personnel.service"
+import { getActiveTeams } from "../../../user-management/services/personnel.service"
 
-import type { Employee, Team } from "../../../user-management/types/personnel"
+import type { Team } from "../../../user-management/types/personnel"
 
 interface Props {
   open: boolean
@@ -60,7 +57,6 @@ export default function StartProductionDialog({
   onConfirm,
 }: Props) {
   const [assignedTo, setAssignedTo] = useState("")
-  const [employees, setEmployees] = useState<Employee[]>([])
   const [teams, setTeams] = useState<Team[]>([])
   const [loadingPersonnel, setLoadingPersonnel] = useState(false)
   const [estimatedCompletionDate, setEstimatedCompletionDate] = useState("")
@@ -76,15 +72,10 @@ export default function StartProductionDialog({
       try {
         setLoadingPersonnel(true)
 
-        const [employeeData, teamData] = await Promise.all([
-          getActiveEmployees(),
-          getActiveTeams(),
-        ])
-
-        setEmployees(employeeData)
+        const teamData = await getActiveTeams()
         setTeams(teamData)
       } catch (error) {
-        console.error("Failed to load employees and teams:", error)
+        console.error("Failed to load teams:", error)
       } finally {
         setLoadingPersonnel(false)
       }
@@ -94,7 +85,11 @@ export default function StartProductionDialog({
   }, [open])
 
   const handleConfirm = async () => {
-    if (!assignedTo || !estimatedCompletionDate) return
+    if (
+      loadingPersonnel ||
+      !teams.some((team) => team.name === assignedTo) ||
+      !estimatedCompletionDate
+    ) return
     if (estimatedCompletionDate < getTodayInManila()) {
       toast.error("Estimated completion date must be today or a future date.")
       return
@@ -135,7 +130,7 @@ export default function StartProductionDialog({
           )}
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Assigned Staff / Team</label>
+            <label className="text-sm font-medium">Assigned Team</label>
 
             <Select
               value={assignedTo || undefined}
@@ -146,30 +141,13 @@ export default function StartProductionDialog({
                 <SelectValue
                   placeholder={
                     loadingPersonnel
-                      ? "Loading employees and teams..."
-                      : "Select an employee or team"
+                      ? "Loading teams..."
+                      : "Select a team"
                   }
                 />
               </SelectTrigger>
 
               <SelectContent>
-                {employees.length > 0 && (
-                  <SelectGroup>
-                    <SelectLabel>Employees</SelectLabel>
-
-                    {employees.map((employee) => (
-                      <SelectItem
-                        key={`employee-${employee.id}`}
-                        value={employee.name}
-                      >
-                        {employee.position
-                          ? `${employee.name} — ${employee.position}`
-                          : employee.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                )}
-
                 {teams.length > 0 && (
                   <SelectGroup>
                     <SelectLabel>Teams</SelectLabel>
@@ -185,10 +163,9 @@ export default function StartProductionDialog({
             </Select>
 
             {!loadingPersonnel &&
-              employees.length === 0 &&
               teams.length === 0 && (
                 <p className="text-xs text-muted-foreground">
-                  No active employees or teams are available.
+                  No active teams are available.
                 </p>
               )}
           </div>
@@ -235,7 +212,8 @@ export default function StartProductionDialog({
             onClick={handleConfirm}
             disabled={
               saving ||
-              !assignedTo ||
+              loadingPersonnel ||
+              !teams.some((team) => team.name === assignedTo) ||
               !estimatedCompletionDate ||
               isPastCompletionDate
             }

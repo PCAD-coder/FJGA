@@ -54,6 +54,13 @@ export default function ProductionModule() {
 
   const filteredProjects = useMemo(() => {
     return projects.filter((project) => {
+      if (
+        project.projectType === "return" &&
+        project.stage === "Ready for Delivery"
+      ) {
+        return false
+      }
+
       const matchesSearch =
         project.orderNumber.toLowerCase().includes(search.toLowerCase()) ||
         project.projectName.toLowerCase().includes(search.toLowerCase()) ||
@@ -148,7 +155,6 @@ const inProductionCount = activeProjects.filter(
           <ToggleGroupItem value="assembly">Assembly</ToggleGroupItem>
           <ToggleGroupItem value="finishing">Finishing</ToggleGroupItem>
           <ToggleGroupItem value="quality_check">Quality Check</ToggleGroupItem>
-        <ToggleGroupItem value="ready_for_delivery">Ready</ToggleGroupItem>
         </ToggleGroup>
 
         <div className="relative max-w-md">

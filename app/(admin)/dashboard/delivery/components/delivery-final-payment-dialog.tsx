@@ -77,7 +77,14 @@ export default function DeliveryFinalPaymentDialog({
         : ""
     )
     setPaymentMethod("cash_on_delivery")
-    setPaymentDate(new Date().toISOString().split("T")[0])
+    setPaymentDate(
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Manila",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(new Date())
+    )
     setReferenceNumber("")
     setReceivedByEmployee("")
     setProofFile(null)
@@ -93,7 +100,12 @@ export default function DeliveryFinalPaymentDialog({
         setLoadingEmployees(true)
 
         const data = await getActiveEmployees()
-        setEmployees(data)
+        setEmployees(
+          data.filter((employee) => {
+            const position = employee.position?.trim().replace(/\s+/g, " ").toLowerCase()
+            return position === "driver" || position === "general staff"
+          })
+        )
       } catch (error) {
         console.error("Failed to load employees:", error)
         toast.error(getErrorMessage(error, "Unable to load employees."))
@@ -405,7 +417,7 @@ export default function DeliveryFinalPaymentDialog({
                   min="0.01"
                   step="0.01"
                   value={amount}
-                  onChange={(event) => setAmount(event.target.value)}
+                  readOnly
                   placeholder="Enter remaining balance"
                 />
               </div>
@@ -448,7 +460,7 @@ export default function DeliveryFinalPaymentDialog({
                 <Input
                   type="date"
                   value={paymentDate}
-                  onChange={(event) => setPaymentDate(event.target.value)}
+                  disabled
                 />
               </div>
 
@@ -510,11 +522,11 @@ export default function DeliveryFinalPaymentDialog({
 
                     {!loadingEmployees && employees.length === 0 ? (
                       <p className="text-xs text-destructive">
-                        No active employees are available.
+                        No active Driver or General staff employees are available.
                       </p>
                     ) : (
                       <p className="text-xs text-muted-foreground">
-                        Select the FJGA employee who received the cash payment.
+                        Select the FJGA Driver or General staff employee who received the cash payment.
                       </p>
                     )}
                   </div>
