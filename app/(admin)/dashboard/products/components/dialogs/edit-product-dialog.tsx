@@ -1404,7 +1404,7 @@ export default function EditProductDialog({
                               </SelectTrigger>
 
                               <SelectContent>
-                                {calculationMethods.map((method) => (
+                                {calculationMethods.filter((method) => method.method_code === "area").map((method) => (
                                   <SelectItem key={method.id} value={method.id}>
                                     {method.display_name}
                                   </SelectItem>
