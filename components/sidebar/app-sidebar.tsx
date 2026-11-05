@@ -85,7 +85,7 @@ export async function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <Link href="/">
+              <Link href="#">
                 <Image
                   src="/logo1.png"
                   alt="logo"
