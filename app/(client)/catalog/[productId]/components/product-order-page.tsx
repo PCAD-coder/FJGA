@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, LoaderCircle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { ContactNumberInput } from "@/components/ui/contact-number-input"
@@ -108,6 +108,7 @@ export default function ProductOrderPage({
   const [loadingLocationCoverage, setLoadingLocationCoverage] = useState(false)
 
   const [estimatedPrice, setEstimatedPrice] = useState(initialPrice)
+  const [loadingPrice, setLoadingPrice] = useState(false)
 
   const [selectedAluminumVariant, setSelectedAluminumVariant] = useState(
     defaultAluminumVariantId
@@ -134,9 +135,12 @@ export default function ProductOrderPage({
   console.log("Catalog variants", variants)
 
   useEffect(() => {
+    let cancelled = false
+    setLoadingPrice(true)
+
     const timeout = setTimeout(async () => {
       try {
-const result = await getCustomizedPrice(product.id, {
+        const result = await getCustomizedPrice(product.id, {
   width,
   height,
   depth,
@@ -146,15 +150,21 @@ const result = await getCustomizedPrice(product.id, {
   lockVariantId: selectedLockVariant,
   hingeVariantId: selectedHingeVariant,
   rollerVariantId: selectedRollerVariant,
-})
+        })
 
+        if (cancelled) return
         setEstimatedPrice(result.sellingPrice)
       } catch (err) {
         console.error(err)
+      } finally {
+        if (!cancelled) setLoadingPrice(false)
       }
     }, 300)
 
-    return () => clearTimeout(timeout)
+    return () => {
+      cancelled = true
+      clearTimeout(timeout)
+    }
   }, [
   width,
   height,
@@ -463,12 +473,22 @@ const result = await getCustomizedPrice(product.id, {
                 Unit price (VAT included)
               </p>
 
-              <p className="mt-1 text-2xl font-semibold tracking-tight">
+              <p
+                className="mt-1 flex items-center gap-2 text-2xl font-semibold tracking-tight"
+                aria-live="polite"
+                aria-busy={loadingPrice}
+              >
                 &#8369;
                 {vatInclusiveUnitPrice.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
+                {loadingPrice && (
+                  <span className="inline-flex items-center gap-1.5 text-sm font-normal text-muted-foreground">
+                    <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+                    Updating price...
+                  </span>
+                )}
               </p>
             </div>
           </div>

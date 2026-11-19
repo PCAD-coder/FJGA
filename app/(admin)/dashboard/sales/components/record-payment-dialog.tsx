@@ -66,6 +66,9 @@ export function RecordPaymentDialog({
   const [notes, setNotes] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000)
+    .toISOString()
+    .slice(0, 10)
 
   useEffect(() => {
     if (!open) {
@@ -121,6 +124,11 @@ export function RecordPaymentDialog({
   const handleSubmit = async () => {
     try {
       setError(null)
+
+      if (!paymentDate || paymentDate < today) {
+        setError("Payment date cannot be in the past.")
+        return
+      }
 
       if (!Number.isFinite(paymentAmount) || paymentAmount <= 0) {
         setError("Please enter a valid payment amount.")
@@ -312,6 +320,7 @@ export function RecordPaymentDialog({
 
             <Input
               type="date"
+              min={today}
               value={paymentDate}
               onChange={(event) => setPaymentDate(event.target.value)}
             />

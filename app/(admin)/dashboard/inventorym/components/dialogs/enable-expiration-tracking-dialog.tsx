@@ -60,6 +60,10 @@ export function EnableExpirationTrackingDialog({
       return
     }
 
+    if (receivedAt < getToday()) {
+      return
+    }
+
     if (expirationDate < receivedAt) {
       return
     }
@@ -148,6 +152,7 @@ export function EnableExpirationTrackingDialog({
               <Input
                 id={`enable-received-${material.id}`}
                 type="date"
+                min={getToday()}
                 value={receivedAt}
                 onChange={(event) => setReceivedAt(event.target.value)}
               />
@@ -161,7 +166,7 @@ export function EnableExpirationTrackingDialog({
               <Input
                 id={`enable-expiration-${material.id}`}
                 type="date"
-                min={receivedAt}
+                min={receivedAt || getToday()}
                 value={expirationDate}
                 onChange={(event) => setExpirationDate(event.target.value)}
               />

@@ -24,6 +24,7 @@ export interface MaterialUsage {
 
 export interface AnalyticsSummary {
   totalRevenue: number
+  totalProfit: number
   completedOrders: number
   returnRequests: number
   customerSatisfaction: number

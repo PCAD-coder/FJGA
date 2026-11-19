@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { ArrowRight, CalendarDays, Package, PhilippinePeso } from "lucide-react"
+import { ArrowRight, CalendarDays, MessageSquare, Package, PhilippinePeso } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -10,10 +10,13 @@ import OrderStatusBadge from "./order-status-badge"
 import OrderDetailsDialog from "./order-details-dialog"
 
 import type { Order } from "../types/order"
+import { Button } from "@/components/ui/button"
 
 interface Props {
   order: Order
   onOrderCancelled: (orderId: string) => void
+  canLeaveFeedback: boolean
+  onLeaveFeedback: () => void
 }
 
 function formatCurrency(value: number) {
@@ -24,7 +27,7 @@ function formatCurrency(value: number) {
   }).format(value)
 }
 
-export default function OrderCard({ order, onOrderCancelled, }: Props) {
+export default function OrderCard({ order, onOrderCancelled, canLeaveFeedback, onLeaveFeedback }: Props) {
   const isCustomOrder = order.orderType === "custom"
 
   return (
@@ -127,6 +130,12 @@ export default function OrderCard({ order, onOrderCancelled, }: Props) {
             </div>
 
             <div className="flex items-center gap-2">
+              {canLeaveFeedback && (
+                <Button type="button" size="sm" variant="outline" onClick={onLeaveFeedback}>
+                  <MessageSquare className="size-4" />
+                  Feedback
+                </Button>
+              )}
               <OrderDetailsDialog
   order={order}
   onOrderCancelled={onOrderCancelled}

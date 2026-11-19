@@ -118,6 +118,12 @@ export default function ScheduleSiteVisitDialog({
   const selectedDate = scheduledAt.slice(0, 10)
   const selectedTime = scheduledAt.slice(11, 16)
   const selectedSlot = getTimeSlot(selectedTime)
+  const todayInManila = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date())
 
   const preferredDate = clientProposal
     ? clientProposal.proposedDate
@@ -306,6 +312,7 @@ export default function ScheduleSiteVisitDialog({
             <Input
               id="site-visit-schedule"
               type="datetime-local"
+              min={`${todayInManila}T${todayInManila === selectedDate ? new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Manila", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date()) : "00:00"}`}
               value={scheduledAt}
               onChange={(e) => setScheduledAt(e.target.value)}
               disabled={saving}

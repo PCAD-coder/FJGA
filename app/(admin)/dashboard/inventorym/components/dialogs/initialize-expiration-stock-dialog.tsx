@@ -67,6 +67,11 @@ export function InitializeExpirationStockDialog({
       return
     }
 
+    if (receivedAt < getTodayDate()) {
+      setValidationError("Received date cannot be in the past.")
+      return
+    }
+
     if (!expirationDate) {
       setValidationError("Expiration date is required.")
       return
@@ -162,6 +167,7 @@ export function InitializeExpirationStockDialog({
                   <Input
                     id="initialize-received-at"
                     type="date"
+                    min={getTodayDate()}
                     value={receivedAt}
                     onChange={(event) =>
                       setReceivedAt(event.target.value)
@@ -183,6 +189,7 @@ export function InitializeExpirationStockDialog({
                   <Input
                     id="initialize-expiration-date"
                     type="date"
+                    min={receivedAt || getTodayDate()}
                     value={expirationDate}
                     onChange={(event) =>
                       setExpirationDate(event.target.value)

@@ -61,10 +61,13 @@ export function RestockMaterialDialog({
     quantityNumber <= 5000
 
   const requiresExpiration = material.tracks_expiration
+  const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000)
+    .toISOString()
+    .slice(0, 10)
 
   const hasValidExpirationDetails =
     !requiresExpiration ||
-    (receivedAt !== "" && expirationDate !== "" && expirationDate >= receivedAt)
+    (receivedAt !== "" && receivedAt >= today && expirationDate !== "" && expirationDate >= receivedAt)
 
   const canSubmit = isValidQuantity && hasValidExpirationDetails
 
@@ -113,6 +116,11 @@ export function RestockMaterialDialog({
 
         if (!expirationDate) {
           setError("Expiration date is required for this material.")
+          return
+        }
+
+        if (receivedAt < today) {
+          setError("Received date cannot be in the past.")
           return
         }
 
@@ -256,6 +264,7 @@ export function RestockMaterialDialog({
                   <Input
                     id={`restock-received-${material.id}`}
                     type="date"
+                    min={today}
                     value={receivedAt}
                     onChange={(event) => {
                       setReceivedAt(event.target.value)
@@ -273,7 +282,7 @@ export function RestockMaterialDialog({
                   <Input
                     id={`restock-expiration-${material.id}`}
                     type="date"
-                    min={receivedAt || undefined}
+                    min={receivedAt || today}
                     value={expirationDate}
                     onChange={(event) => {
                       setExpirationDate(event.target.value)

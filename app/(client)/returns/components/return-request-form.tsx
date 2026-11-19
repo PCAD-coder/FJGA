@@ -35,6 +35,7 @@ interface Props {
 }
 
 export default function ReturnRequestForm({ orders, onSubmitted }: Props) {
+  const eligibleOrders = orders.filter((order) => order.eligible)
   const [selectedOrder, setSelectedOrder] = useState("")
   const [issueType, setIssueType] = useState("")
   const [description, setDescription] = useState("")
@@ -45,7 +46,7 @@ export default function ReturnRequestForm({ orders, onSubmitted }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
-  const selected = orders.find((order) => order.id === selectedOrder)
+  const selected = eligibleOrders.find((order) => order.id === selectedOrder)
 
   async function handleSubmit() {
     setError(null)
@@ -66,8 +67,8 @@ export default function ReturnRequestForm({ orders, onSubmitted }: Props) {
       return
     }
 
-    if (description.trim().length < 50) {
-      setError("Please provide at least 50 characters describing the issue.")
+    if (description.trim().length < 10) {
+      setError("Please provide at least 10 characters describing the issue.")
       return
     }
     if (contactNumber && !/^09[0-9]{9}$/.test(contactNumber)) {
@@ -200,7 +201,7 @@ export default function ReturnRequestForm({ orders, onSubmitted }: Props) {
         />
 
         <p className="text-xs text-muted-foreground">
-          Minimum 50 characters. Be as specific as possible.
+          Minimum 10 characters. Be as specific as possible.
         </p>
       </div>
 
@@ -237,7 +238,7 @@ export default function ReturnRequestForm({ orders, onSubmitted }: Props) {
         className="w-full"
         size="lg"
         onClick={handleSubmit}
-        disabled={submitting}
+        disabled={submitting || eligibleOrders.length === 0}
       >
         {submitting ? "Submitting..." : "Submit Return Request"}
       </Button>

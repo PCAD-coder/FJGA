@@ -19,6 +19,8 @@ import OrderToolbar, { type OrderSort } from "./order-toolbar"
 import OrderCard from "./order-card"
 import EmptyOrders from "./empty-orders"
 import { Button } from "@/components/ui/button"
+import FeedbackDialog from "@/app/(client)/feedback/components/dialogs/feedback-dialog"
+import { getCustomerFeedbacks } from "@/app/(client)/feedback/services/feedback-service"
 
 import type { Order } from "../types/order"
 import { getMyOrders } from "../services/my-orders-service"
@@ -31,6 +33,9 @@ export default function MyOrders() {
   const [search, setSearch] = useState("")
   const [sort, setSort] = useState<OrderSort>("newest")
   const [orders, setOrders] = useState<Order[]>([])
+  const [feedbackOrderIds, setFeedbackOrderIds] = useState<Set<string>>(new Set())
+  const [selectedFeedbackOrder, setSelectedFeedbackOrder] = useState<Order | null>(null)
+  const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false)
   function handleOrderCancelled(orderId: string) {
   setOrders((previousOrders) =>
     previousOrders.map((order) =>
@@ -130,9 +135,13 @@ export default function MyOrders() {
         setLoading(true)
         setError(null)
 
-        const data = await getMyOrders()
+        const [data, feedbacks] = await Promise.all([
+          getMyOrders(),
+          getCustomerFeedbacks(),
+        ])
 
         setOrders(data)
+        setFeedbackOrderIds(new Set(feedbacks.map((feedback) => feedback.orderId)))
       } catch (error) {
         console.error("Failed to load orders:", error)
 
@@ -258,14 +267,39 @@ export default function MyOrders() {
           </div>
         ) : (
           paginatedOrders.map((order) => (
-  <OrderCard
-    key={order.id}
-    order={order}
-    onOrderCancelled={handleOrderCancelled}
-  />
-))
+            <OrderCard
+              key={order.id}
+              order={order}
+              onOrderCancelled={handleOrderCancelled}
+              onLeaveFeedback={() => {
+                setSelectedFeedbackOrder(order)
+                setFeedbackDialogOpen(true)
+              }}
+              canLeaveFeedback={
+                order.status === "Completed" && !feedbackOrderIds.has(order.id)
+              }
+            />
+          ))
         )}
       </div>
+      {selectedFeedbackOrder && (
+        <FeedbackDialog
+          open={feedbackDialogOpen}
+          onOpenChange={(open) => {
+            setFeedbackDialogOpen(open)
+            if (!open) setSelectedFeedbackOrder(null)
+          }}
+          orderId={selectedFeedbackOrder.id}
+          orderNumber={selectedFeedbackOrder.orderNumber}
+          projectName={selectedFeedbackOrder.productName}
+          onSubmitted={() => {
+            setFeedbackOrderIds((previous) =>
+              new Set(previous).add(selectedFeedbackOrder.id)
+            )
+            setSelectedFeedbackOrder(null)
+          }}
+        />
+      )}
       {filteredOrders.length > 0 && (
         <nav
           aria-label="Orders pagination"

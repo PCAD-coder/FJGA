@@ -24,6 +24,12 @@ import {
 import { getActiveEmployees } from "../../user-management/services/personnel.service"
 import type { Employee } from "../../user-management/types/personnel"
 
+function getToday() {
+  const date = new Date()
+  const offset = date.getTimezoneOffset()
+  return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 10)
+}
+
 interface Props {
   open: boolean
 
@@ -75,7 +81,7 @@ const [loadingEmployees, setLoadingEmployees] = useState(false)
 }, [open])
 
 const handleSchedule = () => {
-  if (!date || !time || !assignedStaff) return
+  if (!date || date < getToday() || !time || !assignedStaff) return
 
   onConfirm(date, time, assignedStaff, notes)
 
@@ -105,6 +111,7 @@ const handleSchedule = () => {
 
           <Input
             type="date"
+            min={getToday()}
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />
@@ -171,7 +178,7 @@ const handleSchedule = () => {
 
           <Button
   onClick={handleSchedule}
-  disabled={!date || !time || !assignedStaff || loadingEmployees}
+  disabled={!date || date < getToday() || !time || !assignedStaff || loadingEmployees}
 >
   Schedule
 </Button>

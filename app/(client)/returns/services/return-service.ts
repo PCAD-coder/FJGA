@@ -257,8 +257,8 @@ export async function createReturnRequest(input: {
     throw new Error("Please select an issue type")
   }
 
-  if (description.length < 50) {
-    throw new Error("Please provide at least 50 characters in the description")
+  if (description.length < 10) {
+    throw new Error("Please provide at least 10 characters in the description")
   }
 
   const { data: order, error: orderError } = await supabase

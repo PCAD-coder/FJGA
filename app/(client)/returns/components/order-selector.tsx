@@ -21,6 +21,8 @@ export default function OrderSelector({
   value,
   onChange,
 }: Props) {
+  const eligibleOrders = orders.filter((order) => order.eligible)
+
   return (
     <div className="space-y-2">
       <label className="font-medium">
@@ -30,13 +32,20 @@ export default function OrderSelector({
       <Select
         value={value}
         onValueChange={onChange}
+        disabled={eligibleOrders.length === 0}
       >
         <SelectTrigger>
-          <SelectValue placeholder="Choose an order" />
+          <SelectValue
+            placeholder={
+              eligibleOrders.length === 0
+                ? "No eligible orders"
+                : "Choose an order"
+            }
+          />
         </SelectTrigger>
 
         <SelectContent>
-          {orders.map((order) => (
+          {eligibleOrders.map((order) => (
             <SelectItem
               key={order.id}
               value={order.id}
@@ -46,6 +55,12 @@ export default function OrderSelector({
           ))}
         </SelectContent>
       </Select>
+      {eligibleOrders.length === 0 && (
+        <p className="text-sm text-muted-foreground">
+          You have no eligible orders to return. Orders can be returned within
+          7 days of delivery.
+        </p>
+      )}
     </div>
   );
 }

@@ -121,7 +121,17 @@ export async function getAnalyticsSummary(
     await Promise.all([
       supabase
         .from("orders")
-        .select("id, total_amount")
+        .select(`
+          id,
+          total_amount,
+          subtotal,
+          order_items (
+            material_subtotal,
+            labor_subtotal,
+            materials_snapshot,
+            labor_snapshot
+          )
+        `)
         .eq("status", "delivered")
         .gte("created_at", startDate)
         .lt("created_at", endDate),
@@ -161,6 +171,38 @@ export async function getAnalyticsSummary(
     0
   )
 
+  const totalProfit = deliveredOrders.reduce((total, order) => {
+    const items = Array.isArray(order.order_items) ? order.order_items : []
+    const materialCost = items.reduce((sum, item) => {
+      const snapshots = Array.isArray(item.materials_snapshot)
+        ? item.materials_snapshot
+        : []
+
+      return sum + (snapshots.length > 0
+        ? snapshots.reduce(
+            (itemSum, snapshot) =>
+              itemSum + Number(snapshot.base_cost ?? Number(snapshot.unit_cost ?? 0) * Number(snapshot.quantity ?? 0)),
+            0
+          )
+        : Number(item.material_subtotal ?? 0))
+    }, 0)
+    const laborCost = items.reduce((sum, item) => {
+      const snapshots = Array.isArray(item.labor_snapshot)
+        ? item.labor_snapshot
+        : []
+
+      return sum + (snapshots.length > 0
+        ? snapshots.reduce(
+            (itemSum, snapshot) =>
+              itemSum + Number(snapshot.base_cost ?? Number(snapshot.labor_cost ?? 0) * Number(snapshot.quantity ?? 0)),
+            0
+          )
+        : Number(item.labor_subtotal ?? 0))
+    }, 0)
+
+    return total + Number(order.subtotal ?? 0) - materialCost - laborCost
+  }, 0)
+
   const customerSatisfaction =
     feedbacks.length > 0
       ? feedbacks.reduce(
@@ -171,6 +213,7 @@ export async function getAnalyticsSummary(
 
   return {
     totalRevenue,
+    totalProfit,
     completedOrders: deliveredOrders.length,
     returnRequests: returnRequests.length,
     customerSatisfaction,

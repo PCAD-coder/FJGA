@@ -115,6 +115,7 @@ export default function AnalyticsExportMenu({
       [],
       ["SUMMARY"],
       ["Total Revenue", summary.totalRevenue],
+      ["Total Profit", summary.totalProfit],
       ["Completed Orders", summary.completedOrders],
       ["Return Requests", summary.returnRequests],
       ["Customer Satisfaction", summary.customerSatisfaction],
@@ -349,6 +350,13 @@ export default function AnalyticsExportMenu({
               <div class="summary-label">Completed Orders</div>
               <div class="summary-value">
                 ${escapeHtml(summary.completedOrders)}
+              </div>
+            </div>
+
+            <div class="summary-card">
+              <div class="summary-label">Total Profit</div>
+              <div class="summary-value">
+                ${escapeHtml(formatCurrency(summary.totalProfit))}
               </div>
             </div>
 

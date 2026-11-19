@@ -258,7 +258,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="p-3">
+                <div className="p-3">
           <p className="text-center text-sm text-accent-foreground">
             Don&apos;t have an account?
             <Button asChild variant="link" className="px-2">

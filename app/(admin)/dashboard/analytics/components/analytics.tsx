@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 
-import { DollarSign, ShoppingCart, RotateCcw, Star } from "lucide-react"
+import { DollarSign, ShoppingCart, RotateCcw, Star, TrendingUp } from "lucide-react"
 
 import { DashboardCard } from "@/components/dashboard_cards"
 import AnalyticsSkeleton from "./analytics-skeleton"
@@ -80,6 +80,7 @@ export default function Analytics() {
 
   const [summary, setSummary] = useState({
     totalRevenue: 0,
+    totalProfit: 0,
     completedOrders: 0,
     returnRequests: 0,
     customerSatisfaction: 4.8,
@@ -87,6 +88,7 @@ export default function Analytics() {
 
   const [previousSummary, setPreviousSummary] = useState({
     totalRevenue: 0,
+    totalProfit: 0,
     completedOrders: 0,
     returnRequests: 0,
     customerSatisfaction: 0,
@@ -227,6 +229,17 @@ export default function Analytics() {
           description="Orders with delivered status"
           icon={ShoppingCart}
           color="text-blue-600 dark:text-blue-400"
+        />
+
+        <DashboardCard
+          title="Total Profit"
+          value={`₱${summary.totalProfit.toLocaleString("en-PH", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}`}
+          description="Revenue less material and labor costs"
+          icon={TrendingUp}
+          color="text-violet-600 dark:text-violet-400"
         />
 
         <DashboardCard

@@ -11,14 +11,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-import { MapPin, FileText, XCircle } from "lucide-react"
+import { MapPin, FileText, XCircle, Maximize2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 
 import type { CustomOrder } from "../../types/custom-order"
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import {
+  Dialog as ImageDialog,
+  DialogContent as ImageDialogContent,
+  DialogTitle as ImageDialogTitle,
+} from "@/components/ui/dialog"
 
 interface Props {
   order: CustomOrder | null
@@ -131,6 +136,11 @@ export default function ViewRequestDialog({
   onCreateQuotation,
   onDeny,
 }: Props) {
+  const [fullViewImage, setFullViewImage] = useState<{
+    url: string
+    alt: string
+  } | null>(null)
+
   if (!order) return null
 
   const specificationEntries = Object.entries(order.specifications).filter(
@@ -363,12 +373,29 @@ export default function ViewRequestDialog({
                     className="relative aspect-video overflow-hidden rounded-lg border bg-muted"
                   >
                     {image.signedUrl ? (
-                      <Image
-                        src={image.signedUrl}
-                        alt={`Design reference ${index + 1}`}
-                        fill
-                        className="object-cover"
-                      />
+                      <>
+                        <Image
+                          src={image.signedUrl}
+                          alt={`Design reference ${index + 1}`}
+                          fill
+                          className="object-cover"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          className="absolute right-2 bottom-2 z-10"
+                          onClick={() =>
+                            setFullViewImage({
+                              url: image.signedUrl!,
+                              alt: `Design reference ${index + 1}`,
+                            })
+                          }
+                        >
+                          <Maximize2 className="mr-2 size-4" />
+                          Full view
+                        </Button>
+                      </>
                     ) : (
                       <div className="flex h-full items-center justify-center p-4 text-center text-sm text-muted-foreground">
                         Image unavailable
@@ -422,6 +449,29 @@ export default function ViewRequestDialog({
           </DialogFooter>
         )}
       </DialogContent>
+      <ImageDialog
+        open={fullViewImage !== null}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setFullViewImage(null)
+        }}
+      >
+        <ImageDialogContent className="max-h-[95vh] !max-w-[95vw] overflow-hidden p-3">
+          <ImageDialogTitle className="sr-only">
+            {fullViewImage?.alt ?? "Full view of design reference"}
+          </ImageDialogTitle>
+          {fullViewImage && (
+            <div className="relative h-[85vh] w-full">
+              <Image
+                src={fullViewImage.url}
+                alt={fullViewImage.alt}
+                fill
+                sizes="95vw"
+                className="object-contain"
+              />
+            </div>
+          )}
+        </ImageDialogContent>
+      </ImageDialog>
     </Dialog>
   )
 }
